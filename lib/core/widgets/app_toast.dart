@@ -118,7 +118,7 @@ class _ToastWidgetState extends State<_ToastWidget> with SingleTickerProviderSta
                       color: isDark 
                           ? const Color(0xFF2C2C2E) // Gris oscuro elegante
                           : Colors.white,            // Blanco sólido
-                      borderRadius: BorderRadius.circular(50),
+                      borderRadius: BorderRadius.circular(AppColors.radiusCircular),
                       boxShadow: [
                         BoxShadow(
                           color: Colors.black.withOpacity(isDark ? 0.5 : 0.15),
@@ -143,15 +143,15 @@ class _ToastWidgetState extends State<_ToastWidget> with SingleTickerProviderSta
                             child: Icon(
                               config.icon,
                               color: config.color,
-                              size: 18,
+                              size: AppColors.iconXSmall,
                             ),
                           ),
-                          const SizedBox(width: 12),
+                          const SizedBox(width: AppColors.contentGap),
                           Flexible(
                             child: Text(
                               widget.message,
                               style: GoogleFonts.montserrat(
-                                fontSize: 13,
+                                fontSize: AppColors.bodySmall,
                                 fontWeight: FontWeight.w600,
                                 color: isDark ? Colors.white : AppColors.textPrimary,
                               ),
@@ -187,12 +187,12 @@ _ToastConfig _getToastConfig(ToastType type) {
       );
     case ToastType.error:
       return _ToastConfig(
-        color: AppColors.accent, // Coral
+        color: AppColors.secondary, // Coral
         icon: Icons.close_rounded,
       );
     case ToastType.warning:
       return _ToastConfig(
-        color: AppColors.highlight, // Gold
+        color: AppColors.tertiary, // Gold
         icon: Icons.report_problem_rounded,
       );
     case ToastType.info:

@@ -219,7 +219,7 @@ class _AccountFormScreenState extends ConsumerState<AccountFormScreen> {
                       color: isDark ? Colors.white.withOpacity(0.05) : Colors.grey[100],
                       borderRadius: BorderRadius.circular(8),
                     ),
-                    child: Text(op, style: GoogleFonts.montserrat(fontSize: 20, fontWeight: FontWeight.w600, color: AppColors.primary)),
+                    child: Text(op, style: GoogleFonts.montserrat(fontSize: AppColors.titleMedium, fontWeight: FontWeight.w600, color: AppColors.primary)),
                   ),
                 ),
               ),
@@ -400,7 +400,7 @@ class _AccountFormScreenState extends ConsumerState<AccountFormScreen> {
               value: _selectedTipo,
               decoration: InputDecoration(
                 labelText: 'Tipo de cuenta',
-                labelStyle: GoogleFonts.montserrat(fontSize: 14),
+                labelStyle: GoogleFonts.montserrat(fontSize: AppColors.bodyMedium),
                 filled: true,
                 fillColor: isDark ? AppColors.surfaceDark : Colors.white,
                 contentPadding: const EdgeInsets.symmetric(
@@ -418,7 +418,7 @@ class _AccountFormScreenState extends ConsumerState<AccountFormScreen> {
                   value: tipo,
                   child: Text(
                     _formatTipoName(tipo),
-                    style: GoogleFonts.montserrat(fontSize: 14),
+                    style: GoogleFonts.montserrat(fontSize: AppColors.bodyMedium),
                   ),
                 );
               }).toList(),
@@ -447,7 +447,7 @@ class _AccountFormScreenState extends ConsumerState<AccountFormScreen> {
                     Text(
                       'Banco (Opcional)',
                       style: GoogleFonts.montserrat(
-                        fontSize: 14,
+                        fontSize: AppColors.bodyMedium,
                         fontWeight: FontWeight.w600,
                       ),
                     ),
@@ -515,7 +515,7 @@ class _AccountFormScreenState extends ConsumerState<AccountFormScreen> {
                                     _selectedBank?.displayName ??
                                         'Selecciona un banco',
                                     style: GoogleFonts.montserrat(
-                                      fontSize: 14,
+                                      fontSize: AppColors.bodyMedium,
                                       color: _selectedBank == null
                                           ? Colors.grey
                                           : (isDark ? Colors.white : Colors.black),
@@ -543,7 +543,7 @@ class _AccountFormScreenState extends ConsumerState<AccountFormScreen> {
               loading: () => const Center(child: CircularProgressIndicator()),
               error: (error, stack) => Text(
                 'Error al cargar monedas',
-                style: GoogleFonts.montserrat(color: AppColors.accent),
+                style: GoogleFonts.montserrat(color: AppColors.secondary),
               ),
               data: (currencies) {
                 // Si no hay moneda seleccionada y hay monedas disponibles, selecciona MXN por defecto
@@ -558,7 +558,7 @@ class _AccountFormScreenState extends ConsumerState<AccountFormScreen> {
                   value: _selectedMonedaId,
                   decoration: InputDecoration(
                     labelText: 'Moneda',
-                    labelStyle: GoogleFonts.montserrat(fontSize: 14),
+                    labelStyle: GoogleFonts.montserrat(fontSize: AppColors.bodyMedium),
                     filled: true,
                     fillColor: isDark ? AppColors.surfaceDark : Colors.white,
                     contentPadding: const EdgeInsets.symmetric(
@@ -576,7 +576,7 @@ class _AccountFormScreenState extends ConsumerState<AccountFormScreen> {
                       value: currency.id,
                       child: Text(
                         '${currency.codigo} - ${currency.nombre}',
-                        style: GoogleFonts.montserrat(fontSize: 14),
+                        style: GoogleFonts.montserrat(fontSize: AppColors.bodyMedium),
                       ),
                     );
                   }).toList(),
@@ -621,7 +621,7 @@ class _AccountFormScreenState extends ConsumerState<AccountFormScreen> {
                         if (result == null) return const SizedBox.shrink();
                         return Padding(
                           padding: const EdgeInsets.only(top: 4),
-                          child: Text('= ${_moneyFormatter.format(result)}', style: GoogleFonts.montserrat(fontSize: 12, color: Colors.green, fontWeight: FontWeight.w600)),
+                          child: Text('= ${_moneyFormatter.format(result)}', style: GoogleFonts.montserrat(fontSize: AppColors.bodySmall, color: Colors.green, fontWeight: FontWeight.w600)),
                         );
                       },
                     ),
@@ -652,7 +652,7 @@ class _AccountFormScreenState extends ConsumerState<AccountFormScreen> {
                         if (result == null) return const SizedBox.shrink();
                         return Padding(
                           padding: const EdgeInsets.only(top: 4),
-                          child: Text('= ${_moneyFormatter.format(result)}', style: GoogleFonts.montserrat(fontSize: 12, color: Colors.green, fontWeight: FontWeight.w600)),
+                          child: Text('= ${_moneyFormatter.format(result)}', style: GoogleFonts.montserrat(fontSize: AppColors.bodySmall, color: Colors.green, fontWeight: FontWeight.w600)),
                         );
                       },
                     ),
@@ -664,7 +664,7 @@ class _AccountFormScreenState extends ConsumerState<AccountFormScreen> {
                 child: Text(
                   'Ej. \$7,000 MXN (default: \$0)',
                   style: GoogleFonts.montserrat(
-                    fontSize: 12,
+                    fontSize: AppColors.bodySmall,
                     color: Colors.grey[600],
                   ),
                 ),
@@ -683,7 +683,7 @@ class _AccountFormScreenState extends ConsumerState<AccountFormScreen> {
                 child: Text(
                   'El saldo disponible será: límite - deuda actual',
                   style: GoogleFonts.montserrat(
-                    fontSize: 12,
+                    fontSize: AppColors.bodySmall,
                     color: AppColors.primary,
                     fontWeight: FontWeight.w500,
                   ),
@@ -717,7 +717,7 @@ class _AccountFormScreenState extends ConsumerState<AccountFormScreen> {
                         if (result == null) return const SizedBox.shrink();
                         return Padding(
                           padding: const EdgeInsets.only(top: 4),
-                          child: Text('= ${_moneyFormatter.format(result)}', style: GoogleFonts.montserrat(fontSize: 12, color: Colors.green, fontWeight: FontWeight.w600)),
+                          child: Text('= ${_moneyFormatter.format(result)}', style: GoogleFonts.montserrat(fontSize: AppColors.bodySmall, color: Colors.green, fontWeight: FontWeight.w600)),
                         );
                       },
                     ),
@@ -731,7 +731,7 @@ class _AccountFormScreenState extends ConsumerState<AccountFormScreen> {
                   Text(
                     'Saldo disponible (calculado)',
                     style: GoogleFonts.montserrat(
-                      fontSize: 14,
+                      fontSize: AppColors.bodyMedium,
                       fontWeight: FontWeight.w600,
                     ),
                   ),
@@ -749,7 +749,7 @@ class _AccountFormScreenState extends ConsumerState<AccountFormScreen> {
                     child: Text(
                       _moneyFormatter.format((double.tryParse(_limiteCreditoController.text) ?? 0.0) - (double.tryParse(_deudaActualController.text) ?? 0.0)),
                       style: GoogleFonts.montserrat(
-                        fontSize: 16,
+                        fontSize: AppColors.bodyLarge,
                         fontWeight: FontWeight.w700,
                         color: isDark ? Colors.white : AppColors.textPrimary,
                       ),
@@ -766,7 +766,7 @@ class _AccountFormScreenState extends ConsumerState<AccountFormScreen> {
                 child: Text(
                   'El saldo inicial se establecerá como saldo actual al crear la cuenta',
                   style: GoogleFonts.montserrat(
-                    fontSize: 12,
+                    fontSize: AppColors.bodySmall,
                     color: Colors.grey[600],
                   ),
                 ),
@@ -814,7 +814,7 @@ class _AccountFormScreenState extends ConsumerState<AccountFormScreen> {
       child: Text(
         'No se pudieron cargar los bancos',
         style: GoogleFonts.montserrat(
-          fontSize: 12,
+          fontSize: AppColors.bodySmall,
           color: Colors.red,
         ),
       ),
@@ -850,7 +850,7 @@ class _AccountFormScreenState extends ConsumerState<AccountFormScreen> {
                     Text(
                       'Selecciona un banco',
                       style: GoogleFonts.montserrat(
-                        fontSize: 16,
+                        fontSize: AppColors.bodyLarge,
                         fontWeight: FontWeight.w700,
                       ),
                     ),
@@ -928,7 +928,7 @@ class _AccountFormScreenState extends ConsumerState<AccountFormScreen> {
                         ),
                         subtitle: Text(
                           bank.name,
-                          style: GoogleFonts.montserrat(fontSize: 12),
+                          style: GoogleFonts.montserrat(fontSize: AppColors.bodySmall),
                         ),
                         trailing: isSelected
                             ? Icon(

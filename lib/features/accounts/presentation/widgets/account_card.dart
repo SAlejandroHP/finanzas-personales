@@ -181,7 +181,7 @@ class AccountCard extends StatelessWidget {
                           Text(
                             account.nombre,
                             style: GoogleFonts.montserrat(
-                              fontSize: 13,
+                              fontSize: AppColors.bodySmall,
                               fontWeight: FontWeight.w700,
                               color: isDark ? Colors.white : AppColors.textPrimary,
                             ),
@@ -192,7 +192,7 @@ class AccountCard extends StatelessWidget {
                           Text(
                             theme.label,
                             style: GoogleFonts.montserrat(
-                              fontSize: 10,
+                              fontSize: AppColors.bodySmall,
                               fontWeight: FontWeight.w500,
                               color: Colors.grey,
                             ),
@@ -209,7 +209,7 @@ class AccountCard extends StatelessWidget {
                         child: Text(
                           currencyFormatter.format(account.saldoActual),
                           style: GoogleFonts.montserrat(
-                            fontSize: 16,
+                            fontSize: AppColors.bodyLarge,
                             fontWeight: FontWeight.w800,
                             color: _getBalanceColor(),
                             letterSpacing: -0.5,
@@ -251,7 +251,7 @@ class AccountCard extends StatelessWidget {
           Text(
             label,
             style: GoogleFonts.montserrat(
-              fontSize: 13,
+              fontSize: AppColors.bodySmall,
               color: isDestructive ? Colors.red : null,
             ),
           ),
@@ -262,7 +262,7 @@ class AccountCard extends StatelessWidget {
 
   Color _getBalanceColor() {
     if (account.saldoActual > 0) return Colors.green;
-    if (account.saldoActual < 0) return AppColors.accent;
+    if (account.saldoActual < 0) return AppColors.secondary;
     return Colors.grey;
   }
 }

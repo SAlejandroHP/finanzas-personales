@@ -34,7 +34,7 @@ class DebtsListScreen extends ConsumerWidget {
           'Mis Deudas',
           style: GoogleFonts.montserrat(
             fontWeight: FontWeight.w700,
-            fontSize: 20,
+            fontSize: AppColors.titleMedium,
             color: isDark ? Colors.white : AppColors.textPrimary,
           ),
         ),
@@ -86,7 +86,7 @@ class DebtsListScreen extends ConsumerWidget {
           Text(
             'No tienes deudas registradas',
             style: GoogleFonts.montserrat(
-              fontSize: 16,
+              fontSize: AppColors.bodyLarge,
               fontWeight: FontWeight.w600,
               color: isDark ? Colors.white38 : Colors.grey,
             ),
@@ -95,7 +95,7 @@ class DebtsListScreen extends ConsumerWidget {
           Text(
             'Toca el botón + para agregar una nueva deuda',
             style: GoogleFonts.montserrat(
-              fontSize: 13,
+              fontSize: AppColors.bodySmall,
               color: isDark ? Colors.white24 : Colors.grey[400],
             ),
           ),
@@ -148,7 +148,7 @@ class DebtsListScreen extends ConsumerWidget {
                       Text(
                         debt.nombre,
                         style: GoogleFonts.montserrat(
-                          fontSize: 16,
+                          fontSize: AppColors.bodyLarge,
                           fontWeight: FontWeight.w700,
                           color: isDark ? Colors.white : AppColors.textPrimary,
                         ),
@@ -156,7 +156,7 @@ class DebtsListScreen extends ConsumerWidget {
                       Text(
                         _formatTipo(debt.tipo),
                         style: GoogleFonts.montserrat(
-                          fontSize: 12,
+                          fontSize: AppColors.bodySmall,
                           color: Colors.grey,
                         ),
                       ),
@@ -174,7 +174,7 @@ class DebtsListScreen extends ConsumerWidget {
                       child: Text(
                         debt.estado.toUpperCase(),
                         style: GoogleFonts.montserrat(
-                          fontSize: 10,
+                          fontSize: AppColors.bodySmall,
                           fontWeight: FontWeight.w700,
                           color: _getEstadoColor(debt.estado),
                         ),
@@ -200,12 +200,12 @@ class DebtsListScreen extends ConsumerWidget {
                   children: [
                     Text(
                       'Resta por pagar',
-                      style: GoogleFonts.montserrat(fontSize: 12, color: Colors.grey),
+                      style: GoogleFonts.montserrat(fontSize: AppColors.bodySmall, color: Colors.grey),
                     ),
                     Text(
                       formatter.format(debt.montoRestante),
                       style: GoogleFonts.montserrat(
-                        fontSize: 18,
+                        fontSize: AppColors.titleSmall,
                         fontWeight: FontWeight.w800,
                         color: isDark ? Colors.white : AppColors.textPrimary,
                       ),
@@ -217,12 +217,12 @@ class DebtsListScreen extends ConsumerWidget {
                   children: [
                     Text(
                       'Monto total',
-                      style: GoogleFonts.montserrat(fontSize: 12, color: Colors.grey),
+                      style: GoogleFonts.montserrat(fontSize: AppColors.bodySmall, color: Colors.grey),
                     ),
                     Text(
                       formatter.format(debt.montoTotal),
                       style: GoogleFonts.montserrat(
-                        fontSize: 14,
+                        fontSize: AppColors.bodyMedium,
                         fontWeight: FontWeight.w600,
                         color: isDark ? Colors.white70 : Colors.black54,
                       ),
@@ -250,7 +250,7 @@ class DebtsListScreen extends ConsumerWidget {
                 Text(
                   'Progreso: ${(progress * 100).toStringAsFixed(1)}%',
                   style: GoogleFonts.montserrat(
-                    fontSize: 11,
+                    fontSize: AppColors.bodySmall,
                     color: Colors.grey,
                   ),
                 ),
@@ -258,7 +258,7 @@ class DebtsListScreen extends ConsumerWidget {
                   Text(
                     'Vence: ${DateFormat('dd MMM').format(debt.fechaVencimiento!)}',
                     style: GoogleFonts.montserrat(
-                      fontSize: 11,
+                      fontSize: AppColors.bodySmall,
                       fontWeight: FontWeight.w600,
                       color: debt.fechaVencimiento!.isBefore(DateTime.now()) && debt.estado != 'pagada' 
                           ? Colors.red 

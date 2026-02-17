@@ -430,7 +430,7 @@ class DashboardScreen extends ConsumerWidget {
             Text(
               label,
               style: GoogleFonts.montserrat(
-                fontSize: 11,
+                fontSize: AppColors.bodySmall,
                 color: Colors.grey,
                 fontWeight: FontWeight.w700,
               ),
@@ -443,7 +443,7 @@ class DashboardScreen extends ConsumerWidget {
           style: GoogleFonts.montserrat(
             fontWeight: FontWeight.w800,
             color: color,
-            fontSize: 12,
+            fontSize: AppColors.bodySmall,
             height: 1.1,
           ),
         ),
@@ -469,7 +469,7 @@ class DashboardScreen extends ConsumerWidget {
               Text(
                 'CUENTAS',
                 style: GoogleFonts.montserrat(
-                  fontSize: 13,
+                  fontSize: AppColors.bodySmall,
                   fontWeight: FontWeight.w700,
                   color: AppColors.primary.withOpacity(0.8),
                   letterSpacing: 1.1,
@@ -485,7 +485,7 @@ class DashboardScreen extends ConsumerWidget {
                 child: Text(
                   'Ver todas',
                   style: GoogleFonts.montserrat(
-                    fontSize: 12,
+                    fontSize: AppColors.bodySmall,
                     fontWeight: FontWeight.w600,
                     color: AppColors.primary,
                   ),
@@ -504,7 +504,7 @@ class DashboardScreen extends ConsumerWidget {
                 child: Text(
                   'No tienes cuentas registradas',
                   style: GoogleFonts.montserrat(
-                    fontSize: 12,
+                    fontSize: AppColors.bodySmall,
                     color: Colors.grey,
                   ),
                 ),
@@ -640,7 +640,7 @@ class DashboardScreen extends ConsumerWidget {
                                           Text(
                                             acc.nombre,
                                             style: GoogleFonts.montserrat(
-                                              fontSize: 14,
+                                              fontSize: AppColors.bodyMedium,
                                               fontWeight: FontWeight.w700,
                                               color: isDark
                                                   ? Colors.white
@@ -652,7 +652,7 @@ class DashboardScreen extends ConsumerWidget {
                                           Text(
                                             typeLabel,
                                             style: GoogleFonts.montserrat(
-                                              fontSize: 10,
+                                              fontSize: AppColors.bodySmall,
                                               fontWeight: FontWeight.w500,
                                               color: Colors.grey,
                                             ),
@@ -666,7 +666,7 @@ class DashboardScreen extends ConsumerWidget {
                                 Text(
                                   isTC ? 'Disponible' : 'Saldo',
                                   style: GoogleFonts.montserrat(
-                                    fontSize: 14,
+                                    fontSize: AppColors.bodyMedium,
                                     color: Colors.grey,
                                     fontWeight: FontWeight.w500,
                                   ),
@@ -679,7 +679,7 @@ class DashboardScreen extends ConsumerWidget {
                                     Text(
                                       currencyFormatter.format(acc.saldoActual),
                                       style: GoogleFonts.montserrat(
-                                        fontSize: 16,
+                                        fontSize: AppColors.bodyLarge,
                                         fontWeight: FontWeight.w800,
                                         color: isDark
                                             ? Colors.white
@@ -750,7 +750,7 @@ class DashboardScreen extends ConsumerWidget {
               Text(
                 'PAGOS PENDIENTES',
                 style: GoogleFonts.montserrat(
-                  fontSize: 13,
+                  fontSize: AppColors.bodySmall,
                   fontWeight: FontWeight.w700,
                   color: AppColors.primary.withOpacity(0.8),
                   letterSpacing: 1.1,
@@ -766,7 +766,7 @@ class DashboardScreen extends ConsumerWidget {
                 child: Text(
                   'Ver todas',
                   style: GoogleFonts.montserrat(
-                    fontSize: 12,
+                    fontSize: AppColors.bodySmall,
                     fontWeight: FontWeight.w600,
                     color: AppColors.primary,
                   ),
@@ -777,10 +777,10 @@ class DashboardScreen extends ConsumerWidget {
         ),
         const SizedBox(height: 8),
         Container(
-          padding: const EdgeInsets.all(AppSizes.md),
+          padding: EdgeInsets.all(AppColors.cardPadding),
           decoration: BoxDecoration(
             color: cardColor,
-            borderRadius: BorderRadius.circular(AppSizes.radiusXl),
+            borderRadius: BorderRadius.circular(AppColors.radiusXLarge),
             boxShadow: [
               if (!isDark)
                 BoxShadow(
@@ -825,7 +825,7 @@ class DashboardScreen extends ConsumerWidget {
                               Text(
                                 tx.descripcion ?? 'Sin desc.',
                                 style: GoogleFonts.montserrat(
-                                  fontSize: 13,
+                                  fontSize: AppColors.bodySmall,
                                   fontWeight: FontWeight.w600,
                                   color: isDark
                                       ? Colors.white
@@ -837,7 +837,7 @@ class DashboardScreen extends ConsumerWidget {
                               Text(
                                 DateFormat('dd MMM, yyyy').format(tx.fecha),
                                 style: GoogleFonts.montserrat(
-                                  fontSize: 11,
+                                  fontSize: AppColors.bodySmall,
                                   color: Colors.grey,
                                 ),
                               ),
@@ -850,7 +850,7 @@ class DashboardScreen extends ConsumerWidget {
                             Text(
                               '${isExpense ? '-' : '+'}${formatter.format(tx.monto)}',
                               style: GoogleFonts.montserrat(
-                                fontSize: 13,
+                                fontSize: AppColors.bodySmall,
                                 fontWeight: FontWeight.w700,
                                 color: isExpense
                                     ? Colors.red[400]
@@ -877,7 +877,7 @@ class DashboardScreen extends ConsumerWidget {
                                       ? 'PAGADO'
                                       : 'PENDIENTE',
                                   style: GoogleFonts.montserrat(
-                                    fontSize: 10,
+                                    fontSize: AppColors.bodySmall,
                                     fontWeight: FontWeight.w600,
                                     color: isDark
                                         ? Colors.white38
@@ -916,10 +916,10 @@ class DashboardScreen extends ConsumerWidget {
     final categoriesAsync = ref.watch(categoriesListProvider);
 
     return Container(
-      padding: const EdgeInsets.all(AppSizes.md),
+      padding: EdgeInsets.all(AppColors.cardPadding),
       decoration: BoxDecoration(
         color: cardColor,
-        borderRadius: BorderRadius.circular(AppSizes.radiusXl),
+        borderRadius: BorderRadius.circular(AppColors.radiusXLarge),
         boxShadow: [
           if (!isDark)
             BoxShadow(
@@ -935,7 +935,7 @@ class DashboardScreen extends ConsumerWidget {
           Text(
             'GASTO POR CATEGORÍA',
             style: GoogleFonts.montserrat(
-              fontSize: 13,
+              fontSize: AppColors.bodySmall,
               fontWeight: FontWeight.w700,
               color: AppColors.primary.withOpacity(0.8),
               letterSpacing: 1.1,
@@ -962,7 +962,7 @@ class DashboardScreen extends ConsumerWidget {
                       child: Center(
                         child: Text(
                           'Sin datos',
-                          style: TextStyle(fontSize: 10),
+                          style: TextStyle(fontSize: AppColors.bodySmall),
                         ),
                       ),
                     );
@@ -1064,7 +1064,7 @@ class DashboardScreen extends ConsumerWidget {
                                         child: Text(
                                           category.nombre,
                                           style: GoogleFonts.montserrat(
-                                            fontSize: 12,
+                                            fontSize: AppColors.bodySmall,
                                             color: isDark
                                                 ? Colors.white70
                                                 : AppColors.textPrimary,
@@ -1079,7 +1079,7 @@ class DashboardScreen extends ConsumerWidget {
                                           symbol: '\$',
                                         ).format(entry.value),
                                         style: GoogleFonts.montserrat(
-                                          fontSize: 12,
+                                          fontSize: AppColors.bodySmall,
                                           fontWeight: FontWeight.w600,
                                           color: isDark
                                               ? Colors.white
@@ -1135,7 +1135,7 @@ class DashboardScreen extends ConsumerWidget {
               Text(
                 'DEUDAS PENDIENTES',
                 style: GoogleFonts.montserrat(
-                  fontSize: 13,
+                  fontSize: AppColors.bodySmall,
                   fontWeight: FontWeight.w700,
                   color: AppColors.primary.withOpacity(0.8),
                   letterSpacing: 1.1,
@@ -1151,7 +1151,7 @@ class DashboardScreen extends ConsumerWidget {
                 child: Text(
                   'Ver todas',
                   style: GoogleFonts.montserrat(
-                    fontSize: 12,
+                    fontSize: AppColors.bodySmall,
                     fontWeight: FontWeight.w600,
                     color: AppColors.primary,
                   ),
@@ -1162,10 +1162,10 @@ class DashboardScreen extends ConsumerWidget {
         ),
         const SizedBox(height: 8),
         Container(
-          padding: const EdgeInsets.all(AppSizes.md),
+          padding: EdgeInsets.all(AppColors.cardPadding),
           decoration: BoxDecoration(
             color: cardColor,
-            borderRadius: BorderRadius.circular(AppSizes.radiusXl),
+            borderRadius: BorderRadius.circular(AppColors.radiusXLarge),
             boxShadow: [
               if (!isDark)
                 BoxShadow(
@@ -1201,7 +1201,7 @@ class DashboardScreen extends ConsumerWidget {
                           'No hay deudas pendientes',
                           style: GoogleFonts.montserrat(
                             color: Colors.grey,
-                            fontSize: 12,
+                            fontSize: AppColors.bodySmall,
                             fontWeight: FontWeight.w500,
                           ),
                         ),
@@ -1237,7 +1237,7 @@ class DashboardScreen extends ConsumerWidget {
                               Text(
                                 debt.nombre,
                                 style: GoogleFonts.montserrat(
-                                  fontSize: 13,
+                                  fontSize: AppColors.bodySmall,
                                   fontWeight: FontWeight.w600,
                                   color: isDark
                                       ? Colors.white
@@ -1250,7 +1250,7 @@ class DashboardScreen extends ConsumerWidget {
                                 Text(
                                   'Vence: ${DateFormat('dd MMM').format(debt.fechaVencimiento!)}',
                                   style: GoogleFonts.montserrat(
-                                    fontSize: 11,
+                                    fontSize: AppColors.bodySmall,
                                     color: Colors.grey,
                                   ),
                                 )
@@ -1258,7 +1258,7 @@ class DashboardScreen extends ConsumerWidget {
                                 Text(
                                   _formatDebtType(debt.tipo),
                                   style: GoogleFonts.montserrat(
-                                    fontSize: 11,
+                                    fontSize: AppColors.bodySmall,
                                     color: Colors.grey,
                                   ),
                                 ),
@@ -1271,7 +1271,7 @@ class DashboardScreen extends ConsumerWidget {
                             Text(
                               formatter.format(debt.montoRestante),
                               style: GoogleFonts.montserrat(
-                                fontSize: 13,
+                                fontSize: AppColors.bodySmall,
                                 fontWeight: FontWeight.w700,
                                 color: Colors.orange[400],
                               ),
@@ -1307,7 +1307,7 @@ class DashboardScreen extends ConsumerWidget {
                                 child: Text(
                                   'Pagar ahora',
                                   style: GoogleFonts.montserrat(
-                                    fontSize: 10,
+                                    fontSize: AppColors.bodySmall,
                                     fontWeight: FontWeight.w700,
                                     color: AppColors.primary,
                                   ),

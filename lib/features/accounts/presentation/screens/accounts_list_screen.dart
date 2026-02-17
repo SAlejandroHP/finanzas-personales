@@ -167,7 +167,7 @@ class AccountsListScreen extends ConsumerWidget {
                   Text(
                     'Patrimonio Total Estimado',
                     style: GoogleFonts.montserrat(
-                      fontSize: 12,
+                      fontSize: AppColors.bodySmall,
                       fontWeight: FontWeight.w500,
                       color: Colors.grey,
                     ),
@@ -176,7 +176,7 @@ class AccountsListScreen extends ConsumerWidget {
                   Text(
                     currencyFormatter.format(totalBalance),
                     style: GoogleFonts.montserrat(
-                      fontSize: 24,
+                      fontSize: AppColors.titleLarge,
                       fontWeight: FontWeight.w700,
                       color: isDark ? Colors.white : AppColors.textPrimary,
                     ),
@@ -224,7 +224,7 @@ class AccountsListScreen extends ConsumerWidget {
             'Sin cuentas',
             style: GoogleFonts.montserrat(
               fontWeight: FontWeight.w700,
-              fontSize: 18,
+              fontSize: AppColors.titleSmall,
               color: isDark ? Colors.white : AppColors.textPrimary,
             ),
           ),
@@ -233,7 +233,7 @@ class AccountsListScreen extends ConsumerWidget {
             'Comienza a registrar tus cuentas',
             style: GoogleFonts.montserrat(
               color: isDark ? Colors.white70 : AppColors.textPrimary.withOpacity(0.6),
-              fontSize: 14,
+              fontSize: AppColors.bodyMedium,
             ),
           ),
         ],
@@ -250,7 +250,7 @@ class AccountsListScreen extends ConsumerWidget {
           const SizedBox(height: 16),
           Text(
             'Error al cargar cuentas',
-            style: GoogleFonts.montserrat(fontWeight: FontWeight.w700, fontSize: 16),
+            style: GoogleFonts.montserrat(fontWeight: FontWeight.w700, fontSize: AppColors.bodyLarge),
           ),
           const SizedBox(height: 8),
           Padding(
@@ -258,7 +258,7 @@ class AccountsListScreen extends ConsumerWidget {
             child: Text(
               error,
               textAlign: TextAlign.center,
-              style: GoogleFonts.montserrat(color: Colors.grey, fontSize: 12),
+              style: GoogleFonts.montserrat(color: Colors.grey, fontSize: AppColors.bodySmall),
             ),
           ),
           const SizedBox(height: 16),
@@ -324,7 +324,7 @@ class AccountsListScreen extends ConsumerWidget {
               Text(
                 'Instituciones Disponibles',
                 style: GoogleFonts.montserrat(
-                  fontSize: 14,
+                  fontSize: AppColors.bodyMedium,
                   fontWeight: FontWeight.w600,
                   color: isDark ? Colors.white54 : Colors.grey[600],
                   letterSpacing: 0.5,
@@ -333,7 +333,7 @@ class AccountsListScreen extends ConsumerWidget {
               Text(
                 'Belvo',
                 style: GoogleFonts.montserrat(
-                  fontSize: 10,
+                  fontSize: AppColors.bodySmall,
                   fontWeight: FontWeight.w700,
                   color: AppColors.primary.withOpacity(0.5),
                 ),
@@ -416,7 +416,7 @@ class AccountsListScreen extends ConsumerWidget {
           Text(
             bank.displayName.split(' ')[0], // Solo la primera palabra para que quepa
             style: GoogleFonts.montserrat(
-              fontSize: 10,
+              fontSize: AppColors.bodySmall,
               fontWeight: FontWeight.w500,
               color: isDark ? Colors.white70 : Colors.black87,
             ),

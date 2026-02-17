@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../../core/constants/app_colors.dart';
-import '../../../../core/constants/app_sizes.dart';
 import '../providers/transaction_filters_provider.dart';
 import '../../../accounts/presentation/providers/accounts_provider.dart';
 import '../../../categories/presentation/providers/categories_provider.dart';
@@ -25,7 +24,7 @@ class TransactionFiltersBar extends ConsumerWidget {
       ),
       child: SingleChildScrollView(
         scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: AppSizes.md, vertical: 12),
+        padding: const EdgeInsets.symmetric(horizontal: AppColors.md, vertical: 12),
         physics: const BouncingScrollPhysics(),
         child: Row(
           children: [
@@ -50,7 +49,7 @@ class TransactionFiltersBar extends ConsumerWidget {
                           'Limpiar',
                           style: GoogleFonts.montserrat(
                             color: Colors.redAccent,
-                            fontSize: 12,
+                            fontSize: AppColors.bodySmall,
                             fontWeight: FontWeight.w600,
                           ),
                         ),
@@ -172,18 +171,18 @@ class TransactionFiltersBar extends ConsumerWidget {
               padding: const EdgeInsets.all(20.0),
               child: Text(
                 'Filtrar por estatus',
-                style: GoogleFonts.montserrat(fontWeight: FontWeight.w700, fontSize: 18),
+                style: GoogleFonts.montserrat(fontWeight: FontWeight.w700, fontSize: AppColors.titleSmall),
               ),
             ),
             ListTile(
-              title: Text('Cualquiera', style: GoogleFonts.montserrat(fontSize: 14)),
+              title: Text('Cualquiera', style: GoogleFonts.montserrat(fontSize: AppColors.bodyMedium)),
               onTap: () {
                 ref.read(transactionFiltersProvider.notifier).update((s) => s.copyWith(status: null));
                 Navigator.pop(context);
               },
             ),
             ListTile(
-              title: Text('Completa', style: GoogleFonts.montserrat(fontSize: 14)),
+              title: Text('Completa', style: GoogleFonts.montserrat(fontSize: AppColors.bodyMedium)),
               leading: const Icon(Icons.check_circle_outline, color: Colors.green),
               onTap: () {
                 ref.read(transactionFiltersProvider.notifier).update((s) => s.copyWith(status: 'completa'));
@@ -191,7 +190,7 @@ class TransactionFiltersBar extends ConsumerWidget {
               },
             ),
             ListTile(
-              title: Text('Pendiente', style: GoogleFonts.montserrat(fontSize: 14)),
+              title: Text('Pendiente', style: GoogleFonts.montserrat(fontSize: AppColors.bodyMedium)),
               leading: const Icon(Icons.access_time_outlined, color: Colors.orange),
               onTap: () {
                 ref.read(transactionFiltersProvider.notifier).update((s) => s.copyWith(status: 'pendiente'));
@@ -215,7 +214,7 @@ class TransactionFiltersBar extends ConsumerWidget {
             children: [
               const Padding(
                 padding: EdgeInsets.all(16.0),
-                child: Text('Filtrar por cuenta', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+                child: Text('Filtrar por cuenta', style: TextStyle(fontWeight: FontWeight.bold, fontSize: AppColors.titleSmall)),
               ),
               Expanded(
                 child: ListView(
@@ -256,7 +255,7 @@ class TransactionFiltersBar extends ConsumerWidget {
             children: [
               const Padding(
                 padding: EdgeInsets.all(16.0),
-                child: Text('Filtrar por categoría', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+                child: Text('Filtrar por categoría', style: TextStyle(fontWeight: FontWeight.bold, fontSize: AppColors.titleSmall)),
               ),
               Expanded(
                 child: ListView(
@@ -269,7 +268,7 @@ class TransactionFiltersBar extends ConsumerWidget {
                       },
                     ),
                     ...categories.map((c) => ListTile(
-                      title: Text(c.nombre, style: GoogleFonts.montserrat(fontSize: 14)),
+                      title: Text(c.nombre, style: GoogleFonts.montserrat(fontSize: AppColors.bodyMedium)),
                       leading: Container(
                         padding: const EdgeInsets.all(8),
                         decoration: BoxDecoration(
@@ -313,7 +312,7 @@ class TransactionFiltersBar extends ConsumerWidget {
               decoration: const InputDecoration(labelText: 'Monto mínimo'),
               keyboardType: TextInputType.number,
             ),
-            const SizedBox(height: AppSizes.md),
+            const SizedBox(height: AppColors.md),
             TextField(
               controller: maxController,
               decoration: const InputDecoration(labelText: 'Monto máximo'),
@@ -515,7 +514,7 @@ class _FilterChip extends StatelessWidget {
               label,
               style: GoogleFonts.montserrat(
                 color: isActive ? Colors.white : (isDark ? Colors.white70 : AppColors.textPrimary),
-                fontSize: 12,
+                fontSize: AppColors.bodySmall,
                 fontWeight: isActive ? FontWeight.w600 : FontWeight.w500,
               ),
             ),

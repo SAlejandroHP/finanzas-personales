@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/date_symbol_data_local.dart';
+import 'core/constants/app_colors.dart';
 import 'core/network/supabase_client.dart';
 import 'core/theme/app_theme.dart';
 import 'core/widgets/app_shell.dart';
@@ -242,7 +243,7 @@ final routerProvider = Provider<GoRouter>((ref) {
               Text(
                 'Página no encontrada',
                 style: GoogleFonts.montserrat(
-                  fontSize: 20,
+                  fontSize: AppColors.titleMedium,
                   fontWeight: FontWeight.w600,
                 ),
               ),
@@ -422,7 +423,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
                     _messages[_messageIndex],
                     key: ValueKey<int>(_messageIndex),
                     style: GoogleFonts.montserrat(
-                      fontSize: 14,
+                      fontSize: AppColors.bodyMedium,
                       color: Colors.white70,
                     ),
                   ),

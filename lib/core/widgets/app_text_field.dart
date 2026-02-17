@@ -109,7 +109,7 @@ class _AppTextFieldState extends State<AppTextField> {
           validator: widget.validator,
           onSaved: widget.onSaved,
           style: GoogleFonts.montserrat(
-            fontSize: 14,
+            fontSize: AppColors.bodyMedium,
             color: widget.enabled
                 ? (isDark ? Colors.white : AppColors.textPrimary)
                 : Colors.grey,
@@ -119,18 +119,18 @@ class _AppTextFieldState extends State<AppTextField> {
             hintText: widget.hintText,
             errorText: widget.errorText,
             labelStyle: GoogleFonts.montserrat(
-              fontSize: 14,
+              fontSize: AppColors.bodyMedium,
               color: widget.isError
-                  ? AppColors.accent
+                  ? AppColors.secondary
                   : (isDark ? Colors.white70 : Colors.grey[600]),
             ),
             hintStyle: GoogleFonts.montserrat(
-              fontSize: 14,
+              fontSize: AppColors.bodyMedium,
               color: isDark ? Colors.white54 : Colors.grey[400],
             ),
             floatingLabelStyle: GoogleFonts.montserrat(
-              fontSize: 12,
-              color: widget.isError ? AppColors.accent : AppColors.primary,
+              fontSize: AppColors.bodySmall,
+              color: widget.isError ? AppColors.secondary : AppColors.primary,
             ),
             filled: true,
             fillColor: fillColor,
@@ -142,7 +142,7 @@ class _AppTextFieldState extends State<AppTextField> {
                 ? Icon(
                     widget.prefixIcon,
                     color: widget.isError
-                        ? AppColors.accent
+                        ? AppColors.secondary
                         : (isDark ? Colors.white70 : AppColors.primary),
                     size: 20,
                   )
@@ -172,21 +172,21 @@ class _AppTextFieldState extends State<AppTextField> {
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
               borderSide: BorderSide(
-                color: widget.isError ? AppColors.accent : AppColors.primary,
+                color: widget.isError ? AppColors.secondary : AppColors.primary,
                 width: 2,
               ),
             ),
             errorBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
               borderSide: const BorderSide(
-                color: AppColors.accent,
+                color: AppColors.secondary,
                 width: 2,
               ),
             ),
             focusedErrorBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
               borderSide: const BorderSide(
-                color: AppColors.accent,
+                color: AppColors.secondary,
                 width: 2,
               ),
             ),
@@ -203,8 +203,8 @@ class _AppTextFieldState extends State<AppTextField> {
             child: Text(
               widget.helperText!,
               style: GoogleFonts.montserrat(
-                fontSize: 12,
-                color: widget.isError ? AppColors.accent : Colors.grey[600],
+                fontSize: AppColors.bodySmall,
+                color: widget.isError ? AppColors.secondary : Colors.grey[600],
               ),
             ),
           ),

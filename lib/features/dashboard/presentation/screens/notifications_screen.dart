@@ -4,7 +4,6 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/constants/app_colors.dart';
-import '../../../../core/constants/app_sizes.dart';
 import '../../../../core/widgets/app_toast.dart';
 import '../../../transactions/presentation/providers/transactions_provider.dart';
 import '../../../transactions/presentation/providers/recurring_warnings_provider.dart';
@@ -70,7 +69,7 @@ class NotificationsScreen extends ConsumerWidget {
                   Text(
                     'Avisos y recordatorios',
                     style: GoogleFonts.montserrat(
-                      fontSize: 12,
+                      fontSize: AppColors.bodySmall,
                       color: Colors.grey,
                       fontWeight: FontWeight.w500,
                     ),
@@ -108,7 +107,7 @@ class NotificationsScreen extends ConsumerWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           Container(
-            padding: const EdgeInsets.all(AppSizes.xl),
+            padding: const EdgeInsets.all(AppColors.xl),
             decoration: BoxDecoration(
               color: isDark ? Colors.white.withOpacity(0.03) : AppColors.primary.withOpacity(0.05),
               shape: BoxShape.circle,
@@ -123,7 +122,7 @@ class NotificationsScreen extends ConsumerWidget {
           Text(
             '¡Todo en orden!',
             style: GoogleFonts.montserrat(
-              fontSize: 18,
+              fontSize: AppColors.titleSmall,
               fontWeight: FontWeight.w700,
               color: isDark ? Colors.white : AppColors.textPrimary,
             ),
@@ -135,7 +134,7 @@ class NotificationsScreen extends ConsumerWidget {
               'No tienes pagos pendientes o avisos por el momento.',
               textAlign: TextAlign.center,
               style: GoogleFonts.montserrat(
-                fontSize: 14,
+                fontSize: AppColors.bodyMedium,
                 color: isDark ? Colors.white38 : Colors.grey[500],
                 fontWeight: FontWeight.w500,
               ),
@@ -177,7 +176,7 @@ class NotificationsScreen extends ConsumerWidget {
       margin: const EdgeInsets.only(bottom: 16),
       decoration: BoxDecoration(
         color: cardColor,
-        borderRadius: BorderRadius.circular(AppSizes.radiusXl),
+        borderRadius: BorderRadius.circular(AppColors.radiusXLarge),
         boxShadow: [
           if (!isDark)
             BoxShadow(
@@ -188,7 +187,7 @@ class NotificationsScreen extends ConsumerWidget {
         ],
       ),
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(AppSizes.radiusXl),
+        borderRadius: BorderRadius.circular(AppColors.radiusXLarge),
         child: Stack(
           children: [
             // Línea de acento lateral
@@ -228,7 +227,7 @@ class NotificationsScreen extends ConsumerWidget {
                             Text(
                               warning.title,
                               style: GoogleFonts.montserrat(
-                                fontSize: 13,
+                                fontSize: AppColors.bodySmall,
                                 fontWeight: FontWeight.w700,
                                 letterSpacing: 0.5,
                                 color: isDark ? Colors.white : AppColors.textPrimary,
@@ -237,7 +236,7 @@ class NotificationsScreen extends ConsumerWidget {
                             Text(
                               _formatDateFancy(warning.transaction.fecha),
                               style: GoogleFonts.montserrat(
-                                fontSize: 11,
+                                fontSize: AppColors.bodySmall,
                                 color: Colors.grey,
                                 fontWeight: FontWeight.w500,
                               ),
@@ -251,7 +250,7 @@ class NotificationsScreen extends ConsumerWidget {
                   Text(
                     warning.message,
                     style: GoogleFonts.montserrat(
-                      fontSize: 14,
+                      fontSize: AppColors.bodyMedium,
                       color: isDark ? Colors.white70 : AppColors.textPrimary.withOpacity(0.8),
                       height: 1.5,
                     ),
@@ -263,7 +262,7 @@ class NotificationsScreen extends ConsumerWidget {
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
                       color: isDark ? Colors.black.withOpacity(0.2) : Colors.grey.withOpacity(0.05),
-                      borderRadius: BorderRadius.circular(AppSizes.radiusLg),
+                      borderRadius: BorderRadius.circular(AppColors.radiusLarge),
                     ),
                     child: Row(
                       children: [
@@ -284,7 +283,7 @@ class NotificationsScreen extends ConsumerWidget {
                               Text(
                                 warning.transaction.descripcion ?? 'Sin descripción',
                                 style: GoogleFonts.montserrat(
-                                  fontSize: 14,
+                                  fontSize: AppColors.bodyMedium,
                                   fontWeight: FontWeight.w600,
                                   color: isDark ? Colors.white : AppColors.textPrimary,
                                 ),
@@ -311,7 +310,7 @@ class NotificationsScreen extends ConsumerWidget {
                             Text(
                               currencyFormatter.format(warning.transaction.monto),
                               style: GoogleFonts.montserrat(
-                                fontSize: 16,
+                                fontSize: AppColors.bodyLarge,
                                 fontWeight: FontWeight.w700,
                                 color: isVence ? Colors.red[400] : AppColors.primary,
                               ),
@@ -378,7 +377,7 @@ class NotificationsScreen extends ConsumerWidget {
                                 Text(
                                   'PAGAR AHORA',
                                   style: GoogleFonts.montserrat(
-                                    fontSize: 13,
+                                    fontSize: AppColors.bodySmall,
                                     fontWeight: FontWeight.w800,
                                     color: Colors.white,
                                     letterSpacing: 1.2,

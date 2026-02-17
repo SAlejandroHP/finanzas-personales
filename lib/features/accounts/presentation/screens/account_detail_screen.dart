@@ -117,7 +117,7 @@ class AccountDetailScreen extends ConsumerWidget {
           Text(
             isTC ? 'CRÉDITO DISPONIBLE' : 'SALDO ACTUAL',
             style: GoogleFonts.montserrat(
-              fontSize: 12,
+              fontSize: AppColors.bodySmall,
               fontWeight: FontWeight.w600,
               color: Colors.white.withOpacity(0.7),
               letterSpacing: 1.2,
@@ -154,7 +154,7 @@ class AccountDetailScreen extends ConsumerWidget {
         Text(
           label,
           style: GoogleFonts.montserrat(
-            fontSize: 10,
+            fontSize: AppColors.bodySmall,
             color: Colors.white.withOpacity(0.6),
             fontWeight: FontWeight.w500,
           ),
@@ -162,7 +162,7 @@ class AccountDetailScreen extends ConsumerWidget {
         Text(
           value,
           style: GoogleFonts.montserrat(
-            fontSize: 14,
+            fontSize: AppColors.bodyMedium,
             color: Colors.white,
             fontWeight: FontWeight.w700,
           ),
@@ -191,7 +191,7 @@ class AccountDetailScreen extends ConsumerWidget {
                 'Detalle de la Tarjeta',
                 style: GoogleFonts.montserrat(
                   fontWeight: FontWeight.w700,
-                  fontSize: 14,
+                  fontSize: AppColors.bodyMedium,
                   color: isDark ? Colors.white : AppColors.textPrimary,
                 ),
               ),
@@ -238,7 +238,7 @@ class AccountDetailScreen extends ConsumerWidget {
               Text(
                 'Análisis Avanzado',
                 style: GoogleFonts.montserrat(
-                  fontSize: 20,
+                  fontSize: AppColors.titleMedium,
                   fontWeight: FontWeight.w700,
                   color: isDark ? Colors.white : AppColors.textPrimary,
                 ),
@@ -279,12 +279,12 @@ class AccountDetailScreen extends ConsumerWidget {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text(title, style: GoogleFonts.montserrat(fontSize: 14, fontWeight: FontWeight.w600)),
-                  Text(value, style: GoogleFonts.montserrat(fontSize: 14, fontWeight: FontWeight.w700, color: AppColors.primary)),
+                  Text(title, style: GoogleFonts.montserrat(fontSize: AppColors.bodyMedium, fontWeight: FontWeight.w600)),
+                  Text(value, style: GoogleFonts.montserrat(fontSize: AppColors.bodyMedium, fontWeight: FontWeight.w700, color: AppColors.primary)),
                 ],
               ),
               const SizedBox(height: 4),
-              Text(description, style: GoogleFonts.montserrat(fontSize: 12, color: Colors.grey)),
+              Text(description, style: GoogleFonts.montserrat(fontSize: AppColors.bodySmall, color: Colors.grey)),
             ],
           ),
         ),
@@ -299,14 +299,14 @@ class AccountDetailScreen extends ConsumerWidget {
         Text(
           label,
           style: GoogleFonts.montserrat(
-            fontSize: 13,
+            fontSize: AppColors.bodySmall,
             color: Colors.grey,
           ),
         ),
         Text(
           value,
           style: GoogleFonts.montserrat(
-            fontSize: 13,
+            fontSize: AppColors.bodySmall,
             fontWeight: FontWeight.w600,
             color: isDark ? Colors.white : AppColors.textPrimary,
           ),
@@ -326,7 +326,7 @@ class AccountDetailScreen extends ConsumerWidget {
         Text(
           'TIPS FINANCIEROS',
           style: GoogleFonts.montserrat(
-            fontSize: 11,
+            fontSize: AppColors.bodySmall,
             fontWeight: FontWeight.w800,
             color: Colors.grey,
             letterSpacing: 1.2,
@@ -371,7 +371,7 @@ class AccountDetailScreen extends ConsumerWidget {
                   title,
                   style: GoogleFonts.montserrat(
                     fontWeight: FontWeight.w700,
-                    fontSize: 13,
+                    fontSize: AppColors.bodySmall,
                     color: isDark ? Colors.white : AppColors.textPrimary,
                   ),
                 ),
@@ -379,7 +379,7 @@ class AccountDetailScreen extends ConsumerWidget {
                 Text(
                   content,
                   style: GoogleFonts.montserrat(
-                    fontSize: 12,
+                    fontSize: AppColors.bodySmall,
                     color: isDark ? Colors.white70 : Colors.black87,
                   ),
                 ),
@@ -400,7 +400,7 @@ class AccountDetailScreen extends ConsumerWidget {
           child: Text(
             'Movimientos recientes',
             style: GoogleFonts.montserrat(
-              fontSize: 18,
+              fontSize: AppColors.titleSmall,
               fontWeight: FontWeight.w700,
               color: isDark ? Colors.white : AppColors.textPrimary,
             ),
@@ -419,7 +419,7 @@ class AccountDetailScreen extends ConsumerWidget {
                       const SizedBox(height: 12),
                       Text(
                         'No hay movimientos para mostrar', 
-                        style: GoogleFonts.montserrat(color: Colors.grey, fontSize: 14),
+                        style: GoogleFonts.montserrat(color: Colors.grey, fontSize: AppColors.bodyMedium),
                       ),
                     ],
                   ),

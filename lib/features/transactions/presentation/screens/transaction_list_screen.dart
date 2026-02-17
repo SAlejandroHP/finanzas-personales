@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import '../../../../core/constants/app_colors.dart';
-import '../../../../core/constants/app_sizes.dart';
 import '../../../../core/widgets/app_toast.dart';
 import '../../models/transaction_model.dart';
 import '../providers/transactions_provider.dart';
@@ -30,7 +29,7 @@ class TransactionListScreen extends ConsumerWidget {
           'Movimientos',
           style: GoogleFonts.montserrat(
             fontWeight: FontWeight.w700,
-            fontSize: 20,
+            fontSize: AppColors.titleMedium,
             color: isDark ? Colors.white : AppColors.textPrimary,
           ),
         ),
@@ -79,27 +78,27 @@ class TransactionListScreen extends ConsumerWidget {
                             color: AppColors.primary.withOpacity(0.5),
                           ),
                         ),
-                        const SizedBox(height: AppSizes.lg),
+                        const SizedBox(height: AppColors.lg),
                         Text(
                           hasFilters ? 'Sin resultados' : 'Sin transacciones',
                           style: GoogleFonts.montserrat(
                             fontWeight: FontWeight.w700,
-                            fontSize: 18,
+                            fontSize: AppColors.titleSmall,
                             color: isDark ? Colors.white : AppColors.textPrimary,
                           ),
                         ),
-                        const SizedBox(height: AppSizes.sm),
+                        const SizedBox(height: AppColors.sm),
                         Text(
                           hasFilters 
                               ? 'Prueba ajustando los filtros' 
                               : 'Comienza a registrar tus movimientos',
                           style: GoogleFonts.montserrat(
                             color: isDark ? Colors.white70 : AppColors.textPrimary.withOpacity(0.6),
-                            fontSize: 14,
+                            fontSize: AppColors.bodyMedium,
                           ),
                         ),
                         if (hasFilters) ...[
-                          const SizedBox(height: AppSizes.lg),
+                          const SizedBox(height: AppColors.lg),
                           TextButton.icon(
                             onPressed: () => ref.read(transactionFiltersProvider.notifier).state = TransactionFilters(),
                             icon: const Icon(Icons.refresh_rounded, size: 18),
@@ -172,15 +171,15 @@ class TransactionListScreen extends ConsumerWidget {
                       size: 64,
                       color: Colors.redAccent,
                     ),
-                    const SizedBox(height: AppSizes.lg),
+                    const SizedBox(height: AppColors.lg),
                     Text(
                       'Error al cargar transacciones',
                       style: GoogleFonts.montserrat(
                         fontWeight: FontWeight.w700,
-                        fontSize: 16,
+                        fontSize: AppColors.bodyLarge,
                       ),
                     ),
-                    const SizedBox(height: AppSizes.sm),
+                    const SizedBox(height: AppColors.sm),
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 32),
                       child: Text(
@@ -188,11 +187,11 @@ class TransactionListScreen extends ConsumerWidget {
                         textAlign: TextAlign.center,
                         style: GoogleFonts.montserrat(
                           color: AppColors.textPrimary.withOpacity(0.6),
-                          fontSize: 12,
+                          fontSize: AppColors.bodySmall,
                         ),
                       ),
                     ),
-                    const SizedBox(height: AppSizes.lg),
+                    const SizedBox(height: AppColors.lg),
                     ElevatedButton(
                       onPressed: () => ref.invalidate(transactionsListProvider),
                       style: ElevatedButton.styleFrom(
@@ -246,7 +245,7 @@ class TransactionListScreen extends ConsumerWidget {
                   Text(
                     'Balance del Periodo',
                     style: GoogleFonts.montserrat(
-                      fontSize: 12,
+                      fontSize: AppColors.bodySmall,
                       fontWeight: FontWeight.w500,
                       color: Colors.grey,
                     ),
@@ -255,7 +254,7 @@ class TransactionListScreen extends ConsumerWidget {
                   Text(
                     currencyFormatter.format(summary.total),
                     style: GoogleFonts.montserrat(
-                      fontSize: 24,
+                      fontSize: AppColors.titleLarge,
                       fontWeight: FontWeight.w700,
                       color: isDark ? Colors.white : AppColors.textPrimary,
                     ),
@@ -331,7 +330,7 @@ class TransactionListScreen extends ConsumerWidget {
             Text(
               label,
               style: GoogleFonts.montserrat(
-                fontSize: 11,
+                fontSize: AppColors.bodySmall,
                 fontWeight: FontWeight.w600,
                 color: Colors.grey,
               ),
@@ -342,7 +341,7 @@ class TransactionListScreen extends ConsumerWidget {
         Text(
           currencyFormatter.format(amount),
           style: GoogleFonts.montserrat(
-            fontSize: 16,
+            fontSize: AppColors.bodyLarge,
             fontWeight: FontWeight.w700,
             color: color,
           ),
@@ -425,7 +424,7 @@ class _TransactionSearchDelegate extends SearchDelegate {
 
   @override
   TextStyle get searchFieldStyle => GoogleFonts.montserrat(
-    fontSize: 16,
+    fontSize: AppColors.bodyLarge,
   );
 
   @override
@@ -475,7 +474,7 @@ class _TransactionSearchDelegate extends SearchDelegate {
               'No se encontraron resultados',
               style: GoogleFonts.montserrat(
                 color: Colors.grey,
-                fontSize: 14,
+                fontSize: AppColors.bodyMedium,
               ),
             ),
           ],

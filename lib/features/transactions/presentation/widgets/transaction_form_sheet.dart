@@ -6,7 +6,6 @@ import 'package:uuid/uuid.dart';
 import 'package:math_expressions/math_expressions.dart';
 import 'package:collection/collection.dart';
 
-import '../../../../core/constants/app_sizes.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/widgets/app_button.dart';
 import '../../../../core/widgets/app_text_field.dart';
@@ -415,7 +414,7 @@ class _TransactionFormSheetState extends ConsumerState<TransactionFormSheet> {
                    Text(
                     widget.transaction != null ? 'Editar Movimiento' : 'Nuevo Movimiento',
                     style: GoogleFonts.montserrat(
-                      fontSize: 18,
+                      fontSize: AppColors.titleSmall,
                       fontWeight: FontWeight.w700,
                       color: isDark ? Colors.white : AppColors.textPrimary,
                     ),
@@ -434,7 +433,7 @@ class _TransactionFormSheetState extends ConsumerState<TransactionFormSheet> {
               child: SingleChildScrollView(
                 controller: scrollController,
                 child: Padding(
-                  padding: const EdgeInsets.all(AppSizes.lg),
+                  padding: const EdgeInsets.all(AppColors.lg),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -445,7 +444,7 @@ class _TransactionFormSheetState extends ConsumerState<TransactionFormSheet> {
                             Text(
                               '¿Cuánto vas a ${_getTipoAction(_tipo)}?',
                               style: GoogleFonts.montserrat(
-                                fontSize: 13,
+                                fontSize: AppColors.bodySmall,
                                 color: Colors.grey,
                                 fontWeight: FontWeight.w500,
                               ),
@@ -497,7 +496,7 @@ class _TransactionFormSheetState extends ConsumerState<TransactionFormSheet> {
                                   child: Text(
                                     '= ${_moneyFormatter.format(result)}',
                                     style: GoogleFonts.montserrat(
-                                      fontSize: 12,
+                                      fontSize: AppColors.bodySmall,
                                       fontWeight: FontWeight.w600,
                                       color: Colors.green,
                                     ),
@@ -621,7 +620,7 @@ class _TransactionFormSheetState extends ConsumerState<TransactionFormSheet> {
                                     'Hacer recurrente',
                                     style: GoogleFonts.montserrat(
                                       fontWeight: FontWeight.w600,
-                                      fontSize: 14,
+                                      fontSize: AppColors.bodyMedium,
                                     ),
                                   ),
                                 ),
@@ -658,7 +657,7 @@ class _TransactionFormSheetState extends ConsumerState<TransactionFormSheet> {
                                         Text(
                                           'Frecuencia',
                                           style: GoogleFonts.montserrat(
-                                            fontSize: 10,
+                                            fontSize: AppColors.bodySmall,
                                             fontWeight: FontWeight.w500,
                                             color: Colors.grey,
                                           ),
@@ -669,7 +668,7 @@ class _TransactionFormSheetState extends ConsumerState<TransactionFormSheet> {
                                             isExpanded: true,
                                             icon: const Icon(Icons.keyboard_arrow_down_rounded, size: 20),
                                             style: GoogleFonts.montserrat(
-                                              fontSize: 14,
+                                              fontSize: AppColors.bodyMedium,
                                               fontWeight: FontWeight.w600,
                                               color: isDark ? Colors.white : Colors.black,
                                             ),
@@ -714,7 +713,7 @@ class _TransactionFormSheetState extends ConsumerState<TransactionFormSheet> {
                                                     Text(
                                                       'Ajuste fin de semana',
                                                       style: GoogleFonts.montserrat(
-                                                        fontSize: 13,
+                                                        fontSize: AppColors.bodySmall,
                                                         fontWeight: FontWeight.w600,
                                                         color: isDark ? Colors.white : Colors.black87,
                                                       ),
@@ -722,7 +721,7 @@ class _TransactionFormSheetState extends ConsumerState<TransactionFormSheet> {
                                                     Text(
                                                       'Adelanta al viernes si cae Sáb/Dom',
                                                       style: GoogleFonts.montserrat(
-                                                        fontSize: 11,
+                                                        fontSize: AppColors.bodySmall,
                                                         color: Colors.grey,
                                                       ),
                                                     ),
@@ -745,7 +744,7 @@ class _TransactionFormSheetState extends ConsumerState<TransactionFormSheet> {
                                           child: Text(
                                             'Próximo cobro: ${_getNextOccurrencePreview()}',
                                             style: GoogleFonts.montserrat(
-                                              fontSize: 11,
+                                              fontSize: AppColors.bodySmall,
                                               fontWeight: FontWeight.w600,
                                               color: AppColors.primary,
                                             ),
@@ -776,13 +775,13 @@ class _TransactionFormSheetState extends ConsumerState<TransactionFormSheet> {
                                           'Auto-completar',
                                           style: GoogleFonts.montserrat(
                                             fontWeight: FontWeight.w600,
-                                            fontSize: 14,
+                                            fontSize: AppColors.bodyMedium,
                                           ),
                                         ),
                                         Text(
                                           'Marcar como completa automáticamente',
                                           style: GoogleFonts.montserrat(
-                                            fontSize: 10,
+                                            fontSize: AppColors.bodySmall,
                                             color: Colors.grey,
                                           ),
                                         ),
@@ -848,7 +847,7 @@ class _TransactionFormSheetState extends ConsumerState<TransactionFormSheet> {
         label: widget.transaction != null ? 'Actualizar Movimiento' : 'Registrar Movimiento',
         onPressed: _saveTransaction,
         isFullWidth: true,
-        height: AppSizes.buttonHeight,
+        height: AppColors.buttonHeight,
       ),
     );
   }
@@ -888,7 +887,7 @@ class _TransactionFormSheetState extends ConsumerState<TransactionFormSheet> {
                     child: Text(
                       op,
                       style: GoogleFonts.montserrat(
-                        fontSize: 20,
+                        fontSize: AppColors.titleMedium,
                         fontWeight: FontWeight.w600,
                         color: AppColors.primary,
                       ),
@@ -1043,7 +1042,7 @@ class _TransactionFormSheetState extends ConsumerState<TransactionFormSheet> {
             Text(
               label,
               style: GoogleFonts.montserrat(
-                fontSize: 11,
+                fontSize: AppColors.bodySmall,
                 fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
                 color: isSelected ? color : Colors.grey,
               ),
@@ -1058,7 +1057,7 @@ class _TransactionFormSheetState extends ConsumerState<TransactionFormSheet> {
     return Text(
       title,
       style: GoogleFonts.montserrat(
-        fontSize: 10,
+        fontSize: AppColors.bodySmall,
         fontWeight: FontWeight.w800,
         letterSpacing: 1.2,
         color: Colors.grey[500],
@@ -1091,12 +1090,12 @@ class _TransactionFormSheetState extends ConsumerState<TransactionFormSheet> {
               children: [
                 Text(
                   label,
-                  style: const TextStyle(fontSize: 10, color: Colors.grey, fontWeight: FontWeight.w500),
+                  style: const TextStyle(fontSize: AppColors.bodySmall, color: Colors.grey, fontWeight: FontWeight.w500),
                 ),
                 Text(
                   value,
                   style: GoogleFonts.montserrat(
-                    fontSize: 14,
+                    fontSize: AppColors.bodyMedium,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
@@ -1129,7 +1128,7 @@ class _TransactionFormSheetState extends ConsumerState<TransactionFormSheet> {
                 _tipo == 'transferencia' 
                     ? (isSource ? 'Selecciona origen' : 'Selecciona destino') 
                     : 'Selecciona una cuenta', 
-                style: GoogleFonts.montserrat(fontWeight: FontWeight.bold, fontSize: 18)
+                style: GoogleFonts.montserrat(fontWeight: FontWeight.bold, fontSize: AppColors.titleSmall)
               ),
               const SizedBox(height: 16),
               Flexible(
@@ -1247,7 +1246,7 @@ class _TransactionFormSheetState extends ConsumerState<TransactionFormSheet> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Selecciona la deuda', style: GoogleFonts.montserrat(fontWeight: FontWeight.bold, fontSize: 18)),
+            Text('Selecciona la deuda', style: GoogleFonts.montserrat(fontWeight: FontWeight.bold, fontSize: AppColors.titleSmall)),
             const SizedBox(height: 16),
             if (activeDebts.isEmpty)
               const Padding(
@@ -1432,7 +1431,7 @@ class _CategorySelectorModalState extends State<_CategorySelectorModal> {
             'Elige una categoría',
             style: GoogleFonts.montserrat(
               fontWeight: FontWeight.w700,
-              fontSize: 20,
+              fontSize: AppColors.titleMedium,
               color: isDark ? Colors.white : AppColors.textPrimary,
             ),
           ),
@@ -1440,7 +1439,7 @@ class _CategorySelectorModalState extends State<_CategorySelectorModal> {
           TextField(
             controller: _searchController,
             style: GoogleFonts.montserrat(
-              fontSize: 14,
+              fontSize: AppColors.bodyMedium,
               color: isDark ? Colors.white : AppColors.textPrimary,
             ),
             decoration: InputDecoration(
@@ -1524,7 +1523,7 @@ class _CategorySelectorModalState extends State<_CategorySelectorModal> {
                                     maxLines: 1,
                                     overflow: TextOverflow.ellipsis,
                                     style: GoogleFonts.montserrat(
-                                      fontSize: 11,
+                                      fontSize: AppColors.bodySmall,
                                       fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
                                       color: isSelected 
                                           ? catColor 

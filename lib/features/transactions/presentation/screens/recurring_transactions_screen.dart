@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import '../../../../core/constants/app_colors.dart';
-import '../../../../core/constants/app_sizes.dart';
 import '../../data/transactions_repository.dart';
 import '../../models/transaction_model.dart';
 import '../widgets/transaction_form_sheet.dart';
@@ -44,7 +43,7 @@ class RecurringTransactionsScreen extends ConsumerWidget {
                    Text(
                     'No tienes reglas recurrentes',
                     style: GoogleFonts.montserrat(
-                      fontSize: 16,
+                      fontSize: AppColors.bodyLarge,
                       fontWeight: FontWeight.w600,
                       color: Colors.grey,
                     ),
@@ -52,7 +51,7 @@ class RecurringTransactionsScreen extends ConsumerWidget {
                   const SizedBox(height: 8),
                   Text(
                     'Agrega pagos fijos como sueldos o suscripciones',
-                    style: GoogleFonts.montserrat(fontSize: 12, color: Colors.grey),
+                    style: GoogleFonts.montserrat(fontSize: AppColors.bodySmall, color: Colors.grey),
                   ),
                 ],
               ),
@@ -60,7 +59,7 @@ class RecurringTransactionsScreen extends ConsumerWidget {
           }
           
           return ListView.separated(
-            padding: const EdgeInsets.all(AppSizes.md),
+            padding: const EdgeInsets.all(AppColors.md),
             itemCount: transactions.length,
             separatorBuilder: (_, __) => const SizedBox(height: 12),
             itemBuilder: (context, index) {
@@ -157,7 +156,7 @@ class _RecurringTransactionCard extends StatelessWidget {
                 Text(
                   transaction.descripcion ?? 'Sin descripción',
                   style: GoogleFonts.montserrat(
-                    fontSize: 16,
+                    fontSize: AppColors.bodyLarge,
                     fontWeight: FontWeight.w600,
                     color: isDark ? Colors.white : AppColors.textPrimary,
                   ),
@@ -165,7 +164,7 @@ class _RecurringTransactionCard extends StatelessWidget {
                 Text(
                   _getFrequencyLabel(transaction.recurringRule),
                   style: GoogleFonts.montserrat(
-                    fontSize: 12,
+                    fontSize: AppColors.bodySmall,
                     color: Colors.grey,
                   ),
                 ),
@@ -173,7 +172,7 @@ class _RecurringTransactionCard extends StatelessWidget {
                   Text(
                     'Próx: ${DateFormat('d MMM yyyy', 'es').format(transaction.nextOccurrence!)}',
                     style: GoogleFonts.montserrat(
-                      fontSize: 11,
+                      fontSize: AppColors.bodySmall,
                       color: AppColors.primary,
                       fontWeight: FontWeight.w500,
                     ),
@@ -187,7 +186,7 @@ class _RecurringTransactionCard extends StatelessWidget {
               Text(
                 _formatCurrency(transaction.monto),
                 style: GoogleFonts.montserrat(
-                  fontSize: 16,
+                  fontSize: AppColors.bodyLarge,
                   fontWeight: FontWeight.w700,
                   color: color,
                 ),

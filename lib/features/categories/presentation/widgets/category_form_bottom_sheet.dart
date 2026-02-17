@@ -440,7 +440,7 @@ class _CategoryFormBottomSheetState
                       Text(
                         isEdit ? 'Editar categoría' : 'Nueva categoría',
                         style: GoogleFonts.montserrat(
-                          fontSize: 18,
+                          fontSize: AppColors.titleSmall,
                           fontWeight: FontWeight.w600,
                           color: isDark ? Colors.white : AppColors.textPrimary,
                         ),
@@ -489,7 +489,7 @@ class _CategoryFormBottomSheetState
                           Text(
                             'Tipo',
                             style: GoogleFonts.montserrat(
-                              fontSize: 14,
+                              fontSize: AppColors.bodyMedium,
                               fontWeight: FontWeight.w600,
                               color: isDark ? Colors.white70 : Colors.grey[700],
                             ),
@@ -522,7 +522,7 @@ class _CategoryFormBottomSheetState
                           Text(
                             'Color',
                             style: GoogleFonts.montserrat(
-                              fontSize: 14,
+                              fontSize: AppColors.bodyMedium,
                               fontWeight: FontWeight.w600,
                               color: isDark ? Colors.white70 : Colors.grey[700],
                             ),
@@ -577,7 +577,7 @@ class _CategoryFormBottomSheetState
                           Text(
                             'Ícono',
                             style: GoogleFonts.montserrat(
-                              fontSize: 14,
+                              fontSize: AppColors.bodyMedium,
                               fontWeight: FontWeight.w600,
                               color: isDark ? Colors.white70 : Colors.grey[700],
                             ),
@@ -587,7 +587,7 @@ class _CategoryFormBottomSheetState
                             controller: _iconSearchController,
                             decoration: InputDecoration(
                               hintText: 'Buscar ícono...',
-                              hintStyle: GoogleFonts.montserrat(fontSize: 14),
+                              hintStyle: GoogleFonts.montserrat(fontSize: AppColors.bodyMedium),
                               prefixIcon: const Icon(Icons.search_outlined, size: 20),
                               filled: true,
                               fillColor: isDark ? AppColors.surfaceDark : Colors.grey[100],
@@ -676,7 +676,7 @@ class _CategoryFormBottomSheetState
                                     child: Text(
                                       _selectedIcono!,
                                       style: GoogleFonts.montserrat(
-                                        fontSize: 13,
+                                        fontSize: AppColors.bodySmall,
                                         color: isDark ? Colors.white70 : Colors.grey[700],
                                       ),
                                     ),
@@ -774,7 +774,7 @@ class _CategoryFormBottomSheetState
             Text(
               label,
               style: GoogleFonts.montserrat(
-                fontSize: 14,
+                fontSize: AppColors.bodyMedium,
                 fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
                 color: isSelected
                     ? AppColors.primary

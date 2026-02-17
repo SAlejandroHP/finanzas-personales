@@ -87,13 +87,13 @@ class CategoriesListScreen extends ConsumerWidget {
               child: TextField(
                 onChanged: (value) => ref.read(categorySearchQueryProvider.notifier).state = value,
                 style: GoogleFonts.montserrat(
-                  fontSize: 13,
+                  fontSize: AppColors.bodySmall,
                   color: isDark ? Colors.white : AppColors.textPrimary,
                 ),
                 decoration: InputDecoration(
                   hintText: 'Buscar categoría...',
                   hintStyle: GoogleFonts.montserrat(
-                    fontSize: 13,
+                    fontSize: AppColors.bodySmall,
                     color: isDark ? Colors.white38 : Colors.grey[400],
                   ),
                   prefixIcon: Icon(
@@ -194,7 +194,7 @@ class CategoriesListScreen extends ConsumerWidget {
             label,
             textAlign: TextAlign.center,
             style: GoogleFonts.montserrat(
-              fontSize: 13,
+              fontSize: AppColors.bodySmall,
               fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
               color: isSelected 
                   ? (isDark ? Colors.white : AppColors.primary)
@@ -228,7 +228,7 @@ class CategoriesListScreen extends ConsumerWidget {
             isSearch ? 'Sin coincidencias' : 'Sin categorías',
             style: GoogleFonts.montserrat(
               fontWeight: FontWeight.w700,
-              fontSize: 18,
+              fontSize: AppColors.titleSmall,
               color: isDark ? Colors.white : AppColors.textPrimary,
             ),
           ),
@@ -239,7 +239,7 @@ class CategoriesListScreen extends ConsumerWidget {
               : 'Crea tu primera categoría de ${type == 'ingreso' ? 'ingreso' : 'gasto'}',
             style: GoogleFonts.montserrat(
               color: isDark ? Colors.white70 : AppColors.textPrimary.withOpacity(0.6),
-              fontSize: 14,
+              fontSize: AppColors.bodyMedium,
             ),
             textAlign: TextAlign.center,
           ),
@@ -257,7 +257,7 @@ class CategoriesListScreen extends ConsumerWidget {
           const SizedBox(height: 16),
           Text(
             'Error al cargar categorías',
-            style: GoogleFonts.montserrat(fontWeight: FontWeight.w700, fontSize: 16),
+            style: GoogleFonts.montserrat(fontWeight: FontWeight.w700, fontSize: AppColors.bodyLarge),
           ),
           const SizedBox(height: 8),
           Padding(
@@ -265,7 +265,7 @@ class CategoriesListScreen extends ConsumerWidget {
             child: Text(
               error,
               textAlign: TextAlign.center,
-              style: GoogleFonts.montserrat(color: Colors.grey, fontSize: 12),
+              style: GoogleFonts.montserrat(color: Colors.grey, fontSize: AppColors.bodySmall),
             ),
           ),
         ],

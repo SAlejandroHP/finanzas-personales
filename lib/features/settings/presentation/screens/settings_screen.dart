@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../../core/constants/app_colors.dart';
-import '../../../../core/constants/app_sizes.dart';
 import '../../../../core/providers/ui_provider.dart';
 import '../../../../core/network/supabase_client.dart';
 import '../../../transactions/presentation/screens/recurring_transactions_screen.dart';
@@ -32,13 +31,13 @@ class SettingsScreen extends ConsumerWidget {
         color: isDark ? const Color(0xFF121212) : AppColors.backgroundColor,
         child: ListView(
           physics: const BouncingScrollPhysics(),
-          padding: const EdgeInsets.symmetric(vertical: AppSizes.md),
+          padding: const EdgeInsets.symmetric(vertical: AppColors.md),
           children: [
             // SECCIÓN: PERFIL / CUENTA
             if (user != null) ...[
               _buildSectionHeader(context, 'Cuenta'),
               _buildProfileCard(context, user.email ?? 'Usuario', isDark),
-              const SizedBox(height: AppSizes.md),
+              const SizedBox(height: AppColors.md),
             ],
 
             // SECCIÓN: GESTIÓN (CORE)
@@ -52,17 +51,17 @@ class SettingsScreen extends ConsumerWidget {
               subtitle: 'Bancos, efectivo y billeteras virtuales',
               onTap: () => context.push('/accounts'),
             ),
-            const SizedBox(height: AppSizes.sm),
+            const SizedBox(height: AppColors.sm),
             _buildNavigationCard(
               context,
               isDark,
               icon: Icons.grid_view_outlined,
-              iconColor: AppColors.accent,
+              iconColor: AppColors.secondary,
               title: 'Mis Categorías',
               subtitle: 'Organiza tus ingresos y gastos',
               onTap: () => context.push('/categories'),
             ),
-            const SizedBox(height: AppSizes.sm),
+            const SizedBox(height: AppColors.sm),
             _buildNavigationCard(
               context,
               isDark,
@@ -75,7 +74,7 @@ class SettingsScreen extends ConsumerWidget {
                 MaterialPageRoute(builder: (_) => RecurringTransactionsScreen())
               ),
             ),
-            const SizedBox(height: AppSizes.sm),
+            const SizedBox(height: AppColors.sm),
             _buildNavigationCard(
               context,
               isDark,
@@ -85,7 +84,7 @@ class SettingsScreen extends ConsumerWidget {
               subtitle: 'Préstamos, deudas con familiares y servicios',
               onTap: () => context.push('/settings/debts'),
             ),
-            const SizedBox(height: AppSizes.lg),
+            const SizedBox(height: AppColors.lg),
 
             // SECCIÓN: PREFERENCIAS
             _buildSectionHeader(context, 'Personalización'),
@@ -107,17 +106,17 @@ class SettingsScreen extends ConsumerWidget {
                 segments: [
                   ButtonSegment(
                     value: AppThemeMode.light,
-                    label: Text('Claro', style: GoogleFonts.montserrat(fontSize: 12, fontWeight: FontWeight.w500)),
+                    label: Text('Claro', style: GoogleFonts.montserrat(fontSize: AppColors.bodySmall, fontWeight: FontWeight.w500)),
                     icon: const Icon(Icons.light_mode_outlined, size: 16),
                   ),
                   ButtonSegment(
                     value: AppThemeMode.dark,
-                    label: Text('Oscuro', style: GoogleFonts.montserrat(fontSize: 12, fontWeight: FontWeight.w500)),
+                    label: Text('Oscuro', style: GoogleFonts.montserrat(fontSize: AppColors.bodySmall, fontWeight: FontWeight.w500)),
                     icon: const Icon(Icons.dark_mode_outlined, size: 16),
                   ),
                   ButtonSegment(
                     value: AppThemeMode.system,
-                    label: Text('Auto', style: GoogleFonts.montserrat(fontSize: 12, fontWeight: FontWeight.w500)),
+                    label: Text('Auto', style: GoogleFonts.montserrat(fontSize: AppColors.bodySmall, fontWeight: FontWeight.w500)),
                     icon: const Icon(Icons.smartphone_outlined, size: 16),
                   ),
                 ],
@@ -127,16 +126,16 @@ class SettingsScreen extends ConsumerWidget {
                 },
               ),
             ),
-            const SizedBox(height: AppSizes.lg),
+            const SizedBox(height: AppColors.lg),
 
-            const SizedBox(height: AppSizes.xl * 2),
+            const SizedBox(height: AppColors.xl * 2),
             
             // Versión de la app
             Center(
               child: Text(
                 'v1.0.0',
                 style: GoogleFonts.montserrat(
-                  fontSize: 12,
+                  fontSize: AppColors.bodySmall,
                   color: Colors.grey,
                 ),
               ),
@@ -150,11 +149,11 @@ class SettingsScreen extends ConsumerWidget {
   /// Construye el encabezado de una sección
   Widget _buildSectionHeader(BuildContext context, String title) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(AppSizes.lg, AppSizes.md, AppSizes.lg, AppSizes.sm),
+      padding: const EdgeInsets.fromLTRB(AppColors.lg, AppColors.md, AppColors.lg, AppColors.sm),
       child: Text(
         title.toUpperCase(),
         style: GoogleFonts.montserrat(
-          fontSize: 12,
+          fontSize: AppColors.bodySmall,
           fontWeight: FontWeight.w700,
           color: AppColors.primary.withOpacity(0.8),
           letterSpacing: 1.2,
@@ -166,11 +165,11 @@ class SettingsScreen extends ConsumerWidget {
   /// Tarjeta de perfil del usuario
   Widget _buildProfileCard(BuildContext context, String email, bool isDark) {
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: AppSizes.lg),
-      padding: const EdgeInsets.all(AppSizes.lg),
+      margin: const EdgeInsets.symmetric(horizontal: AppColors.lg),
+      padding: const EdgeInsets.all(AppColors.lg),
       decoration: BoxDecoration(
         color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
-        borderRadius: BorderRadius.circular(AppSizes.radiusXl),
+        borderRadius: BorderRadius.circular(AppColors.radiusXLarge),
         boxShadow: [
           if (!isDark)
             BoxShadow(
@@ -187,7 +186,7 @@ class SettingsScreen extends ConsumerWidget {
             backgroundColor: AppColors.primary.withOpacity(0.1),
             child: const Icon(Icons.person_outline, color: AppColors.primary),
           ),
-          const SizedBox(width: AppSizes.md),
+          const SizedBox(width: AppColors.md),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -195,14 +194,14 @@ class SettingsScreen extends ConsumerWidget {
                 Text(
                   'Hola 👋',
                   style: GoogleFonts.montserrat(
-                    fontSize: 14,
+                    fontSize: AppColors.bodyMedium,
                     color: isDark ? Colors.white70 : AppColors.textPrimary.withOpacity(0.6),
                   ),
                 ),
                 Text(
                   email,
                   style: GoogleFonts.montserrat(
-                    fontSize: 16,
+                    fontSize: AppColors.bodyLarge,
                     fontWeight: FontWeight.w600,
                     color: isDark ? Colors.white : AppColors.textPrimary,
                   ),
@@ -227,11 +226,11 @@ class SettingsScreen extends ConsumerWidget {
     required Widget child,
   }) {
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: AppSizes.lg),
-      padding: const EdgeInsets.all(AppSizes.lg),
+      margin: const EdgeInsets.symmetric(horizontal: AppColors.lg),
+      padding: const EdgeInsets.all(AppColors.lg),
       decoration: BoxDecoration(
         color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
-        borderRadius: BorderRadius.circular(AppSizes.radiusXl),
+        borderRadius: BorderRadius.circular(AppColors.radiusXLarge),
         boxShadow: [
           if (!isDark)
             BoxShadow(
@@ -254,7 +253,7 @@ class SettingsScreen extends ConsumerWidget {
                 ),
                 child: Icon(icon, color: iconColor, size: 22),
               ),
-              const SizedBox(width: AppSizes.md),
+              const SizedBox(width: AppColors.md),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -262,7 +261,7 @@ class SettingsScreen extends ConsumerWidget {
                     Text(
                       title,
                       style: GoogleFonts.montserrat(
-                        fontSize: 16,
+                        fontSize: AppColors.bodyLarge,
                         fontWeight: FontWeight.w600,
                         color: isDark ? Colors.white : AppColors.textPrimary,
                       ),
@@ -270,7 +269,7 @@ class SettingsScreen extends ConsumerWidget {
                     Text(
                       subtitle,
                       style: GoogleFonts.montserrat(
-                        fontSize: 12,
+                        fontSize: AppColors.bodySmall,
                         color: Colors.grey,
                       ),
                     ),
@@ -279,7 +278,7 @@ class SettingsScreen extends ConsumerWidget {
               ),
             ],
           ),
-          const SizedBox(height: AppSizes.lg),
+          const SizedBox(height: AppColors.lg),
           SizedBox(width: double.infinity, child: child),
         ],
       ),
@@ -299,11 +298,11 @@ class SettingsScreen extends ConsumerWidget {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        margin: const EdgeInsets.symmetric(horizontal: AppSizes.lg),
-        padding: const EdgeInsets.all(AppSizes.lg),
+        margin: const EdgeInsets.symmetric(horizontal: AppColors.lg),
+        padding: const EdgeInsets.all(AppColors.lg),
         decoration: BoxDecoration(
           color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
-          borderRadius: BorderRadius.circular(AppSizes.radiusXl),
+          borderRadius: BorderRadius.circular(AppColors.radiusXLarge),
           boxShadow: [
             if (!isDark)
               BoxShadow(
@@ -323,7 +322,7 @@ class SettingsScreen extends ConsumerWidget {
               ),
               child: Icon(icon, color: iconColor, size: 22),
             ),
-            const SizedBox(width: AppSizes.md),
+            const SizedBox(width: AppColors.md),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -331,7 +330,7 @@ class SettingsScreen extends ConsumerWidget {
                   Text(
                     title,
                     style: GoogleFonts.montserrat(
-                      fontSize: 16,
+                      fontSize: AppColors.bodyLarge,
                       fontWeight: FontWeight.w600,
                       color: isDark ? Colors.white : AppColors.textPrimary,
                     ),
@@ -339,7 +338,7 @@ class SettingsScreen extends ConsumerWidget {
                   Text(
                     subtitle,
                     style: GoogleFonts.montserrat(
-                      fontSize: 12,
+                      fontSize: AppColors.bodySmall,
                       color: Colors.grey,
                     ),
                   ),

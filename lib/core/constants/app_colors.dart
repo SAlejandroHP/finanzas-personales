@@ -13,6 +13,13 @@ import 'package:flutter/material.dart';
 ///
 /// LISTADO COMPLETO DE ELEMENTOS Y USOS (Sin excepción):
 ///
+/// WIDGETS Y PANTALLAS (Implementación de Diseño):
+/// - AppButton        -> Altura (buttonHeight), Radio (radiusSmall), Texto (bodyLarge).
+/// - AppTextField     -> Padding (cardPadding), Radio (radiusMedium), Texto (bodyMedium).
+/// - AppToast         -> Radio (radiusCircular), Iconos (iconXSmall), Texto (bodySmall).
+/// - DashboardScreen  -> Margen (pagePadding), Gap (contentGap), Tarjetas (radiusLarge).
+/// - AuthScreen       -> Títulos (titleLarge), Logo (iconLarge), Botonera (buttonHeight).
+///
 /// COLORES (Tematizados):
 /// - AppColors.primary          -> Color de identidad (Teal). Usado globalmente para marca.
 /// - AppColors.secondary        -> Color de soporte (Coral). Usado para acentos y estados.
@@ -88,6 +95,14 @@ abstract class AppColors {
   
   static const Color backgroundDark = Color(0xFF1A1A1A);
   static const Color surfaceDark    = Color(0xFF252525);
+  
+  // COLORES DE ESTADO Y TEXTO REUTILIZABLES
+  static const Color error          = Color(0xFFE53935); // Rojo estándar
+  static const Color success        = Color(0xFF43A047); // Verde estándar
+  static const Color warning        = Color(0xFFFFB300); // Ámbar estándar
+  static const Color info           = Color(0xFF1E88E5); // Azul estándar
+  static const Color description    = Colors.grey;       // Texto de descripción (600)
+  static const Color disabled       = Colors.grey;       // Elementos deshabilitados
 
   // ===========================================================================
   // SISTEMA DE TIPOGRAFÍA (Font Sizes)
@@ -114,7 +129,30 @@ abstract class AppColors {
   static const double cardPadding   = 16.0; // Padding interno estándar
   static const double pagePadding   = 16.0; // Margen lateral de pantallas
   static const double contentGap    = 12.0; // Espacio entre elementos verticales
+  static const double gapSmall      = 4.0;  // Pequeños espacios entre texto e iconos
   static const double cardElevation = 2.0;  // Sombra estándar
+
+  // ===========================================================================
+  // SISTEMA DE ESPACIADO GENÉRICO (Tokens de tamaño)
+  // ===========================================================================
+  static const double xs  = 4.0;
+  static const double sm  = 8.0;
+  static const double md  = 16.0;
+  static const double lg  = 24.0;
+  static const double xl  = 32.0;
+  static const double xxl = 48.0;
+
+  // ===========================================================================
+  // SISTEMA DE ICONOS Y BOTONES
+  // ===========================================================================
+  static const double iconXSmall   = 16.0;
+  static const double iconSmall    = 20.0;
+  static const double iconMedium   = 24.0;
+  static const double iconLarge    = 32.0;
+  
+  static const double buttonHeight      = 44.0; // Altura estándar de botones
+  static const double buttonHeightSmall = 36.0; // Botones compactos
+  static const double inputHeight       = 48.0; // Altura estándar para campos de texto
 
   // ===========================================================================
   // DEGRADADOS Y OTROS

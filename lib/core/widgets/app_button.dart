@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import '../constants/app_colors.dart';
-import '../constants/app_sizes.dart';
 
 /// Botón personalizado reutilizable para toda la aplicación.
 /// Soporta diferentes variantes (primary, secondary, outlined) y estados.
@@ -62,7 +61,7 @@ class AppButton extends StatelessWidget {
         textColorFinal = textColor ?? AppColors.textSecondary;
         break;
       case 'secondary':
-        bgColor = backgroundColor ?? AppColors.accent;
+        bgColor = backgroundColor ?? AppColors.secondary;
         textColorFinal = textColor ?? AppColors.textSecondary;
         break;
       case 'outlined':
@@ -81,20 +80,20 @@ class AppButton extends StatelessWidget {
 
     switch (size) {
       case 'small':
-        padding = AppSizes.sm;
+        padding = AppColors.sm;
         fontSize = 12;
-        buttonHeight = AppSizes.buttonHeightSmall;
+        buttonHeight = AppColors.buttonHeightSmall;
         break;
       case 'large':
-        padding = AppSizes.lg;
+        padding = AppColors.lg;
         fontSize = 16;
-        buttonHeight = AppSizes.buttonHeight + 8;
+        buttonHeight = AppColors.buttonHeight + 8;
         break;
       case 'medium':
       default:
-        padding = AppSizes.md;
+        padding = AppColors.md;
         fontSize = 14;
-        buttonHeight = AppSizes.buttonHeight;
+        buttonHeight = AppColors.buttonHeight;
     }
 
     // Usa altura personalizada si se proporciona
@@ -116,8 +115,8 @@ class AppButton extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             children: [
               if (icon != null) ...[
-                Icon(icon, color: textColorFinal, size: AppSizes.iconMd),
-                SizedBox(width: AppSizes.sm),
+                Icon(icon, color: textColorFinal, size: AppColors.iconMedium),
+                SizedBox(width: AppColors.sm),
               ],
               Text(
                 label,
@@ -134,7 +133,7 @@ class AppButton extends StatelessWidget {
       color: Colors.transparent,
       child: InkWell(
         onTap: isLoading ? null : onPressed,
-        borderRadius: BorderRadius.circular(AppSizes.radiusMd),
+        borderRadius: BorderRadius.circular(AppColors.radiusMedium),
         child: Container(
           height: buttonHeight,
           padding: EdgeInsets.symmetric(horizontal: padding),
@@ -143,7 +142,7 @@ class AppButton extends StatelessWidget {
             border: variant == 'outlined'
                 ? Border.all(color: textColorFinal, width: 2)
                 : null,
-            borderRadius: BorderRadius.circular(AppSizes.radiusMd),
+            borderRadius: BorderRadius.circular(AppColors.radiusMedium),
           ),
           child: Center(child: buttonChild),
         ),

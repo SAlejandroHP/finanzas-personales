@@ -220,7 +220,7 @@ class CategoryCard extends StatelessWidget {
                         category.nombre,
                         textAlign: TextAlign.center,
                         style: GoogleFonts.montserrat(
-                          fontSize: 11,
+                          fontSize: AppColors.bodySmall,
                           fontWeight: FontWeight.w700,
                           color: isDark ? Colors.white : AppColors.textPrimary,
                         ),
@@ -262,7 +262,7 @@ class CategoryCard extends StatelessWidget {
           Text(
             label,
             style: GoogleFonts.montserrat(
-              fontSize: 13,
+              fontSize: AppColors.bodySmall,
               color: isDestructive ? Colors.red : null,
             ),
           ),

@@ -222,7 +222,7 @@ class _AccountFormBottomSheetState extends ConsumerState<AccountFormBottomSheet>
                       color: isDark ? Colors.white.withOpacity(0.05) : Colors.grey[100],
                       borderRadius: BorderRadius.circular(8),
                     ),
-                    child: Text(op, style: GoogleFonts.montserrat(fontSize: 20, fontWeight: FontWeight.w600, color: AppColors.primary)),
+                    child: Text(op, style: GoogleFonts.montserrat(fontSize: AppColors.titleMedium, fontWeight: FontWeight.w600, color: AppColors.primary)),
                   ),
                 ),
               ),
@@ -374,7 +374,7 @@ class _AccountFormBottomSheetState extends ConsumerState<AccountFormBottomSheet>
                     Text(
                       isEdit ? 'Editar cuenta' : 'Nueva cuenta',
                       style: GoogleFonts.montserrat(
-                        fontSize: 18,
+                        fontSize: AppColors.titleSmall,
                         fontWeight: FontWeight.w600,
                         color: isDark ? Colors.white : AppColors.textPrimary,
                       ),
@@ -419,7 +419,7 @@ class _AccountFormBottomSheetState extends ConsumerState<AccountFormBottomSheet>
                             value: _selectedTipo,
                             decoration: InputDecoration(
                               labelText: 'Tipo de cuenta',
-                            labelStyle: GoogleFonts.montserrat(fontSize: 14),
+                            labelStyle: GoogleFonts.montserrat(fontSize: AppColors.bodyMedium),
                             filled: true,
                             fillColor: isDark ? AppColors.surfaceDark : Colors.white,
                             contentPadding: const EdgeInsets.symmetric(
@@ -437,7 +437,7 @@ class _AccountFormBottomSheetState extends ConsumerState<AccountFormBottomSheet>
                               value: tipo,
                               child: Text(
                                 _formatTipoName(tipo),
-                                style: GoogleFonts.montserrat(fontSize: 14),
+                                style: GoogleFonts.montserrat(fontSize: AppColors.bodyMedium),
                               ),
                             );
                           }).toList(),
@@ -463,7 +463,7 @@ class _AccountFormBottomSheetState extends ConsumerState<AccountFormBottomSheet>
                           error: (error, stack) => Text(
                             'Error al cargar monedas',
                             style: GoogleFonts.montserrat(
-                              color: AppColors.accent,
+                              color: AppColors.secondary,
                             ),
                           ),
                           data: (currencies) {
@@ -480,7 +480,7 @@ class _AccountFormBottomSheetState extends ConsumerState<AccountFormBottomSheet>
                               value: _selectedMonedaId,
                               decoration: InputDecoration(
                                 labelText: 'Moneda',
-                                labelStyle: GoogleFonts.montserrat(fontSize: 14),
+                                labelStyle: GoogleFonts.montserrat(fontSize: AppColors.bodyMedium),
                                 filled: true,
                                 fillColor: isDark ? AppColors.surfaceDark : Colors.white,
                                 contentPadding: const EdgeInsets.symmetric(
@@ -498,7 +498,7 @@ class _AccountFormBottomSheetState extends ConsumerState<AccountFormBottomSheet>
                                   value: currency.id,
                                   child: Text(
                                     '${currency.codigo} - ${currency.nombre}',
-                                    style: GoogleFonts.montserrat(fontSize: 14),
+                                    style: GoogleFonts.montserrat(fontSize: AppColors.bodyMedium),
                                   ),
                                 );
                               }).toList(),
@@ -548,7 +548,7 @@ class _AccountFormBottomSheetState extends ConsumerState<AccountFormBottomSheet>
                                     if (result == null) return const SizedBox.shrink();
                                     return Padding(
                                       padding: const EdgeInsets.only(top: 4),
-                                      child: Text('= ${_moneyFormatter.format(result)}', style: GoogleFonts.montserrat(fontSize: 12, color: Colors.green, fontWeight: FontWeight.w600)),
+                                      child: Text('= ${_moneyFormatter.format(result)}', style: GoogleFonts.montserrat(fontSize: AppColors.bodySmall, color: Colors.green, fontWeight: FontWeight.w600)),
                                     );
                                   },
                                 ),
@@ -578,7 +578,7 @@ class _AccountFormBottomSheetState extends ConsumerState<AccountFormBottomSheet>
                                     if (result == null) return const SizedBox.shrink();
                                     return Padding(
                                       padding: const EdgeInsets.only(top: 4),
-                                      child: Text('= ${_moneyFormatter.format(result)}', style: GoogleFonts.montserrat(fontSize: 12, color: Colors.green, fontWeight: FontWeight.w600)),
+                                      child: Text('= ${_moneyFormatter.format(result)}', style: GoogleFonts.montserrat(fontSize: AppColors.bodySmall, color: Colors.green, fontWeight: FontWeight.w600)),
                                     );
                                   },
                                 ),
@@ -590,7 +590,7 @@ class _AccountFormBottomSheetState extends ConsumerState<AccountFormBottomSheet>
                             child: Text(
                               'El disponible será: \$${((double.tryParse(_limiteCreditoController.text) ?? 0.0) - (double.tryParse(_deudaActualController.text) ?? 0.0)).toStringAsFixed(2)}',
                               style: GoogleFonts.montserrat(
-                                fontSize: 12,
+                                fontSize: AppColors.bodySmall,
                                 fontWeight: FontWeight.w600,
                                 color: AppColors.primary,
                               ),
@@ -626,7 +626,7 @@ class _AccountFormBottomSheetState extends ConsumerState<AccountFormBottomSheet>
                                     if (result == null) return const SizedBox.shrink();
                                     return Padding(
                                       padding: const EdgeInsets.only(top: 4),
-                                      child: Text('= ${_moneyFormatter.format(result)}', style: GoogleFonts.montserrat(fontSize: 12, color: Colors.green, fontWeight: FontWeight.w600)),
+                                      child: Text('= ${_moneyFormatter.format(result)}', style: GoogleFonts.montserrat(fontSize: AppColors.bodySmall, color: Colors.green, fontWeight: FontWeight.w600)),
                                     );
                                   },
                                 ),
@@ -640,7 +640,7 @@ class _AccountFormBottomSheetState extends ConsumerState<AccountFormBottomSheet>
                             child: Text(
                               'El saldo inicial se establecerá como saldo actual al crear la cuenta',
                               style: GoogleFonts.montserrat(
-                                fontSize: 12,
+                                fontSize: AppColors.bodySmall,
                                 color: Colors.grey[600],
                               ),
                             ),
@@ -674,7 +674,7 @@ class _AccountFormBottomSheetState extends ConsumerState<AccountFormBottomSheet>
           Text(
             'Banco (Opcional)',
             style: GoogleFonts.montserrat(
-              fontSize: 14,
+              fontSize: AppColors.bodyMedium,
               fontWeight: FontWeight.w600,
               color: isDark ? Colors.white70 : Colors.grey[700],
             ),
@@ -735,7 +735,7 @@ class _AccountFormBottomSheetState extends ConsumerState<AccountFormBottomSheet>
                         child: Text(
                           _selectedBank?.displayName ?? 'Selecciona un banco',
                           style: GoogleFonts.montserrat(
-                            fontSize: 14,
+                            fontSize: AppColors.bodyMedium,
                             color: _selectedBank == null
                                 ? (isDark ? Colors.white38 : Colors.grey)
                                 : (isDark ? Colors.white : Colors.black87),
@@ -768,7 +768,7 @@ class _AccountFormBottomSheetState extends ConsumerState<AccountFormBottomSheet>
   Widget _buildBankErrorState() {
     return Text(
       'No se pudieron cargar los bancos',
-      style: GoogleFonts.montserrat(fontSize: 12, color: Colors.red),
+      style: GoogleFonts.montserrat(fontSize: AppColors.bodySmall, color: Colors.red),
     );
   }
 
@@ -798,7 +798,7 @@ class _AccountFormBottomSheetState extends ConsumerState<AccountFormBottomSheet>
                     Text(
                       'Selecciona un banco',
                       style: GoogleFonts.montserrat(
-                        fontSize: 18,
+                        fontSize: AppColors.titleSmall,
                         fontWeight: FontWeight.w600,
                       ),
                     ),
@@ -824,7 +824,7 @@ class _AccountFormBottomSheetState extends ConsumerState<AccountFormBottomSheet>
                             Text(
                               'No hay bancos disponibles',
                               style: GoogleFonts.montserrat(
-                                fontSize: 14,
+                                fontSize: AppColors.bodyMedium,
                                 color: Colors.grey[600],
                               ),
                             ),

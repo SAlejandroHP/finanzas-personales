@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import '../constants/app_colors.dart';
-import '../constants/app_sizes.dart';
 
 /// Widget indicador de carga personalizado para la aplicación.
 /// Muestra un indicador de progreso circular con el color primario de la app.
@@ -21,7 +20,7 @@ class LoadingIndicator extends StatelessWidget {
   const LoadingIndicator({
     Key? key,
     this.color,
-    this.size = AppSizes.iconLg,
+    this.size = AppColors.iconLarge,
     this.message,
     this.fullScreen = false,
   }) : super(key: key);
@@ -44,7 +43,7 @@ class LoadingIndicator extends StatelessWidget {
           ),
         ),
         if (message != null) ...[
-          SizedBox(height: AppSizes.md),
+          SizedBox(height: AppColors.md),
           Text(
             message!,
             style: Theme.of(context).textTheme.bodyMedium,

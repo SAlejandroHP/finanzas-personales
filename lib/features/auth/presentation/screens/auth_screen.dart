@@ -4,7 +4,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/constants/app_colors.dart';
-import '../../../../core/constants/app_sizes.dart';
 import '../../../../core/widgets/app_text_field.dart';
 import '../../../../core/widgets/app_button.dart';
 import '../../../../core/widgets/app_toast.dart';
@@ -115,7 +114,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen>
                     Text(
                       'Finanzas Personal',
                       style: GoogleFonts.montserrat(
-                        fontSize: 28,
+                        fontSize: AppColors.titleLarge,
                         fontWeight: FontWeight.w700,
                         color: isDark ? Colors.white : AppColors.textPrimary,
                       ),
@@ -124,7 +123,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen>
                     Text(
                       'Gestiona tu dinero de forma inteligente',
                       style: GoogleFonts.montserrat(
-                        fontSize: 14,
+                        fontSize: AppColors.bodyMedium,
                         color: Colors.grey[600],
                       ),
                     ),
@@ -226,7 +225,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen>
           text,
           textAlign: TextAlign.center,
           style: GoogleFonts.montserrat(
-            fontSize: 16,
+            fontSize: AppColors.bodyLarge,
             fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
             color: isSelected
                 ? (isDark ? Colors.white : AppColors.primary)
@@ -269,7 +268,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen>
                 child: Text(
                   'O con email',
                   style: GoogleFonts.montserrat(
-                    fontSize: 12,
+                    fontSize: AppColors.bodySmall,
                     color: Colors.grey[600],
                   ),
                 ),
@@ -309,8 +308,8 @@ class _AuthScreenState extends ConsumerState<AuthScreen>
               child: Text(
                 'Olvidé mi contraseña',
                 style: GoogleFonts.montserrat(
-                  fontSize: 12,
-                  color: AppColors.accent,
+                  fontSize: AppColors.bodySmall,
+                  color: AppColors.secondary,
                   fontWeight: FontWeight.w500,
                 ),
               ),
@@ -324,7 +323,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen>
             onPressed  : isLoading ? null: _handleEmailLogin,
             isFullWidth: true,
             isLoading  : isLoading,
-            height     : AppSizes.buttonHeight,
+            height     : AppColors.buttonHeight,
           ),
           const SizedBox(height: 16),
 
@@ -383,7 +382,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen>
                 child: Text(
                   'O con email',
                   style: GoogleFonts.montserrat(
-                    fontSize: 12,
+                    fontSize: AppColors.bodySmall,
                     color: Colors.grey[600],
                   ),
                 ),

@@ -333,7 +333,7 @@ class TransactionTile extends ConsumerWidget { // Corrección v4: Cambiado a Con
                           overflow: TextOverflow.ellipsis,
                           style: GoogleFonts.montserrat(
                             color: isDark ? Colors.white54 : AppColors.textPrimary.withOpacity(0.5),
-                            fontSize: 13,
+                            fontSize: AppColors.bodySmall,
                           ),
                         ),
                       if (transaction.isRecurring && transaction.nextOccurrence != null && 
@@ -352,7 +352,7 @@ class TransactionTile extends ConsumerWidget { // Corrección v4: Cambiado a Con
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
                                   style: GoogleFonts.montserrat(
-                                    fontSize: 11,
+                                    fontSize: AppColors.bodySmall,
                                     fontWeight: FontWeight.w600,
                                     color: Colors.orange[800],
                                   ),
@@ -376,7 +376,7 @@ class TransactionTile extends ConsumerWidget { // Corrección v4: Cambiado a Con
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                               style: GoogleFonts.montserrat(
-                                fontSize: 11,
+                                fontSize: AppColors.bodySmall,
                                 fontWeight: FontWeight.w500,
                                 color: Colors.grey,
                               ),
@@ -392,7 +392,7 @@ class TransactionTile extends ConsumerWidget { // Corrección v4: Cambiado a Con
                           Text(
                             _formatDate(transaction.fecha),
                             style: GoogleFonts.montserrat(
-                              fontSize: 11,
+                              fontSize: AppColors.bodySmall,
                               fontWeight: FontWeight.w500,
                               color: Colors.grey,
                             ),
@@ -464,7 +464,7 @@ class TransactionTile extends ConsumerWidget { // Corrección v4: Cambiado a Con
                                   children: [
                                     const Icon(Icons.edit_outlined, size: 18),
                                     const SizedBox(width: 8),
-                                    Text('Editar', style: GoogleFonts.montserrat(fontSize: 13)),
+                                    Text('Editar', style: GoogleFonts.montserrat(fontSize: AppColors.bodySmall)),
                                   ],
                                 ),
                               ),
@@ -474,7 +474,7 @@ class TransactionTile extends ConsumerWidget { // Corrección v4: Cambiado a Con
                                   children: [
                                     const Icon(Icons.delete_outline, size: 18, color: Colors.red),
                                     const SizedBox(width: 8),
-                                    Text('Eliminar', style: GoogleFonts.montserrat(fontSize: 13, color: Colors.red)),
+                                    Text('Eliminar', style: GoogleFonts.montserrat(fontSize: AppColors.bodySmall, color: Colors.red)),
                                   ],
                                 ),
                               ),

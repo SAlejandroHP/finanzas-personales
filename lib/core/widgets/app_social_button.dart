@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import '../constants/app_colors.dart';
 
 /// Botón compacto para login social (Google, Apple, etc.)
 /// Muestra un ícono a la izquierda y texto pequeño.
@@ -81,7 +82,7 @@ class AppSocialButton extends StatelessWidget {
                 Text(
                   label,
                   style: GoogleFonts.montserrat(
-                    fontSize: 13,
+                    fontSize: AppColors.bodySmall,
                     fontWeight: FontWeight.w500,
                     color: isDark ? Colors.white : Colors.black87,
                   ),

@@ -174,7 +174,7 @@ class _DebtFormSheetState extends ConsumerState<DebtFormSheet> {
                       color: isDark ? Colors.white.withOpacity(0.05) : Colors.grey[100],
                       borderRadius: BorderRadius.circular(8),
                     ),
-                    child: Text(op, style: GoogleFonts.montserrat(fontSize: 20, fontWeight: FontWeight.w600, color: AppColors.primary)),
+                    child: Text(op, style: GoogleFonts.montserrat(fontSize: AppColors.titleMedium, fontWeight: FontWeight.w600, color: AppColors.primary)),
                   ),
                 ),
               ),
@@ -300,7 +300,7 @@ class _DebtFormSheetState extends ConsumerState<DebtFormSheet> {
                     Text(
                       widget.debt != null ? 'Editar Deuda' : 'Nueva Deuda',
                       style: GoogleFonts.montserrat(
-                        fontSize: 18,
+                        fontSize: AppColors.titleSmall,
                         fontWeight: FontWeight.w700,
                         color: isDark ? Colors.white : AppColors.textPrimary,
                       ),
@@ -338,7 +338,7 @@ class _DebtFormSheetState extends ConsumerState<DebtFormSheet> {
                           Text(
                             'Tipo de deuda',
                             style: GoogleFonts.montserrat(
-                              fontSize: 12,
+                              fontSize: AppColors.bodySmall,
                               fontWeight: FontWeight.w600,
                               color: Colors.grey,
                             ),
@@ -397,7 +397,7 @@ class _DebtFormSheetState extends ConsumerState<DebtFormSheet> {
                                           if (result == null) return const SizedBox.shrink();
                                           return Padding(
                                             padding: const EdgeInsets.only(top: 4),
-                                            child: Text('= ${_moneyFormatter.format(result)}', style: GoogleFonts.montserrat(fontSize: 12, color: Colors.green, fontWeight: FontWeight.w600)),
+                                            child: Text('= ${_moneyFormatter.format(result)}', style: GoogleFonts.montserrat(fontSize: AppColors.bodySmall, color: Colors.green, fontWeight: FontWeight.w600)),
                                           );
                                         },
                                       ),
@@ -429,7 +429,7 @@ class _DebtFormSheetState extends ConsumerState<DebtFormSheet> {
                                           if (result == null) return const SizedBox.shrink();
                                           return Padding(
                                             padding: const EdgeInsets.only(top: 4),
-                                            child: Text('= ${_moneyFormatter.format(result)}', style: GoogleFonts.montserrat(fontSize: 12, color: Colors.green, fontWeight: FontWeight.w600)),
+                                            child: Text('= ${_moneyFormatter.format(result)}', style: GoogleFonts.montserrat(fontSize: AppColors.bodySmall, color: Colors.green, fontWeight: FontWeight.w600)),
                                           );
                                         },
                                       ),
@@ -460,7 +460,7 @@ class _DebtFormSheetState extends ConsumerState<DebtFormSheet> {
                                 Text(
                                   'Cuenta asociada (Opcional)',
                                   style: GoogleFonts.montserrat(
-                                    fontSize: 12,
+                                    fontSize: AppColors.bodySmall,
                                     fontWeight: FontWeight.w600,
                                     color: Colors.grey,
                                   ),
@@ -540,12 +540,12 @@ class _DebtFormSheetState extends ConsumerState<DebtFormSheet> {
               children: [
                 Text(
                   label,
-                  style: const TextStyle(fontSize: 10, color: Colors.grey, fontWeight: FontWeight.w500),
+                  style: const TextStyle(fontSize: AppColors.bodySmall, color: Colors.grey, fontWeight: FontWeight.w500),
                 ),
                 Text(
                   value,
                   style: GoogleFonts.montserrat(
-                    fontSize: 14,
+                    fontSize: AppColors.bodyMedium,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
