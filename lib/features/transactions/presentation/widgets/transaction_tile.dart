@@ -247,7 +247,9 @@ class TransactionTile extends ConsumerWidget { // Corrección v4: Cambiado a Con
 
     // Resolver info de categoría si no se pasó
     if (displayCategoryName == null && transaction.categoriaId != null) {
-      final category = categoriesAsync.asData?.value.where((c) => c.id == transaction.categoriaId).firstOrNull;
+      final category = categoriesAsync.asData?.value
+          .where((c) => c.id == transaction.categoriaId)
+          .firstOrNull;
       if (category != null) {
         displayCategoryName = category.nombre;
         displayCategoryIcon = _getMaterialIconData(category.icono);
@@ -257,34 +259,45 @@ class TransactionTile extends ConsumerWidget { // Corrección v4: Cambiado a Con
 
     // Resolver info de cuenta si no se pasó
     AccountModel? account;
-    if (displayAccountName == null || true) { // Necesitamos la cuenta para la moneda siempre
-      account = accountsAsync.asData?.value.where((a) => a.id == transaction.cuentaOrigenId).firstOrNull;
-      if (account != null) {
-        displayAccountName = account.nombre;
-      }
+    account = accountsAsync.asData?.value
+        .where((a) => a.id == transaction.cuentaOrigenId)
+        .firstOrNull;
+    if (account != null) {
+      displayAccountName = account.nombre;
     }
 
     // Resolver símbolo de moneda
     String displayCurrencySymbol = currencySymbol;
     if (account != null) {
       final currencyAsync = ref.watch(currencyByIdProvider(account.monedaId));
-      displayCurrencySymbol = currencyAsync.asData?.value?.simbolo ?? currencySymbol;
+      displayCurrencySymbol =
+          currencyAsync.asData?.value?.simbolo ?? currencySymbol;
     }
 
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final cardColor = isDark ? AppColors.surfaceDark : AppColors.surface;
+    final isCompleted = transaction.estado == 'completa';
 
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: AppColors.pagePadding, vertical: 4),
+      margin: const EdgeInsets.symmetric(
+        horizontal: AppColors.pagePadding,
+        vertical: 6,
+      ),
       decoration: BoxDecoration(
         color: cardColor,
         borderRadius: BorderRadius.circular(AppColors.radiusLarge),
+        border: Border.all(
+          color: isCompleted 
+            ? Colors.transparent 
+            : (isDark ? Colors.orange.withOpacity(0.3) : Colors.orange.withOpacity(0.1)),
+          width: 1,
+        ),
         boxShadow: [
           if (!isDark)
             BoxShadow(
-              color: Colors.black.withOpacity(0.03),
-              blurRadius: 6,
-              offset: const Offset(0, 2),
+              color: Colors.black.withOpacity(0.04),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
             ),
         ],
       ),
@@ -292,167 +305,195 @@ class TransactionTile extends ConsumerWidget { // Corrección v4: Cambiado a Con
         borderRadius: BorderRadius.circular(AppColors.radiusLarge),
         child: InkWell(
           onTap: onEdit,
-          onLongPress: onDelete, // Acceso rápido a eliminar
+          onLongPress: onDelete,
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: AppColors.contentGap, vertical: 10),
-            child: Row(
+            padding: const EdgeInsets.all(AppColors.cardPadding),
+            child: Column(
               children: [
-                // Ícono de categoría más compacto
-                Container(
-                  width: 40,
-                  height: 40,
-                  decoration: BoxDecoration(
-                    color: displayCategoryColor.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Icon(
-                    displayCategoryIcon,
-                    color: displayCategoryColor,
-                    size: 18,
-                  ),
-                ),
-                const SizedBox(width: 12),
-                // Información Central
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        displayCategoryName ?? transaction.tipo.toUpperCase(),
-                        style: GoogleFonts.montserrat(
-                          fontWeight: FontWeight.w700,
-                          fontSize: 15,
-                          color: isDark ? Colors.white : AppColors.textPrimary,
-                        ),
+                // Fila Superior: Icono, Categoría/Desc y Monto
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // 1. Icono de Categoría
+                    Container(
+                      width: 44,
+                      height: 44,
+                      decoration: BoxDecoration(
+                        color: displayCategoryColor.withOpacity(0.12),
+                        borderRadius: BorderRadius.circular(AppColors.radiusMedium),
                       ),
-                      if (transaction.descripcion != null && transaction.descripcion!.isNotEmpty)
-                        Text(
-                          transaction.descripcion!,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: GoogleFonts.montserrat(
-                            color: isDark ? Colors.white54 : AppColors.textPrimary.withOpacity(0.5),
-                            fontSize: AppColors.bodySmall,
+                      child: Icon(
+                        displayCategoryIcon,
+                        color: displayCategoryColor,
+                        size: 22,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    
+                    // Información Central (Categoría y Descripción)
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          // 2. Nombre de la categoría
+                          Text(
+                            displayCategoryName ?? transaction.tipo.toUpperCase(),
+                            style: GoogleFonts.montserrat(
+                              fontWeight: FontWeight.w700,
+                              fontSize: 15,
+                              color: isDark ? Colors.white : AppColors.textPrimary,
+                            ),
                           ),
-                        ),
-                      if (transaction.isRecurring && transaction.nextOccurrence != null && 
-                          transaction.nextOccurrence!.difference(DateTime.now()).inDays >= 0 &&
-                          transaction.nextOccurrence!.difference(DateTime.now()).inDays <= 3)
-                        Padding(
-                          padding: const EdgeInsets.only(top: 4, bottom: 2),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
+                          const SizedBox(height: 2),
+                          // 3. Descripción
+                          if (transaction.descripcion != null && transaction.descripcion!.isNotEmpty)
+                            Text(
+                              transaction.descripcion!,
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                              style: GoogleFonts.montserrat(
+                                color: isDark ? Colors.white60 : AppColors.textPrimary.withOpacity(0.6),
+                                fontSize: 13,
+                              ),
+                            ),
+                        ],
+                      ),
+                    ),
+                    
+                    const SizedBox(width: 8),
+                    
+                    // 6. Monto (Alineado arriba a la derecha)
+                    Text(
+                      _formatCurrency(transaction.monto, displayCurrencySymbol),
+                      style: GoogleFonts.montserrat(
+                        fontSize: 16,
+                        color: _getAmountColor(),
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                  ],
+                ),
+                
+                const SizedBox(height: 12),
+                
+                // Línea divisoria sutil
+                Divider(
+                  height: 1, 
+                  color: isDark ? Colors.white10 : Colors.grey.withOpacity(0.1),
+                ),
+                
+                const SizedBox(height: 12),
+
+                // Fila Inferior: Banco, Fecha y Controles
+                Row(
+                  children: [
+                    // Columna de Metadatos (Banco y Fecha)
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          // 4. Banco
+                          Row(
                             children: [
-                              Icon(Icons.access_alarm_rounded, size: 12, color: Colors.orange),
-                              const SizedBox(width: 4),
-                              Flexible(
+                              Icon(
+                                Icons.account_balance_rounded,
+                                size: 14,
+                                color: isDark ? Colors.white70 : Colors.grey[600],
+                              ),
+                              const SizedBox(width: 6),
+                              Expanded(
                                 child: Text(
-                                  'Vence en ${transaction.nextOccurrence!.difference(DateTime.now()).inDays} días${(transaction.descripcion?.toLowerCase().contains('internet') ?? false) ? ' – Paga antes y ahorra \$50' : ''}',
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
+                                  displayAccountName ?? 'Cuenta general',
                                   style: GoogleFonts.montserrat(
-                                    fontSize: AppColors.bodySmall,
+                                    fontSize: 12,
                                     fontWeight: FontWeight.w600,
-                                    color: Colors.orange[800],
+                                    color: isDark ? Colors.white70 : Colors.grey[700],
                                   ),
                                 ),
                               ),
                             ],
                           ),
-                        ),
-                      const SizedBox(height: 2),
-                      Row(
-                        children: [
-                          Icon(
-                            Icons.account_balance_wallet_outlined, 
-                            size: 10, 
-                            color: Colors.grey,
-                          ),
-                          const SizedBox(width: 3),
-                          Flexible(
-                            child: Text(
-                              displayAccountName ?? 'Cuenta',
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: GoogleFonts.montserrat(
-                                fontSize: AppColors.bodySmall,
-                                fontWeight: FontWeight.w500,
-                                color: Colors.grey,
+                          const SizedBox(height: 6),
+                          // 5. Fecha
+                          Row(
+                            children: [
+                              Icon(
+                                Icons.calendar_today_rounded,
+                                size: 14,
+                                color: Colors.grey[500],
                               ),
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          Icon(
-                            Icons.access_time_outlined, 
-                            size: 10, 
-                            color: Colors.grey,
-                          ),
-                          const SizedBox(width: 3),
-                          Text(
-                            _formatDate(transaction.fecha),
-                            style: GoogleFonts.montserrat(
-                              fontSize: AppColors.bodySmall,
-                              fontWeight: FontWeight.w500,
-                              color: Colors.grey,
-                            ),
+                              const SizedBox(width: 6),
+                              Expanded(
+                                child: Text(
+                                  _formatDate(transaction.fecha),
+                                  style: GoogleFonts.montserrat(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w500,
+                                    color: Colors.grey[600],
+                                  ),
+                                ),
+                              ),
+                            ],
                           ),
                         ],
                       ),
-                    ],
-                  ),
-                ),
-                const SizedBox(width: 8),
-                // Lado Derecho: Monto, Switch Delgado y Menú
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      _formatCurrency(transaction.monto, displayCurrencySymbol),
-                      style: GoogleFonts.montserrat(
-                        fontSize: 17,
-                        color: _getAmountColor(),
-                        fontWeight: FontWeight.w700,
-                      ),
                     ),
-                    const SizedBox(height: 4),
+                    
+                    // 7. Switch y 8. Opciones
                     Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Transform.scale(
-                          scale: 0.7, // Más pequeño como pidió el usuario
-                          child: Switch(
-                            value: transaction.estado == 'completa',
-                            activeTrackColor: AppColors.primary, // Usando Teal de app_colors
-                            activeColor: Colors.white,
-                            onChanged: (value) async {
-                              final updatedTx = transaction.copyWith(
-                                estado: value ? 'completa' : 'pendiente',
-                              );
-                              
-                              if (value) {
-                                await ref.read(transactionsNotifierProvider.notifier).markAsComplete(transaction);
-                              } else {
-                                await ref.read(transactionsNotifierProvider.notifier).markAsPending(transaction);
-                              }
-                              
-                              // Llama a FinanceService para refrescar saldos y providers en toda la app
-                              ref.read(financeServiceProvider).updateAfterTransaction(updatedTx, ref);
-                            },
+                        // Switch de estado
+                        if (!isCompleted)
+                          Padding(
+                            padding: const EdgeInsets.only(right: 8),
+                            child: Text(
+                              'PENDIENTE',
+                              style: GoogleFonts.montserrat(
+                                fontSize: 9,
+                                fontWeight: FontWeight.w700,
+                                color: Colors.orange,
+                                letterSpacing: 0.5,
+                              ),
+                            ),
+                          ),
+                        SizedBox(
+                          height: 28,
+                          width: 44,
+                          child: Transform.scale(
+                            scale: 0.75,
+                            child: Switch(
+                              value: isCompleted,
+                              activeColor: Colors.white,
+                              activeTrackColor: AppColors.primary,
+                              inactiveThumbColor: Colors.grey[400],
+                              inactiveTrackColor: Colors.grey[200],
+                              onChanged: (value) async {
+                                final updatedTx = transaction.copyWith(
+                                  estado: value ? 'completa' : 'pendiente',
+                                );
+                                if (value) {
+                                  await ref.read(transactionsNotifierProvider.notifier).markAsComplete(transaction);
+                                } else {
+                                  await ref.read(transactionsNotifierProvider.notifier).markAsPending(transaction);
+                                }
+                                ref.read(financeServiceProvider).updateAfterTransaction(updatedTx, ref);
+                              },
+                            ),
                           ),
                         ),
-                        const SizedBox(width: 4),
                         Material(
                           color: Colors.transparent,
                           child: PopupMenuButton<String>(
-                            padding: EdgeInsets.zero,
                             icon: Icon(
                               Icons.more_vert_rounded,
                               size: 20,
-                              color: isDark ? Colors.white60 : AppColors.textPrimary.withOpacity(0.4),
+                              color: isDark ? Colors.white38 : AppColors.textPrimary.withOpacity(0.3),
                             ),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                            padding: EdgeInsets.zero,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(AppColors.radiusMedium),
+                            ),
                             onSelected: (value) {
                               if (value == 'edit') onEdit?.call();
                               if (value == 'delete') onDelete?.call();
@@ -472,9 +513,9 @@ class TransactionTile extends ConsumerWidget { // Corrección v4: Cambiado a Con
                                 value: 'delete',
                                 child: Row(
                                   children: [
-                                    const Icon(Icons.delete_outline, size: 18, color: Colors.red),
+                                    const Icon(Icons.delete_outline, size: 18, color: AppColors.error),
                                     const SizedBox(width: 8),
-                                    Text('Eliminar', style: GoogleFonts.montserrat(fontSize: AppColors.bodySmall, color: Colors.red)),
+                                    Text('Eliminar', style: GoogleFonts.montserrat(fontSize: AppColors.bodySmall, color: AppColors.error)),
                                   ],
                                 ),
                               ),
