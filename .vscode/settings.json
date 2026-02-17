@@ -1,0 +1,5 @@
+{
+  "dart.flutterSelectDeviceWhenConnected": false,
+  "dart.flutterRunMode": "web",
+  "dart.flutterWebRenderer": "html"
+}

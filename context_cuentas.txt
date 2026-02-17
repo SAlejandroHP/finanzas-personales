@@ -1,0 +1,28 @@
+	        Padding(
+	          padding: const EdgeInsets.symmetric(horizontal: 4),
+	          child: Row(
+	            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+	            children: [
+	              Text(
+	                'CUENTAS',
+	                style: GoogleFonts.montserrat(
+	                  fontSize: 13,
+	                  fontWeight: FontWeight.w700,
+	                  color: AppColors.primary.withOpacity(0.8),
+	                  letterSpacing: 1.1,
+	                ),
+	              ),
+	              GestureDetector(
+	                onTap: () => context.go('/accounts'),
+	                child: Text(
+	                  'Ver todas',
+	                  style: GoogleFonts.montserrat(
+	                    fontSize: 12,
+	                    fontWeight: FontWeight.w600,
+	                    color: AppColors.primary,
+	                  ),
+	                ),
+	              ),
+	            ],
+	          ),
+	        ),

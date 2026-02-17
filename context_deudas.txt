@@ -1,0 +1,28 @@
+    final debtsAsync = ref.watch(debtsListProvider);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 4),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'DEUDAS PENDIENTES',
+                style: GoogleFonts.montserrat(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.primary.withOpacity(0.8),
+                  letterSpacing: 1.1,
+                ),
+              ),
+              TextButton(
+                onPressed: () => context.push('/settings/debts'),
+                child: Text(
+                  'Ver todas',
+                  style: GoogleFonts.montserrat(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.primary,
+                  ),
