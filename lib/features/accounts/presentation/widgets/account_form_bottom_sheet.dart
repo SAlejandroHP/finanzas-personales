@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:uuid/uuid.dart';
@@ -13,12 +12,12 @@ import '../../../../core/widgets/bank_logo.dart';
 import '../../../../core/network/supabase_client.dart';
 import '../../models/account_model.dart';
 import '../../models/bank_model.dart';
+import '../../models/currency_model.dart';
 import '../providers/accounts_provider.dart';
 import '../providers/banks_provider.dart';
 import '../providers/currencies_provider.dart';
 
 /// Widget bottom sheet deslizable para crear o editar una cuenta.
-/// Usa DraggableScrollableSheet para permitir redimensionamiento.
 class AccountFormBottomSheet extends ConsumerStatefulWidget {
   const AccountFormBottomSheet({Key? key}) : super(key: key);
 
@@ -66,7 +65,7 @@ class _AccountFormBottomSheetState extends ConsumerState<AccountFormBottomSheet>
     _limiteCreditoFocusNode.addListener(() => setState(() {}));
     _deudaActualFocusNode.addListener(() => setState(() {}));
 
-    // Si hay una cuenta seleccionada (modo edición), carga los datos
+    // Cargar datos si es edición o hay banco preseleccionado
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final selectedAccount = ref.read(selectedAccountProvider);
       if (selectedAccount != null) {
@@ -75,7 +74,6 @@ class _AccountFormBottomSheetState extends ConsumerState<AccountFormBottomSheet>
         setState(() {
           _selectedTipo = selectedAccount.tipo;
           _selectedMonedaId = selectedAccount.monedaId;
-          // Cargar banco si existe
           if (selectedAccount.bancoId != null) {
             _selectedBank = BankModel(
               id: selectedAccount.bancoId!,
@@ -89,14 +87,12 @@ class _AccountFormBottomSheetState extends ConsumerState<AccountFormBottomSheet>
           }
         });
       } else {
-        // Si no es edición, verifica si hay un banco preseleccionado desde el catálogo
         final preselectedBank = ref.read(selectedBankProvider);
         if (preselectedBank != null) {
           setState(() {
             _selectedBank = preselectedBank;
-            // Limpiar el provider después de usarlo
-            Future.microtask(() => ref.read(selectedBankProvider.notifier).state = null);
           });
+          ref.read(selectedBankProvider.notifier).state = null;
         }
       }
     });
@@ -168,111 +164,10 @@ class _AccountFormBottomSheetState extends ConsumerState<AccountFormBottomSheet>
     controller.selection = TextSelection.collapsed(offset: selection.start + op.length);
   }
 
-  Widget _buildAdaptiveFooter(bool isDark) {
-    if (_saldoInicialFocusNode.hasFocus || _limiteCreditoFocusNode.hasFocus || _deudaActualFocusNode.hasFocus) {
-      return _buildCalculatorToolbar(isDark);
-    }
-
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-      child: Row(
-        children: [
-          Expanded(
-            child: AppButton(
-              label: 'Cancelar',
-              variant: 'outlined',
-              onPressed: _isLoading ? null : () => Navigator.of(context).pop(),
-            ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: AppButton(
-              label: (ref.read(selectedAccountProvider) != null) ? 'Actualizar' : 'Crear',
-              isLoading: _isLoading,
-              onPressed: _isLoading ? null : _handleSave,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildCalculatorToolbar(bool isDark) {
-    final operators = ['+', '-', '*', '/'];
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
-        border: Border(top: BorderSide(color: isDark ? Colors.white10 : Colors.black12)),
-      ),
-      child: SafeArea(
-        top: false,
-        child: Row(
-          children: [
-            ...operators.map((op) => Expanded(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 4),
-                child: InkWell(
-                  onTap: () => _insertOperator(op),
-                  borderRadius: BorderRadius.circular(8),
-                  child: Container(
-                    height: 44,
-                    alignment: Alignment.center,
-                    decoration: BoxDecoration(
-                      color: isDark ? Colors.white.withOpacity(0.05) : Colors.grey[100],
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Text(op, style: GoogleFonts.montserrat(fontSize: AppColors.titleMedium, fontWeight: FontWeight.w600, color: AppColors.primary)),
-                  ),
-                ),
-              ),
-            )),
-            const SizedBox(width: 8),
-            ValueListenableBuilder<double?>(
-              valueListenable: _calculatorResult,
-              builder: (context, result, _) {
-                return InkWell(
-                  onTap: () {
-                    final focusNode = _saldoInicialFocusNode.hasFocus ? _saldoInicialFocusNode : 
-                                     _limiteCreditoFocusNode.hasFocus ? _limiteCreditoFocusNode : 
-                                     _deudaActualFocusNode;
-                    final controller = _saldoInicialFocusNode.hasFocus ? _saldoInicialController : 
-                                      _limiteCreditoFocusNode.hasFocus ? _limiteCreditoController : 
-                                      _deudaActualController;
-                    
-                    if (result != null) {
-                      controller.text = result.toStringAsFixed(2);
-                    }
-                    focusNode.unfocus();
-                  },
-                  child: Container(
-                    height: 44,
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    decoration: BoxDecoration(color: AppColors.primary, borderRadius: BorderRadius.circular(8)),
-                    child: const Center(child: Icon(Icons.check_rounded, color: Colors.white, size: 24)),
-                  ),
-                );
-              }
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  /// Valida y guarda la cuenta
   Future<void> _handleSave() async {
-    if (!_formKey.currentState!.validate()) {
-      return;
-    }
-
-    if (_selectedTipo == null) {
-      _showError('Por favor selecciona un tipo de cuenta');
-      return;
-    }
-
-    if (_selectedMonedaId == null) {
-      _showError('Por favor selecciona una moneda');
+    if (!_formKey.currentState!.validate()) return;
+    if (_selectedTipo == null || _selectedMonedaId == null) {
+      _showError('Por favor completa los campos requeridos');
       return;
     }
 
@@ -298,10 +193,8 @@ class _AccountFormBottomSheetState extends ConsumerState<AccountFormBottomSheet>
       );
 
       if (selectedAccount != null) {
-        // Modo edición
         await ref.read(accountsNotifierProvider.notifier).updateAccount(account);
       } else {
-        // Modo creación
         final limiteCredito = double.tryParse(_limiteCreditoController.text);
         final deudaActual = double.tryParse(_deudaActualController.text) ?? 0.0;
         
@@ -313,30 +206,18 @@ class _AccountFormBottomSheetState extends ConsumerState<AccountFormBottomSheet>
       }
 
       if (mounted) {
-        showAppToast(
-          context,
-          message: selectedAccount != null
-              ? 'Cuenta actualizada'
-              : 'Cuenta creada exitosamente',
-          type: ToastType.success,
-        );
+        showAppToast(context, message: 'Cuenta guardada', type: ToastType.success);
         Navigator.of(context).pop();
       }
     } catch (e) {
       _showError('Error al guardar: $e');
     } finally {
-      if (mounted) {
-        setState(() => _isLoading = false);
-      }
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
   void _showError(String message) {
-    showAppToast(
-      context,
-      message: message,
-      type: ToastType.error,
-    );
+    showAppToast(context, message: message, type: ToastType.error);
   }
 
   @override
@@ -346,541 +227,212 @@ class _AccountFormBottomSheetState extends ConsumerState<AccountFormBottomSheet>
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final currenciesAsync = ref.watch(currenciesProvider);
 
-    // Corrección: Usar DraggableScrollableSheet para homologar con otros canvas
     return DraggableScrollableSheet(
-      initialChildSize: 0.85,  // Altura inicial
-      minChildSize: 0.4,        // Altura mínima
-      maxChildSize: 0.85,       // Altura máxima
+      initialChildSize: 0.85,
+      minChildSize: 0.4,
+      maxChildSize: 0.95,
       expand: false,
       builder: (context, scrollController) {
-        return Container(
-          decoration: BoxDecoration(
-            color: isDark ? AppColors.surfaceDark : Colors.white,
-            borderRadius: const BorderRadius.only(
-              topLeft: Radius.circular(24),
-              topRight: Radius.circular(24),
+        return GestureDetector(
+          onTap: () => FocusScope.of(context).unfocus(),
+          child: Container(
+            decoration: BoxDecoration(
+              color: isDark ? AppColors.surfaceDark : Colors.white,
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(AppColors.radiusXLarge)),
             ),
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // Header con título y botón cerrar
-              // Corrección: Padding homologado (horizontal 16, vertical 8)
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      isEdit ? 'Editar cuenta' : 'Nueva cuenta',
-                      style: GoogleFonts.montserrat(
-                        fontSize: AppColors.titleSmall,
-                        fontWeight: FontWeight.w600,
-                        color: isDark ? Colors.white : AppColors.textPrimary,
-                      ),
-                    ),
-                    IconButton(
-                      icon: const Icon(Icons.close),
-                      color: isDark ? Colors.white70 : Colors.grey[700],
-                      onPressed: () => Navigator.of(context).pop(),
-                      padding: const EdgeInsets.all(4),
-                      constraints: const BoxConstraints(),
-                    ),
-                  ],
+            child: Column(
+              children: [
+                Center(
+                  child: Container(
+                    margin: const EdgeInsets.only(top: 12),
+                    width: 40, height: 4,
+                    decoration: BoxDecoration(color: isDark ? Colors.white24 : Colors.grey[300], borderRadius: BorderRadius.circular(2)),
+                  ),
                 ),
-              ),
-              
-              // Línea divisora
-              Divider(
-                height: 1,
-                color: isDark ? Colors.white10 : Colors.grey[300],
-              ),
-              
-              // Contenido con scroll
-              Flexible(
-                child: SingleChildScrollView(
-                  controller: scrollController,
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-                  child: Form(
-                    key: _formKey,
-                    child: Column(
-                      children: [
-                          // Campo de nombre
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(20, 16, 12, 12),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(isEdit ? 'Editar Cuenta' : 'Nueva Cuenta', style: GoogleFonts.montserrat(fontSize: AppColors.titleMedium, fontWeight: FontWeight.w700)),
+                      IconButton(icon: const Icon(Icons.close_rounded), onPressed: () => Navigator.of(context).pop()),
+                    ],
+                  ),
+                ),
+                Divider(height: 1, color: isDark ? Colors.white10 : Colors.grey[100]),
+                Expanded(
+                  child: SingleChildScrollView(
+                    controller: scrollController,
+                    padding: const EdgeInsets.all(20),
+                    child: Form(
+                      key: _formKey,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          _buildSectionTitle('INFORMACIÓN BÁSICA', isDark),
+                          const SizedBox(height: 12),
                           AppTextField(
                             label: 'Nombre de la cuenta',
                             controller: _nombreController,
-                            prefixIcon: Icons.title_outlined,
+                            hintText: 'Ej: Nómina, Ahorros, etc.',
+                            prefixIcon: Icons.badge_outlined,
                             enabled: !_isLoading,
+                            onSubmitted: (_) => FocusScope.of(context).nextFocus(),
                           ),
-                          const SizedBox(height: 16),
-
-                          // Dropdown de tipo
-                          DropdownButtonFormField<String>(
-                            value: _selectedTipo,
-                            decoration: InputDecoration(
-                              labelText: 'Tipo de cuenta',
-                            labelStyle: GoogleFonts.montserrat(fontSize: AppColors.bodyMedium),
-                            filled: true,
-                            fillColor: isDark ? AppColors.surfaceDark : Colors.white,
-                            contentPadding: const EdgeInsets.symmetric(
-                              horizontal: 16,
-                              vertical: 10,
-                            ),
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(12),
-                              borderSide: BorderSide.none,
-                            ),
-                            prefixIcon: const Icon(Icons.list_outlined),
-                          ),
-                          items: AccountModel.tiposPermitidos.map((tipo) {
-                            return DropdownMenuItem(
-                              value: tipo,
-                              child: Text(
-                                _formatTipoName(tipo),
-                                style: GoogleFonts.montserrat(fontSize: AppColors.bodyMedium),
-                              ),
-                            );
-                          }).toList(),
-                          onChanged: _isLoading
-                              ? null
-                              : (value) {
-                                  setState(() => _selectedTipo = value);
-                                },
-                          validator: (value) {
-                            if (value == null || value.isEmpty) {
-                              return 'Selecciona un tipo';
-                            }
-                            return null;
-                          },
-                        ),
-                        const SizedBox(height: 16),
-
-                        // Dropdown de moneda
-                        currenciesAsync.when(
-                          loading: () => const Center(
-                            child: CircularProgressIndicator(),
-                          ),
-                          error: (error, stack) => Text(
-                            'Error al cargar monedas',
-                            style: GoogleFonts.montserrat(
-                              color: AppColors.secondary,
-                            ),
-                          ),
-                          data: (currencies) {
-                            // Si no hay moneda seleccionada y hay monedas disponibles, selecciona MXN por defecto
-                            if (_selectedMonedaId == null && currencies.isNotEmpty) {
-                              final mxn = currencies.firstWhere(
-                                (c) => c.codigo == 'MXN',
-                                orElse: () => currencies.first,
-                              );
-                              _selectedMonedaId = mxn.id;
-                            }
-
-                            return DropdownButtonFormField<String>(
-                              value: _selectedMonedaId,
-                              decoration: InputDecoration(
-                                labelText: 'Moneda',
-                                labelStyle: GoogleFonts.montserrat(fontSize: AppColors.bodyMedium),
-                                filled: true,
-                                fillColor: isDark ? AppColors.surfaceDark : Colors.white,
-                                contentPadding: const EdgeInsets.symmetric(
-                                  horizontal: 16,
-                                  vertical: 10,
-                                ),
-                                border: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                  borderSide: BorderSide.none,
-                                ),
-                                prefixIcon: const Icon(Icons.payments_outlined),
-                              ),
-                              items: currencies.map((currency) {
-                                return DropdownMenuItem(
-                                  value: currency.id,
-                                  child: Text(
-                                    '${currency.codigo} - ${currency.nombre}',
-                                    style: GoogleFonts.montserrat(fontSize: AppColors.bodyMedium),
-                                  ),
-                                );
-                              }).toList(),
-                              onChanged: _isLoading
-                                  ? null
-                                  : (value) {
-                                      setState(() => _selectedMonedaId = value);
-                                    },
-                              validator: (value) {
-                                if (value == null || value.isEmpty) {
-                                  return 'Selecciona una moneda';
-                                }
-                                return null;
-                              },
-                            );
-                          },
-                        ),
-                        const SizedBox(height: 16),
-
-                        // Selector de banco de Belvo
-                        _buildBankSelector(context, isDark),
-
-                        const SizedBox(height: 16),
-
-                        // Campos específicos para Tarjeta de Crédito
-                        if (_selectedTipo == 'tarjeta_credito') ...[
-                          Column(
+                          const SizedBox(height: 24),
+                          _buildSectionTitle('TIPO DE CUENTA', isDark),
+                          const SizedBox(height: 12),
+                          _buildTipoSelector(isDark),
+                          const SizedBox(height: 24),
+                          _buildSectionTitle('CONFIGURACIÓN', isDark),
+                          const SizedBox(height: 12),
+                          Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              AppTextField(
-                                label: 'Límite de crédito',
-                                controller: _limiteCreditoController,
-                                focusNode: _limiteCreditoFocusNode,
-                                keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                                prefixIcon: Icons.speed_outlined,
-                                enabled: !_isLoading,
-                                onSubmitted: (_) {
-                                  if (_calculatorResult.value != null) {
-                                    _limiteCreditoController.text = _calculatorResult.value!.toStringAsFixed(2);
-                                  }
-                                  _limiteCreditoFocusNode.unfocus();
-                                },
-                              ),
-                              if (_limiteCreditoFocusNode.hasFocus)
-                                ValueListenableBuilder<double?>(
-                                  valueListenable: _calculatorResult,
-                                  builder: (context, result, _) {
-                                    if (result == null) return const SizedBox.shrink();
-                                    return Padding(
-                                      padding: const EdgeInsets.only(top: 4),
-                                      child: Text('= ${_moneyFormatter.format(result)}', style: GoogleFonts.montserrat(fontSize: AppColors.bodySmall, color: Colors.green, fontWeight: FontWeight.w600)),
-                                    );
-                                  },
+                              Expanded(
+                                flex: 2,
+                                child: currenciesAsync.when(
+                                  loading: () => const Center(child: CircularProgressIndicator(strokeWidth: 2)),
+                                  error: (_, __) => const Icon(Icons.error_outline),
+                                  data: (currencies) => _buildCurrencyDropdown(currencies, isDark),
                                 ),
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                flex: 3,
+                                child: _buildBankSelectorInRow(context, isDark),
+                              ),
                             ],
                           ),
+                          const SizedBox(height: 24),
+                          _buildSectionTitle('DETALLE FINANCIERO', isDark),
                           const SizedBox(height: 16),
-                          Column(
-                            children: [
-                              AppTextField(
-                                label: 'Deuda actual / Monto utilizado',
-                                controller: _deudaActualController,
-                                focusNode: _deudaActualFocusNode,
-                                keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                                prefixIcon: Icons.credit_score_outlined,
-                                enabled: !_isLoading,
-                                onSubmitted: (_) {
-                                  if (_calculatorResult.value != null) {
-                                    _deudaActualController.text = _calculatorResult.value!.toStringAsFixed(2);
-                                  }
-                                  _deudaActualFocusNode.unfocus();
-                                },
-                              ),
-                              if (_deudaActualFocusNode.hasFocus)
-                                ValueListenableBuilder<double?>(
-                                  valueListenable: _calculatorResult,
-                                  builder: (context, result, _) {
-                                    if (result == null) return const SizedBox.shrink();
-                                    return Padding(
-                                      padding: const EdgeInsets.only(top: 4),
-                                      child: Text('= ${_moneyFormatter.format(result)}', style: GoogleFonts.montserrat(fontSize: AppColors.bodySmall, color: Colors.green, fontWeight: FontWeight.w600)),
-                                    );
-                                  },
-                                ),
-                            ],
-                          ),
-                          const SizedBox(height: 8),
-                          Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 4),
-                            child: Text(
-                              'El disponible será: \$${((double.tryParse(_limiteCreditoController.text) ?? 0.0) - (double.tryParse(_deudaActualController.text) ?? 0.0)).toStringAsFixed(2)}',
-                              style: GoogleFonts.montserrat(
-                                fontSize: AppColors.bodySmall,
-                                fontWeight: FontWeight.w600,
-                                color: AppColors.primary,
-                              ),
-                            ),
-                          ),
-                          const SizedBox(height: 16),
+                          if (_selectedTipo == 'tarjeta_credito') ...[
+                            _buildMontoField(label: 'Límite de crédito', controller: _limiteCreditoController, focusNode: _limiteCreditoFocusNode, icon: Icons.speed_rounded, isDark: isDark),
+                            const SizedBox(height: 16),
+                            _buildMontoField(label: 'Deuda actual', controller: _deudaActualController, focusNode: _deudaActualFocusNode, icon: Icons.credit_score_rounded, isDark: isDark),
+                            const SizedBox(height: 12),
+                            _buildInfoBox('Disponible: \$${((double.tryParse(_limiteCreditoController.text) ?? 0.0) - (double.tryParse(_deudaActualController.text) ?? 0.0)).toStringAsFixed(2)}', isDark),
+                          ] else ...[
+                            _buildMontoField(label: 'Saldo inicial', controller: _saldoInicialController, focusNode: _saldoInicialFocusNode, icon: Icons.account_balance_wallet_rounded, isDark: isDark),
+                            const SizedBox(height: 12),
+                            _buildInfoBox('Este monto se establecerá como tu saldo actual.', isDark, isHelp: true),
+                          ],
                         ],
-
-                        // Campo de saldo inicial (Ocultar si es TC para no confundir, se calcula de limite-deuda)
-                        if (_selectedTipo != 'tarjeta_credito') ...[
-                          Column(
-                            children: [
-                              AppTextField(
-                                label: 'Saldo inicial',
-                                controller: _saldoInicialController,
-                                focusNode: _saldoInicialFocusNode,
-                                keyboardType: const TextInputType.numberWithOptions(
-                                  decimal: true,
-                                ),
-                                prefixIcon: Icons.account_balance_wallet_outlined,
-                                enabled: !_isLoading,
-                                onSubmitted: (_) {
-                                  if (_calculatorResult.value != null) {
-                                    _saldoInicialController.text = _calculatorResult.value!.toStringAsFixed(2);
-                                  }
-                                  _saldoInicialFocusNode.unfocus();
-                                },
-                              ),
-                              if (_saldoInicialFocusNode.hasFocus)
-                                ValueListenableBuilder<double?>(
-                                  valueListenable: _calculatorResult,
-                                  builder: (context, result, _) {
-                                    if (result == null) return const SizedBox.shrink();
-                                    return Padding(
-                                      padding: const EdgeInsets.only(top: 4),
-                                      child: Text('= ${_moneyFormatter.format(result)}', style: GoogleFonts.montserrat(fontSize: AppColors.bodySmall, color: Colors.green, fontWeight: FontWeight.w600)),
-                                    );
-                                  },
-                                ),
-                            ],
-                          ),
-                          const SizedBox(height: 8),
-
-                          // Ayuda sobre el saldo
-                          Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 4),
-                            child: Text(
-                              'El saldo inicial se establecerá como saldo actual al crear la cuenta',
-                              style: GoogleFonts.montserrat(
-                                fontSize: AppColors.bodySmall,
-                                color: Colors.grey[600],
-                              ),
-                            ),
-                          ),
-                        ],
-                      ],
+                      ),
                     ),
                   ),
                 ),
-              ),
-              
-              // Botones de acción o toolbar de calculadora
-              _buildAdaptiveFooter(isDark),
-            ],
+                _buildAdaptiveFooter(isDark),
+              ],
+            ),
           ),
         );
       },
     );
   }
 
-  /// Construye el selector de banco usando banksProvider
-  Widget _buildBankSelector(BuildContext context, bool isDark) {
+  Widget _buildSectionTitle(String title, bool isDark) {
+    return Text(title, style: GoogleFonts.montserrat(fontSize: AppColors.bodySmall, fontWeight: FontWeight.w800, letterSpacing: 1.2, color: isDark ? Colors.white38 : Colors.grey[500]));
+  }
+
+  Widget _buildTipoSelector(bool isDark) {
+    return SizedBox(
+      height: 90,
+      child: ListView.separated(
+        scrollDirection: Axis.horizontal,
+        itemCount: AccountModel.tiposPermitidos.length,
+        separatorBuilder: (_, __) => const SizedBox(width: 12),
+        itemBuilder: (context, index) {
+          final tipo = AccountModel.tiposPermitidos[index];
+          final isSelected = _selectedTipo == tipo;
+          return GestureDetector(
+            onTap: _isLoading ? null : () => setState(() => _selectedTipo = tipo),
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 200),
+              width: 100,
+              decoration: BoxDecoration(
+                color: isSelected ? AppColors.primary.withOpacity(0.1) : (isDark ? Colors.white.withOpacity(0.05) : Colors.grey[50]),
+                borderRadius: BorderRadius.circular(AppColors.radiusMedium),
+                border: Border.all(color: isSelected ? AppColors.primary : (isDark ? Colors.white10 : Colors.grey[200]!), width: isSelected ? 2 : 1),
+              ),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(_getTipoIcon(tipo), color: isSelected ? AppColors.primary : (isDark ? Colors.white30 : Colors.grey[400]), size: 28),
+                  const SizedBox(height: 8),
+                  Text(_formatTipoName(tipo), textAlign: TextAlign.center, style: GoogleFonts.montserrat(fontSize: 10, fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500, color: isSelected ? AppColors.primary : (isDark ? Colors.white54 : Colors.grey[600]))),
+                ],
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  IconData _getTipoIcon(String tipo) {
+    switch (tipo) {
+      case 'efectivo': return Icons.payments_rounded;
+      case 'chequera': return Icons.account_balance_rounded;
+      case 'ahorro': return Icons.savings_rounded;
+      case 'tarjeta_credito': return Icons.credit_card_rounded;
+      case 'inversion': return Icons.trending_up_rounded;
+      default: return Icons.help_outline_rounded;
+    }
+  }
+
+  String _formatTipoName(String tipo) {
+    switch (tipo) {
+      case 'tarjeta_credito': return 'T. Crédito';
+      case 'ahorro': return 'Ahorro';
+      case 'inversion': return 'Inversión';
+      case 'chequera': return 'Débito';
+      default: return tipo.isNotEmpty ? tipo[0].toUpperCase() + tipo.substring(1) : '';
+    }
+  }
+
+  Widget _buildCurrencyDropdown(List<CurrencyModel> currencies, bool isDark) {
+    if (_selectedMonedaId == null && currencies.isNotEmpty) {
+      final mxn = currencies.firstWhere(
+        (c) => c.codigo == 'MXN', 
+        orElse: () => currencies.first,
+      );
+      _selectedMonedaId = mxn.id;
+    }
+    return DropdownButtonFormField<String>(
+      value: _selectedMonedaId,
+      decoration: _getInputDecoration('Moneda', Icons.currency_exchange_rounded, isDark),
+      style: GoogleFonts.montserrat(fontSize: 13, color: isDark ? Colors.white : AppColors.textPrimary),
+      dropdownColor: isDark ? AppColors.surfaceDark : Colors.white,
+      items: currencies.map<DropdownMenuItem<String>>((c) => DropdownMenuItem(
+        value: c.id, 
+        child: Text(c.codigo),
+      )).toList(),
+      onChanged: _isLoading ? null : (v) => setState(() => _selectedMonedaId = v),
+    );
+  }
+
+  Widget _buildBankSelectorInRow(BuildContext context, bool isDark) {
     final banksAsync = ref.watch(banksProvider('MX'));
-
     return banksAsync.when(
-      loading: () => _buildBankLoadingState(),
-      error: (error, stack) => _buildBankErrorState(),
-      data: (banks) => Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Banco (Opcional)',
-            style: GoogleFonts.montserrat(
-              fontSize: AppColors.bodyMedium,
-              fontWeight: FontWeight.w600,
-              color: isDark ? Colors.white70 : Colors.grey[700],
-            ),
-          ),
-          const SizedBox(height: 8),
-          Container(
-            decoration: BoxDecoration(
-              color: isDark ? const Color(0xFF2A2A2A) : Colors.grey[100],
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(
-                color: isDark ? Colors.white10 : Colors.black12,
-              ),
-            ),
-            child: Material(
-              color: Colors.transparent,
-              child: InkWell(
-                onTap: _isLoading ? null : () => _showBankPicker(context, banks, isDark),
-                borderRadius: BorderRadius.circular(12),
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                  child: Row(
-                    children: [
-                      if (_selectedBank?.logo != null)
-                        Container(
-                          width: 28,
-                          height: 28,
-                          margin: const EdgeInsets.only(right: 12),
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(6),
-                            border: Border.all(color: Colors.black12),
-                          ),
-                          child: ClipRRect(
-                            borderRadius: BorderRadius.circular(6),
-                          child: BankLogo(
-                            bankName: _selectedBank!.displayName,
-                            primaryColor: _selectedBank!.primaryColor,
-                            size: 28,
-                          ),
-                          ),
-                        )
-                      else
-                        Container(
-                          width: 28,
-                          height: 28,
-                          margin: const EdgeInsets.only(right: 12),
-                          decoration: BoxDecoration(
-                            color: AppColors.primary.withOpacity(0.1),
-                            borderRadius: BorderRadius.circular(6),
-                          ),
-                          child: const Icon(
-                            Icons.account_balance_outlined,
-                            size: 16,
-                            color: AppColors.primary,
-                          ),
-                        ),
-                      Expanded(
-                        child: Text(
-                          _selectedBank?.displayName ?? 'Selecciona un banco',
-                          style: GoogleFonts.montserrat(
-                            fontSize: AppColors.bodyMedium,
-                            color: _selectedBank == null
-                                ? (isDark ? Colors.white38 : Colors.grey)
-                                : (isDark ? Colors.white : Colors.black87),
-                          ),
-                        ),
-                      ),
-                      const Icon(Icons.keyboard_arrow_right, size: 20, color: Colors.grey),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildBankLoadingState() {
-    return Container(
-      height: 48,
-      decoration: BoxDecoration(
-        color: Colors.grey.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: const Center(child: SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))),
-    );
-  }
-
-  Widget _buildBankErrorState() {
-    return Text(
-      'No se pudieron cargar los bancos',
-      style: GoogleFonts.montserrat(fontSize: AppColors.bodySmall, color: Colors.red),
-    );
-  }
-
-  void _showBankPicker(BuildContext context, List<BankModel> banks, bool isDark) {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      useRootNavigator: true,
-      backgroundColor: Colors.transparent,
-      builder: (context) => DraggableScrollableSheet(
-        initialChildSize: 0.7,
-        minChildSize: 0.5,
-        maxChildSize: 0.95,
-        expand: false,
-        builder: (_, scrollController) => Container(
-          decoration: BoxDecoration(
-            color: isDark ? AppColors.surfaceDark : Colors.white,
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-          ),
-          child: Column(
+      loading: () => Container(height: 52, decoration: _getBoxDecoration(isDark), child: const Center(child: SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2)))),
+      error: (_, __) => Container(height: 52, decoration: _getBoxDecoration(isDark), child: const Icon(Icons.error_outline)),
+      data: (banks) => GestureDetector(
+        onTap: _isLoading ? null : () => _showBankPicker(context, banks, isDark),
+        child: Container(
+          height: 52,
+          padding: const EdgeInsets.symmetric(horizontal: 12),
+          decoration: _getBoxDecoration(isDark),
+          child: Row(
             children: [
-              Padding(
-                padding: const EdgeInsets.all(16),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      'Selecciona un banco',
-                      style: GoogleFonts.montserrat(
-                        fontSize: AppColors.titleSmall,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    IconButton(
-                      icon: const Icon(Icons.close),
-                      onPressed: () => Navigator.pop(context),
-                    ),
-                  ],
-                ),
-              ),
-              Expanded(
-                child: banks.isEmpty
-                    ? Center(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(
-                              Icons.account_balance_outlined,
-                              size: 48,
-                              color: Colors.grey[400],
-                            ),
-                            const SizedBox(height: 16),
-                            Text(
-                              'No hay bancos disponibles',
-                              style: GoogleFonts.montserrat(
-                                fontSize: AppColors.bodyMedium,
-                                color: Colors.grey[600],
-                              ),
-                            ),
-                            const SizedBox(height: 24),
-                            ListTile(
-                              leading: const CircleAvatar(
-                                backgroundColor: Colors.grey,
-                                child: Icon(Icons.not_interested, color: Colors.white, size: 20),
-                              ),
-                              title: Text('Ninguno', style: GoogleFonts.montserrat(fontWeight: FontWeight.w500)),
-                              onTap: () {
-                                setState(() => _selectedBank = null);
-                                Navigator.pop(context);
-                              },
-                            ),
-                          ],
-                        ),
-                      )
-                    : ListView.builder(
-                        controller: scrollController,
-                        padding: const EdgeInsets.symmetric(horizontal: 16),
-                        itemCount: banks.length + 1,
-                        itemBuilder: (context, index) {
-                          if (index == 0) {
-                            return ListTile(
-                              leading: const CircleAvatar(
-                                backgroundColor: Colors.grey,
-                                child: Icon(Icons.not_interested, color: Colors.white, size: 20),
-                              ),
-                              title: Text('Ninguno', style: GoogleFonts.montserrat(fontWeight: FontWeight.w500)),
-                              onTap: () {
-                                setState(() => _selectedBank = null);
-                                Navigator.pop(context);
-                              },
-                            );
-                          }
-                          
-                          final bank = banks[index - 1];
-                          return ListTile(
-                            leading: BankLogo(
-                              bankName: bank.displayName,
-                              primaryColor: bank.primaryColor,
-                              size: 36,
-                            ),
-                            title: Text(
-                              bank.displayName,
-                              style: GoogleFonts.montserrat(fontWeight: FontWeight.w500),
-                            ),
-                            onTap: () {
-                              setState(() => _selectedBank = bank);
-                              Navigator.pop(context);
-                            },
-                          );
-                        },
-                      ),
-              ),
+              if (_selectedBank != null)
+                ClipRRect(borderRadius: BorderRadius.circular(4), child: BankLogo(bankName: _selectedBank!.displayName, primaryColor: _selectedBank!.primaryColor, size: 20))
+              else
+                Icon(Icons.account_balance_rounded, size: 20, color: isDark ? Colors.white24 : Colors.grey[400]),
+              const SizedBox(width: 8),
+              Expanded(child: Text(_selectedBank?.displayName ?? 'Banco', maxLines: 1, overflow: TextOverflow.ellipsis, style: GoogleFonts.montserrat(fontSize: 12, color: _selectedBank == null ? (isDark ? Colors.white24 : Colors.grey[500]) : (isDark ? Colors.white : AppColors.textPrimary)))),
+              Icon(Icons.keyboard_arrow_down_rounded, size: 16, color: isDark ? Colors.white24 : Colors.grey[400]),
             ],
           ),
         ),
@@ -888,23 +440,204 @@ class _AccountFormBottomSheetState extends ConsumerState<AccountFormBottomSheet>
     );
   }
 
-  /// Formatea el nombre del tipo para mostrarlo mejor
-  String _formatTipoName(String tipo) {
-    switch (tipo) {
-      case 'efectivo':
-        return 'Efectivo';
-      case 'chequera':
-        return 'Cuenta de débito';
-      case 'ahorro':
-        return 'Cuenta de ahorro';
-      case 'tarjeta_credito':
-        return 'Tarjeta de crédito';
-      case 'inversion':
-        return 'Inversión';
-      case 'otro':
-        return 'Otro';
-      default:
-        return tipo;
+  Widget _buildMontoField({required String label, required TextEditingController controller, required FocusNode focusNode, required IconData icon, required bool isDark}) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        AppTextField(
+          label: label,
+          controller: controller,
+          focusNode: focusNode,
+          keyboardType: const TextInputType.numberWithOptions(decimal: true),
+          prefixIcon: icon,
+          enabled: !_isLoading,
+          onSubmitted: (_) {
+            if (_calculatorResult.value != null) controller.text = _calculatorResult.value!.toStringAsFixed(2);
+            focusNode.unfocus();
+          },
+        ),
+        if (focusNode.hasFocus)
+          ValueListenableBuilder<double?>(
+            valueListenable: _calculatorResult,
+            builder: (context, result, _) {
+              if (result == null) return const SizedBox.shrink();
+              return Padding(
+                padding: const EdgeInsets.only(top: 8, left: 12),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  decoration: BoxDecoration(color: AppColors.success.withOpacity(0.1), borderRadius: BorderRadius.circular(20)),
+                  child: Row(mainAxisSize: MainAxisSize.min, children: [
+                    const Icon(Icons.calculate_outlined, size: 14, color: AppColors.success),
+                    const SizedBox(width: 6),
+                    Text('= ${_moneyFormatter.format(result)}', style: GoogleFonts.montserrat(fontSize: 12, color: AppColors.success, fontWeight: FontWeight.w700)),
+                  ]),
+                ),
+              );
+            },
+          ),
+      ],
+    );
+  }
+
+  Widget _buildInfoBox(String text, bool isDark, {bool isHelp = false}) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: isHelp ? (isDark ? Colors.white.withOpacity(0.03) : Colors.grey[50]) : AppColors.primary.withOpacity(0.05),
+        borderRadius: BorderRadius.circular(AppColors.radiusMedium),
+        border: Border.all(color: isHelp ? (isDark ? Colors.white10 : Colors.grey[200]!) : AppColors.primary.withOpacity(0.1)),
+      ),
+      child: Row(children: [
+        Icon(isHelp ? Icons.info_outline_rounded : Icons.account_balance_wallet_outlined, size: 18, color: isHelp ? Colors.grey : AppColors.primary),
+        const SizedBox(width: 10),
+        Expanded(child: Text(text, style: GoogleFonts.montserrat(fontSize: 11, color: isDark ? Colors.white60 : Colors.grey[600]))),
+      ]),
+    );
+  }
+
+  InputDecoration _getInputDecoration(String label, IconData icon, bool isDark) {
+    return InputDecoration(
+      labelText: label,
+      labelStyle: GoogleFonts.montserrat(fontSize: 12, color: isDark ? Colors.white38 : Colors.grey[500]),
+      filled: true,
+      fillColor: isDark ? Colors.white.withOpacity(0.05) : Colors.grey[100],
+      border: OutlineInputBorder(borderRadius: BorderRadius.circular(AppColors.radiusMedium), borderSide: BorderSide.none),
+      prefixIcon: Icon(icon, size: 18, color: isDark ? Colors.white38 : Colors.grey[500]),
+    );
+  }
+
+  BoxDecoration _getBoxDecoration(bool isDark) {
+    return BoxDecoration(color: isDark ? Colors.white.withOpacity(0.05) : Colors.grey[100], borderRadius: BorderRadius.circular(AppColors.radiusMedium));
+  }
+
+  Widget _buildAdaptiveFooter(bool isDark) {
+    if (_saldoInicialFocusNode.hasFocus || _limiteCreditoFocusNode.hasFocus || _deudaActualFocusNode.hasFocus) {
+      return _buildCalculatorToolbar(isDark);
     }
+    if (MediaQuery.of(context).viewInsets.bottom > 0) {
+      return Container(
+        padding: const EdgeInsets.all(12),
+        color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            TextButton(onPressed: () => FocusScope.of(context).unfocus(), child: const Text('Ocultar')),
+            ElevatedButton(onPressed: () => FocusScope.of(context).nextFocus(), child: const Text('Siguiente')),
+          ],
+        ),
+      );
+    }
+    return Container(
+      padding: EdgeInsets.fromLTRB(20, 16, 20, MediaQuery.of(context).padding.bottom + 16),
+      decoration: BoxDecoration(color: isDark ? AppColors.surfaceDark : Colors.white, border: Border(top: BorderSide(color: isDark ? Colors.white10 : Colors.grey[100]!))),
+      child: Row(
+        children: [
+          Expanded(child: AppButton(label: 'Cancelar', variant: 'secondary', onPressed: () => Navigator.of(context).pop())),
+          const SizedBox(width: 12),
+          Expanded(child: AppButton(label: (ref.read(selectedAccountProvider) != null) ? 'Actualizar' : 'Crear Cuenta', isLoading: _isLoading, onPressed: _handleSave)),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCalculatorToolbar(bool isDark) {
+    final operators = ['+', '-', '*', '/'];
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(color: isDark ? const Color(0xFF1E1E1E) : Colors.white, border: Border(top: BorderSide(color: isDark ? Colors.white10 : Colors.black12))),
+      child: SafeArea(
+        top: false,
+        child: Row(
+          children: [
+            ...operators.map((op) => Expanded(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 4),
+                child: InkWell(
+                  onTap: () => _insertOperator(op),
+                  child: Container(
+                    height: 48,
+                    alignment: Alignment.center,
+                    decoration: BoxDecoration(color: isDark ? Colors.white.withOpacity(0.05) : Colors.grey[50], borderRadius: BorderRadius.circular(12)),
+                    child: Text(op, style: GoogleFonts.montserrat(fontSize: 20, fontWeight: FontWeight.w600, color: AppColors.primary)),
+                  ),
+                ),
+              ),
+            )),
+            const SizedBox(width: 8),
+            InkWell(
+              onTap: () {
+                final result = _calculatorResult.value;
+                if (result != null) {
+                  if (_saldoInicialFocusNode.hasFocus) _saldoInicialController.text = result.toStringAsFixed(2);
+                  else if (_limiteCreditoFocusNode.hasFocus) _limiteCreditoController.text = result.toStringAsFixed(2);
+                  else if (_deudaActualFocusNode.hasFocus) _deudaActualController.text = result.toStringAsFixed(2);
+                }
+                FocusScope.of(context).unfocus();
+              },
+              child: Container(
+                height: 48,
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                decoration: BoxDecoration(color: AppColors.primary, borderRadius: BorderRadius.circular(12)),
+                child: Row(children: [
+                  const Icon(Icons.check_rounded, color: Colors.white, size: 20),
+                  const SizedBox(width: 8),
+                  Text('HECHO', style: GoogleFonts.montserrat(fontSize: 12, fontWeight: FontWeight.w800, color: Colors.white)),
+                ]),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showBankPicker(BuildContext context, List<BankModel> banks, bool isDark) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => DraggableScrollableSheet(
+        initialChildSize: 0.7,
+        builder: (_, scrollController) => Container(
+          decoration: BoxDecoration(color: isDark ? AppColors.surfaceDark : Colors.white, borderRadius: const BorderRadius.vertical(top: Radius.circular(AppColors.radiusXLarge))),
+          child: Column(
+            children: [
+              Padding(
+                padding: const EdgeInsets.all(20),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text('Bancos', style: GoogleFonts.montserrat(fontSize: 16, fontWeight: FontWeight.w700)),
+                    IconButton(icon: const Icon(Icons.close_rounded), onPressed: () => Navigator.pop(context)),
+                  ],
+                ),
+              ),
+              const Divider(height: 1),
+              Expanded(
+                child: ListView.builder(
+                  controller: scrollController,
+                  itemCount: banks.length + 1,
+                  itemBuilder: (context, index) {
+                    if (index == 0) {
+                      return ListTile(
+                        leading: const CircleAvatar(child: Icon(Icons.not_interested)),
+                        title: const Text('Ninguno'),
+                        onTap: () { setState(() => _selectedBank = null); Navigator.pop(context); },
+                      );
+                    }
+                    final bank = banks[index - 1];
+                    return ListTile(
+                      leading: BankLogo(bankName: bank.displayName, primaryColor: bank.primaryColor, size: 40),
+                      title: Text(bank.displayName),
+                      onTap: () { setState(() => _selectedBank = bank); Navigator.pop(context); },
+                    );
+                  },
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 }
