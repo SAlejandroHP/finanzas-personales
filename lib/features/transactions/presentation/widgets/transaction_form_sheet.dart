@@ -8,7 +8,6 @@ import 'package:collection/collection.dart';
 
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/widgets/app_button.dart';
-import '../../../../core/widgets/app_text_field.dart';
 import '../../../accounts/presentation/providers/accounts_provider.dart';
 import '../../../categories/presentation/providers/categories_provider.dart';
 import '../../../accounts/models/account_model.dart';
@@ -29,13 +28,8 @@ Future<void> showTransactionFormSheet(
   return showModalBottomSheet(
     context: context,
     isScrollControlled: true,
-    useRootNavigator: true, // Esto asegura que aparezca sobre la barra de navegación
-    shape: const RoundedRectangleBorder(
-      borderRadius: BorderRadius.only(
-        topLeft: Radius.circular(24),
-        topRight: Radius.circular(24),
-      ),
-    ),
+    useRootNavigator: true,
+    backgroundColor: Colors.transparent,
     barrierColor: Colors.black.withOpacity(0.5),
     builder: (context) => TransactionFormSheet(
       transaction: transaction,
@@ -394,392 +388,281 @@ class _TransactionFormSheetState extends ConsumerState<TransactionFormSheet> {
     final accounts = ref.watch(accountsWithBalanceProvider);
     final categories = ref.watch(categoriesListProvider);
     final bottomInset = MediaQuery.of(context).viewInsets.bottom;
+    final surfaceColor = isDark ? AppColors.surfaceDark : Colors.white;
 
-    return Padding(
-      padding: EdgeInsets.only(bottom: bottomInset),
-      child: DraggableScrollableSheet(
-        initialChildSize: 0.85,
-        minChildSize: 0.4,
-        maxChildSize: 0.85,
-        expand: false,
-        builder: (context, scrollController) {
-        final body = Column(
-          children: [
-            // Header Minimalista
-            Container(
-              padding: const EdgeInsets.fromLTRB(24, 12, 12, 8),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                   Text(
-                    widget.transaction != null ? 'Editar Movimiento' : 'Nuevo Movimiento',
-                    style: GoogleFonts.montserrat(
-                      fontSize: AppColors.titleSmall,
-                      fontWeight: FontWeight.w700,
-                      color: isDark ? Colors.white : AppColors.textPrimary,
-                    ),
+    return Container(
+      decoration: BoxDecoration(
+        color: surfaceColor,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(AppColors.radiusXLarge)),
+      ),
+      child: Padding(
+        padding: EdgeInsets.only(bottom: bottomInset),
+        child: DraggableScrollableSheet(
+          initialChildSize: 0.85,
+          minChildSize: 0.4,
+          maxChildSize: 0.95,
+          expand: false,
+          builder: (context, scrollController) {
+            return Column(
+              children: [
+                // Barra táctil superior (Grabber Handle)
+                Container(
+                  margin: const EdgeInsets.only(top: AppColors.sm, bottom: AppColors.xs),
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: isDark ? Colors.white24 : Colors.black12,
+                    borderRadius: BorderRadius.circular(AppColors.radiusSmall),
                   ),
-                  IconButton(
-                    icon: Icon(Icons.close_rounded, color: isDark ? Colors.white38 : Colors.grey),
-                    onPressed: () => Navigator.pop(context),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 8),
-
-            // Formulario
-            Expanded(
-              child: SingleChildScrollView(
-                controller: scrollController,
-                child: Padding(
-                  padding: const EdgeInsets.all(AppColors.lg),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+                ),
+                
+                // Header con Título
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: AppColors.lg, vertical: AppColors.sm),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      // Sección de Monto (Héroe)
-                      Center(
-                        child: Column(
-                          children: [
-                            Text(
-                              '¿Cuánto vas a ${_getTipoAction(_tipo)}?',
-                              style: GoogleFonts.montserrat(
-                                fontSize: AppColors.bodySmall,
-                                color: Colors.grey,
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                            const SizedBox(height: 12),
-                            IntrinsicWidth(
-                              child: TextField(
-                                controller: _montoController,
-                                focusNode: _montoFocusNode,
-                                textAlign: TextAlign.center,
-                                keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                                textInputAction: TextInputAction.done,
-                                onSubmitted: (_) {
-                                  // Al presionar "Listo" en el teclado, aplicamos el cálculo y cerramos
-                                  if (_calculatorResult.value != null) {
-                                    setState(() {
-                                      _montoController.text = _moneyFormatter.format(_calculatorResult.value);
-                                      _onMontoChanged();
-                                    });
-                                  }
-                                  _montoFocusNode.unfocus();
-                                },
+                      Text(
+                        widget.transaction != null ? 'Editar Movimiento' : 'Nuevo Movimiento',
+                        style: GoogleFonts.montserrat(
+                          fontSize: AppColors.titleMedium,
+                          fontWeight: FontWeight.w700,
+                          color: isDark ? Colors.white : AppColors.textPrimary,
+                        ),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.close_rounded, size: AppColors.iconMedium),
+                        onPressed: () => Navigator.pop(context),
+                        style: IconButton.styleFrom(
+                          backgroundColor: isDark ? Colors.white.withOpacity(0.05) : Colors.grey[100],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+
+                // Contenido principal
+                Expanded(
+                  child: SingleChildScrollView(
+                    controller: scrollController,
+                    physics: const BouncingScrollPhysics(),
+                    padding: const EdgeInsets.symmetric(horizontal: AppColors.lg),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const SizedBox(height: AppColors.md),
+                        
+                        // AREA HERO: Monto principal
+                        Center(
+                          child: Column(
+                            children: [
+                              Text(
+                                '¿CUÁNTO VAS A ${_getTipoAction(_tipo).toUpperCase()}?',
                                 style: GoogleFonts.montserrat(
-                                  fontSize: 42,
+                                  fontSize: AppColors.bodySmall,
                                   fontWeight: FontWeight.w700,
-                                  color: _getTipoColor(_tipo),
-                                ),
-                                decoration: InputDecoration(
-                                  hintText: '\$ 0.00',
-                                  hintStyle: TextStyle(color: (isDark ? Colors.white : AppColors.textPrimary).withOpacity(0.3)),
-                                  border: InputBorder.none,
-                                  enabledBorder: InputBorder.none,
-                                  focusedBorder: InputBorder.none,
-                                  contentPadding: EdgeInsets.zero,
+                                  letterSpacing: 1.2,
+                                  color: Colors.grey,
                                 ),
                               ),
-                            ),
-                            ValueListenableBuilder<double?>(
-                              valueListenable: _calculatorResult,
-                              builder: (context, result, _) {
-                                if (result == null) return const SizedBox(height: 14);
-                                return Container(
-                                  margin: const EdgeInsets.only(top: 4),
-                                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                                  decoration: BoxDecoration(
-                                    color: Colors.green.withOpacity(0.1),
-                                    borderRadius: BorderRadius.circular(20),
+                              const SizedBox(height: AppColors.sm),
+                              IntrinsicWidth(
+                                child: TextField(
+                                  controller: _montoController,
+                                  focusNode: _montoFocusNode,
+                                  textAlign: TextAlign.center,
+                                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                                  style: GoogleFonts.montserrat(
+                                    fontSize: 44,
+                                    fontWeight: FontWeight.w800,
+                                    color: _getTipoColor(_tipo),
                                   ),
-                                  child: Text(
-                                    '= ${_moneyFormatter.format(result)}',
-                                    style: GoogleFonts.montserrat(
-                                      fontSize: AppColors.bodySmall,
-                                      fontWeight: FontWeight.w600,
-                                      color: Colors.green,
+                                  decoration: InputDecoration(
+                                    hintText: '\$ 0.00',
+                                    hintStyle: TextStyle(
+                                      color: (isDark ? Colors.white24 : Colors.black12),
                                     ),
+                                    border: InputBorder.none,
+                                    enabledBorder: InputBorder.none,
+                                    focusedBorder: InputBorder.none,
+                                    contentPadding: EdgeInsets.zero,
                                   ),
-                                );
-                              },
-                            ),
-                          ],
+                                ),
+                              ),
+                              // Resultado de calculadora (si hay operación)
+                              ValueListenableBuilder<double?>(
+                                valueListenable: _calculatorResult,
+                                builder: (context, result, _) {
+                                  if (result == null) return const SizedBox(height: 24);
+                                  return Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: AppColors.md, vertical: 6),
+                                    decoration: BoxDecoration(
+                                      color: AppColors.success.withOpacity(0.1),
+                                      borderRadius: BorderRadius.circular(AppColors.radiusCircular),
+                                    ),
+                                    child: Text(
+                                      '= ${_moneyFormatter.format(result)}',
+                                      style: GoogleFonts.montserrat(
+                                        fontSize: AppColors.bodyMedium,
+                                        fontWeight: FontWeight.w700,
+                                        color: AppColors.success,
+                                      ),
+                                    ),
+                                  );
+                                },
+                              ),
+                            ],
+                          ),
                         ),
-                      ),
-                      const SizedBox(height: 32),
+                        
+                        const SizedBox(height: AppColors.lg),
 
-                      // Selector de Tipo (Compacto M3)
-                      Row(
-                        children: [
-                          Expanded(child: _buildTypeButton('gasto', 'Gasto', Icons.south_west_rounded, Colors.red, isDark)),
-                          const SizedBox(width: 8),
-                          Expanded(child: _buildTypeButton('ingreso', 'Ingreso', Icons.north_east_rounded, Colors.green, isDark)),
-                          const SizedBox(width: 8),
-                          Expanded(child: _buildTypeButton('transferencia', 'Transf.', Icons.swap_horiz_rounded, AppColors.primary, isDark)),
-                          const SizedBox(width: 8),
-                          Expanded(child: _buildTypeButton('deuda_pago', 'Pago Deuda', Icons.credit_score_rounded, Colors.orange, isDark)),
-                        ],
-                      ),
-                      const SizedBox(height: 24),
+                        // Selectores de Tipo (Pills)
+                        SingleChildScrollView(
+                          scrollDirection: Axis.horizontal,
+                          physics: const BouncingScrollPhysics(),
+                          child: Row(
+                            children: [
+                              _buildTypeButton('gasto', 'Gasto', Icons.south_west_rounded, Colors.red, isDark),
+                              const SizedBox(width: AppColors.sm),
+                              _buildTypeButton('ingreso', 'Ingreso', Icons.north_east_rounded, AppColors.success, isDark),
+                              const SizedBox(width: AppColors.sm),
+                              _buildTypeButton('transferencia', 'Transf.', Icons.swap_horiz_rounded, AppColors.primary, isDark),
+                              const SizedBox(width: AppColors.sm),
+                              _buildTypeButton('deuda_pago', 'Pago Deuda', Icons.credit_score_rounded, Colors.orange, isDark),
+                            ],
+                          ),
+                        ),
+                        
+                        const SizedBox(height: AppColors.xl),
 
-                      // Campos en lista limpia
-                      _buildFormSectionHeader('DETALLES'),
-                      
-                      const SizedBox(height: 8),
-                      // Selector de Cuenta
-                      _buildSelectorTile(
-                        label: (_tipo == 'transferencia' || _tipo == 'deuda_pago') ? 'Origen' : 'Cuenta',
-                        value: _getAccountName(_cuentaOrigenId, accounts),
-                        icon: Icons.account_balance_wallet_outlined,
-                        onTap: () => _showAccountSelector(context, accounts, true),
-                        isDark: isDark,
-                      ),
-                      
-                      if (_tipo == 'transferencia' || _tipo == 'deuda_pago') ...[
-                        const SizedBox(height: 12),
+                        _buildFormSectionHeader('DETALLES DE LA TRANSACCIÓN'),
+                        const SizedBox(height: AppColors.md),
+                        
+                        // Tarjeta de Cuenta
                         _buildSelectorTile(
-                          label: 'Destino',
-                          value: _getAccountName(_cuentaDestinoId, accounts),
-                          icon: Icons.login_rounded,
-                          onTap: () => _showAccountSelector(context, accounts, false),
+                          label: (_tipo == 'transferencia' || _tipo == 'deuda_pago') ? 'De cuenta origen' : 'Cuenta principal',
+                          value: _getAccountName(_cuentaOrigenId, accounts),
+                          icon: Icons.account_balance_wallet_rounded,
+                          onTap: () => _showAccountSelector(context, accounts, true),
                           isDark: isDark,
                         ),
-                      ],
-                      if (_tipo == 'gasto' || _tipo == 'ingreso') ...[
-                        const SizedBox(height: 12),
-                        _buildSelectorTile(
-                          label: 'Categoría',
-                          value: _getCategoryName(_categoriaId, categories),
-                          icon: Icons.category_outlined,
-                          onTap: () => _showCategorySelector(context, categories),
-                          isDark: isDark,
-                        ),
-                      ],
-
-                      if (_tipo == 'deuda_pago') ...[
-                        const SizedBox(height: 12),
-                        ref.watch(debtsListProvider).when(
-                          data: (debts) => _buildSelectorTile(
-                            label: 'Deuda a pagar',
-                            value: _getDebtName(_deudaId, debts),
-                            icon: Icons.money_off_rounded,
-                            onTap: () => _showDebtSelector(context, debts),
+                        
+                        // Campos Condicionales
+                        if (_tipo == 'transferencia' || _tipo == 'deuda_pago') ...[
+                          const SizedBox(height: AppColors.md),
+                          _buildSelectorTile(
+                            label: 'Hacia cuenta destino',
+                            value: _getAccountName(_cuentaDestinoId, accounts),
+                            icon: Icons.login_rounded,
+                            onTap: () => _showAccountSelector(context, accounts, false),
                             isDark: isDark,
                           ),
-                          loading: () => const LinearProgressIndicator(),
-                          error: (_, __) => const Text('Error al cargar deudas'),
-                        ),
-                      ],
+                        ],
+                        
+                        if (_tipo == 'gasto' || _tipo == 'ingreso') ...[
+                          const SizedBox(height: AppColors.md),
+                          _buildSelectorTile(
+                            label: 'Categoría',
+                            value: _getCategoryName(_categoriaId, categories),
+                            icon: Icons.category_rounded,
+                            onTap: () => _showCategorySelector(context, categories),
+                            isDark: isDark,
+                          ),
+                        ],
 
-                      const SizedBox(height: 12),
-                      _buildSelectorTile(
-                        label: 'Fecha',
-                        value: intl.DateFormat('d MMMM, yyyy', 'es').format(_fecha),
-                        icon: Icons.calendar_today_rounded,
-                        onTap: _selectDate,
-                        isDark: isDark,
-                      ),
-
-                      const SizedBox(height: 24),
-                      _buildFormSectionHeader('OPCIONAL'),
-                      const SizedBox(height: 8),
-                      
-                      AppTextField(
-                        controller: _descripcionController,
-                        focusNode: _descripcionFocusNode,
-                        label: 'Nota o descripción',
-                        prefixIcon: Icons.notes_rounded,
-                        maxLines: 1,
-                      ),
-                      const SizedBox(height: 24),
-                      
-                      // Sección Recurrente
-                      _buildFormSectionHeader('RECURRENCIA'),
-                      const SizedBox(height: 12),
-                      Container(
-                        padding: const EdgeInsets.all(16),
-                        decoration: BoxDecoration(
-                          color: isDark ? Colors.white.withOpacity(0.05) : Colors.grey[100],
-                          borderRadius: BorderRadius.circular(16),
-                          border: _isRecurring 
-                              ? Border.all(color: AppColors.primary.withOpacity(0.5))
-                              : null,
-                        ),
-                        child: Column(
-                          children: [
-                            Row(
-                              children: [
-                                Icon(
-                                  Icons.repeat_rounded, 
-                                  color: _isRecurring ? AppColors.primary : Colors.grey
-                                ),
-                                const SizedBox(width: 12),
-                                Expanded(
-                                  child: Text(
-                                    'Hacer recurrente',
-                                    style: GoogleFonts.montserrat(
-                                      fontWeight: FontWeight.w600,
-                                      fontSize: AppColors.bodyMedium,
-                                    ),
-                                  ),
-                                ),
-                                Switch(
-                                  value: _isRecurring,
-                                  activeColor: AppColors.primary,
-                                  onChanged: (val) {
-                                    setState(() {
-                                      _isRecurring = val;
-                                      if (val) {
-                                        // Update rule to match current date day if switching on
-                                        if (!_recurringRule.contains(_fecha.day.toString()) && _recurringRule.startsWith('monthly_day_')) {
-                                           _recurringRule = 'monthly_day_${_fecha.day}';
-                                        }
-                                      }
-                                    });
-                                  },
-                                ),
-                              ],
+                        if (_tipo == 'deuda_pago') ...[
+                          const SizedBox(height: AppColors.md),
+                          ref.watch(debtsListProvider).when(
+                            data: (debts) => _buildSelectorTile(
+                              label: 'Deuda vinculada',
+                              value: _getDebtName(_deudaId, debts),
+                              icon: Icons.money_off_rounded,
+                              onTap: () => _showDebtSelector(context, debts),
+                              isDark: isDark,
                             ),
-                            
-                            if (_isRecurring) ...[
-                              const Divider(height: 24),
-                              
-                              // Frecuencia Dropdown
+                            loading: () => const Center(child: CircularProgressIndicator()),
+                            error: (_, __) => const Text('Error al cargar deudas'),
+                          ),
+                        ],
+
+                        const SizedBox(height: AppColors.md),
+                        _buildSelectorTile(
+                          label: 'Fecha del movimiento',
+                          value: intl.DateFormat('EEEE d MMMM, yyyy', 'es').format(_fecha),
+                          icon: Icons.calendar_today_rounded,
+                          onTap: _selectDate,
+                          isDark: isDark,
+                        ),
+
+                        const SizedBox(height: AppColors.xl),
+                        _buildFormSectionHeader('NOTAS Y RECURRENCIA'),
+                        const SizedBox(height: AppColors.md),
+                        
+                        // Campo de Texto para Notas
+                        TextField(
+                          controller: _descripcionController,
+                          focusNode: _descripcionFocusNode,
+                          style: GoogleFonts.montserrat(fontSize: AppColors.bodyMedium),
+                          decoration: InputDecoration(
+                            hintText: 'Añadir una nota...',
+                            prefixIcon: const Icon(Icons.notes_rounded, color: Colors.grey),
+                            filled: true,
+                            fillColor: isDark ? Colors.white.withOpacity(0.05) : Colors.grey[50],
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(AppColors.radiusMedium),
+                              borderSide: BorderSide.none,
+                            ),
+                            contentPadding: const EdgeInsets.all(AppColors.md),
+                          ),
+                        ),
+                        
+                        const SizedBox(height: AppColors.md),
+
+                        // Sección Recurrente Mejorada
+                        Container(
+                          padding: const EdgeInsets.all(AppColors.md),
+                          decoration: BoxDecoration(
+                            color: isDark ? Colors.white.withOpacity(0.03) : Colors.grey[50],
+                            borderRadius: BorderRadius.circular(AppColors.radiusLarge),
+                            border: Border.all(
+                              color: _isRecurring 
+                                  ? AppColors.primary.withOpacity(0.3) 
+                                  : Colors.transparent,
+                            ),
+                          ),
+                          child: Column(
+                            children: [
                               Row(
                                 children: [
-                                  const Icon(Icons.update, size: 20, color: Colors.grey),
-                                  const SizedBox(width: 12),
-                                  Expanded(
-                                    child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
-                                      children: [
-                                        Text(
-                                          'Frecuencia',
-                                          style: GoogleFonts.montserrat(
-                                            fontSize: AppColors.bodySmall,
-                                            fontWeight: FontWeight.w500,
-                                            color: Colors.grey,
-                                          ),
-                                        ),
-                                        DropdownButtonHideUnderline(
-                                          child: DropdownButton<String>(
-                                            value: _recurringRule,
-                                            isExpanded: true,
-                                            icon: const Icon(Icons.keyboard_arrow_down_rounded, size: 20),
-                                            style: GoogleFonts.montserrat(
-                                              fontSize: AppColors.bodyMedium,
-                                              fontWeight: FontWeight.w600,
-                                              color: isDark ? Colors.white : Colors.black,
-                                            ),
-                                            items: [
-                                              const DropdownMenuItem(
-                                                value: 'quincenal',
-                                                child: Text('Quincenal (15 y último)'),
-                                              ),
-                                              const DropdownMenuItem(
-                                                value: 'monthly_day_13',
-                                                child: Text('Mensual (día 13)'),
-                                              ),
-                                              const DropdownMenuItem(
-                                                value: 'monthly_day_30',
-                                                child: Text('Mensual (día 30)'),
-                                              ),
-                                              // Opción actual si no está en la lista estándar (para evitar crash)
-                                              if (_recurringRule != 'quincenal' && 
-                                                  _recurringRule != 'monthly_day_13' && 
-                                                  _recurringRule != 'monthly_day_30')
-                                                DropdownMenuItem(
-                                                  value: _recurringRule,
-                                                  child: Text(_getRuleLabel(_recurringRule)),
-                                                ),
-                                            ],
-                                            onChanged: (val) {
-                                              if (val != null) setState(() => _recurringRule = val);
-                                            },
-                                          ),
-                                        ),
-                                        
-                                        // Ajuste fin de semana (solo para Quincenal y Día 30)
-                                        if (_recurringRule == 'quincenal' || _recurringRule == 'monthly_day_30') ...[
-                                          const SizedBox(height: 12),
-                                          Row(
-                                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                            children: [
-                                              Expanded(
-                                                child: Column(
-                                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                                  children: [
-                                                    Text(
-                                                      'Ajuste fin de semana',
-                                                      style: GoogleFonts.montserrat(
-                                                        fontSize: AppColors.bodySmall,
-                                                        fontWeight: FontWeight.w600,
-                                                        color: isDark ? Colors.white : Colors.black87,
-                                                      ),
-                                                    ),
-                                                    Text(
-                                                      'Adelanta al viernes si cae Sáb/Dom',
-                                                      style: GoogleFonts.montserrat(
-                                                        fontSize: AppColors.bodySmall,
-                                                        color: Colors.grey,
-                                                      ),
-                                                    ),
-                                                  ],
-                                                ),
-                                              ),
-                                              Switch.adaptive(
-                                                value: _weekendAdjustment,
-                                                onChanged: (val) => setState(() => _weekendAdjustment = val),
-                                                activeColor: AppColors.primary,
-                                              ),
-                                            ],
-                                          ),
-                                        ],
-
-                                        const SizedBox(height: 8),
-                                        // Vista previa de la próxima fecha
-                                        Padding(
-                                          padding: const EdgeInsets.only(top: 4, left: 2),
-                                          child: Text(
-                                            'Próximo cobro: ${_getNextOccurrencePreview()}',
-                                            style: GoogleFonts.montserrat(
-                                              fontSize: AppColors.bodySmall,
-                                              fontWeight: FontWeight.w600,
-                                              color: AppColors.primary,
-                                            ),
-                                          ),
-                                        ),
-                                      ],
+                                  Container(
+                                    padding: const EdgeInsets.all(8),
+                                    decoration: BoxDecoration(
+                                      color: _isRecurring 
+                                          ? AppColors.primary.withOpacity(0.1) 
+                                          : Colors.grey.withOpacity(0.1),
+                                      borderRadius: BorderRadius.circular(AppColors.radiusSmall),
+                                    ),
+                                    child: Icon(
+                                      Icons.repeat_rounded, 
+                                      color: _isRecurring ? AppColors.primary : Colors.grey,
+                                      size: 20
                                     ),
                                   ),
-                                ],
-                              ),
-                              
-                              const SizedBox(height: 16),
-                              
-                              // Auto-completar Toggle
-                              Row(
-                                children: [
-                                  Icon(
-                                    Icons.check_circle_outline_rounded,
-                                    size: 20, 
-                                    color: _autoComplete ? Colors.green : Colors.grey
-                                  ),
-                                  const SizedBox(width: 12),
+                                  const SizedBox(width: AppColors.md),
                                   Expanded(
                                     child: Column(
                                       crossAxisAlignment: CrossAxisAlignment.start,
                                       children: [
                                         Text(
-                                          'Auto-completar',
+                                          'Gasto Recurrente',
                                           style: GoogleFonts.montserrat(
-                                            fontWeight: FontWeight.w600,
+                                            fontWeight: FontWeight.w700,
                                             fontSize: AppColors.bodyMedium,
                                           ),
                                         ),
                                         Text(
-                                          'Marcar como completa automáticamente',
+                                          'Repetir automáticamente',
                                           style: GoogleFonts.montserrat(
                                             fontSize: AppColors.bodySmall,
                                             color: Colors.grey,
@@ -788,51 +671,179 @@ class _TransactionFormSheetState extends ConsumerState<TransactionFormSheet> {
                                       ],
                                     ),
                                   ),
-                                  Switch(
-                                    value: _autoComplete,
-                                    activeColor: Colors.green,
-                                    onChanged: (val) => setState(() => _autoComplete = val),
+                                  Switch.adaptive(
+                                    value: _isRecurring,
+                                    activeColor: AppColors.primary,
+                                    onChanged: (val) {
+                                      setState(() {
+                                        _isRecurring = val;
+                                        if (val) {
+                                          if (!_recurringRule.contains(_fecha.day.toString()) && _recurringRule.startsWith('monthly_day_')) {
+                                             _recurringRule = 'monthly_day_${_fecha.day}';
+                                          }
+                                        }
+                                      });
+                                    },
                                   ),
                                 ],
                               ),
+                              
+                              if (_isRecurring) ...[
+                                Padding(
+                                  padding: const EdgeInsets.only(top: AppColors.md),
+                                  child: Divider(color: isDark ? Colors.white10 : Colors.black12),
+                                ),
+                                const SizedBox(height: AppColors.sm),
+                                
+                                // Frecuencia
+                                InkWell(
+                                  onTap: () {
+                                    // Podríamos mostrar un selector más bonito aquí
+                                  },
+                                  child: Row(
+                                    children: [
+                                      const Icon(Icons.update_rounded, size: 20, color: Colors.grey),
+                                      const SizedBox(width: AppColors.md),
+                                      Expanded(
+                                        child: DropdownButtonHideUnderline(
+                                          child: DropdownButton<String>(
+                                            value: _recurringRule,
+                                            isExpanded: true,
+                                            icon: const Icon(Icons.keyboard_arrow_down_rounded),
+                                            style: GoogleFonts.montserrat(
+                                              fontSize: AppColors.bodyMedium,
+                                              fontWeight: FontWeight.w600,
+                                              color: isDark ? Colors.white : AppColors.textPrimary,
+                                            ),
+                                            items: [
+                                              const DropdownMenuItem(value: 'quincenal', child: Text('Quincenal (15 y último)')),
+                                              const DropdownMenuItem(value: 'monthly_day_13', child: Text('Mensual (día 13)')),
+                                              const DropdownMenuItem(value: 'monthly_day_30', child: Text('Mensual (día 30)')),
+                                              if (_recurringRule != 'quincenal' && _recurringRule != 'monthly_day_13' && _recurringRule != 'monthly_day_30')
+                                                DropdownMenuItem(value: _recurringRule, child: Text(_getRuleLabel(_recurringRule))),
+                                            ],
+                                            onChanged: (val) { if (val != null) setState(() => _recurringRule = val); },
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                
+                                const SizedBox(height: AppColors.md),
+                                
+                                // Auto-comp Check
+                                Row(
+                                  children: [
+                                    Icon(Icons.check_circle_outline_rounded, size: 20, color: _autoComplete ? AppColors.success : Colors.grey),
+                                    const SizedBox(width: AppColors.md),
+                                    Expanded(
+                                      child: Text(
+                                        'Auto-completar automáticamente',
+                                        style: GoogleFonts.montserrat(fontSize: AppColors.bodySmall, fontWeight: FontWeight.w600),
+                                      ),
+                                    ),
+                                    Switch.adaptive(
+                                      value: _autoComplete,
+                                      activeColor: AppColors.success,
+                                      onChanged: (val) => setState(() => _autoComplete = val),
+                                    ),
+                                  ],
+                                ),
+
+                                const SizedBox(height: AppColors.sm),
+                                // Preview
+                                Row(
+                                  children: [
+                                    const SizedBox(width: 36),
+                                    Text(
+                                      'Próximo: ${_getNextOccurrencePreview()}',
+                                      style: GoogleFonts.montserrat(
+                                        fontSize: AppColors.bodySmall,
+                                        fontWeight: FontWeight.w700,
+                                        color: AppColors.primary,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ],
                             ],
-                          ],
+                          ),
                         ),
-                      ),
-                      const SizedBox(height: 24),
-                      
-                      // Estado
-                      Row(
-                        children: [
-                           _buildFormSectionHeader('YA ESTÁ PAGADO?'),
-                           const Spacer(),
-                           Transform.scale(
-                             scale: 0.7,
-                             child: Switch(
-                               value: _estado == 'completa',
-                               activeTrackColor: AppColors.primary,
-                               onChanged: (val) => setState(() => _estado = val ? 'completa' : 'pendiente'),
-                             ),
-                           ),
-                        ],
-                      ),
-                      
-                      const SizedBox(height: 80), // Espacio para el footer
-                    ],
+                        
+                        const SizedBox(height: AppColors.md),
+
+                        // Toggle de Estado Pagado
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: AppColors.md, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: _estado == 'completa' 
+                                ? AppColors.success.withOpacity(0.05) 
+                                : Colors.grey.withOpacity(0.05),
+                            borderRadius: BorderRadius.circular(AppColors.radiusLarge),
+                            border: Border.all(
+                              color: _estado == 'completa' 
+                                  ? AppColors.success.withOpacity(0.3) 
+                                  : Colors.transparent,
+                            ),
+                          ),
+                          child: Row(
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.all(8),
+                                decoration: BoxDecoration(
+                                  color: _estado == 'completa' ? AppColors.success.withOpacity(0.1) : Colors.grey.withOpacity(0.1),
+                                  shape: BoxShape.circle,
+                                ),
+                                child: Icon(
+                                  _estado == 'completa' ? Icons.check_rounded : Icons.pending_actions_rounded,
+                                  color: _estado == 'completa' ? AppColors.success : Colors.grey,
+                                  size: 20,
+                                ),
+                              ),
+                              const SizedBox(width: AppColors.md),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      'Marcar como pagado',
+                                      style: GoogleFonts.montserrat(
+                                        fontWeight: FontWeight.w700,
+                                        fontSize: AppColors.bodyMedium,
+                                      ),
+                                    ),
+                                    Text(
+                                      _estado == 'completa' ? 'Esta transacción ya se liquidó' : 'Quedará como pendiente',
+                                      style: GoogleFonts.montserrat(fontSize: AppColors.bodySmall, color: Colors.grey),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              Switch.adaptive(
+                                value: _estado == 'completa',
+                                activeColor: AppColors.success,
+                                onChanged: (val) => setState(() => _estado = val ? 'completa' : 'pendiente'),
+                              ),
+                            ],
+                          ),
+                        ),
+
+                        const SizedBox(height: 120),
+                      ],
+                    ),
                   ),
                 ),
-              ),
-            ),
-            // Footer Adaptativo o Toolbar de Teclado
-            _buildAdaptiveFooter(isDark),
-
-          ],
-        );
-        return body;
-      },
-    ),
-  );
-}
+                
+                // Footer Adaptativo (Calculadora o Botón)
+                _buildAdaptiveFooter(isDark),
+              ],
+            );
+          },
+        ),
+      ),
+    );
+  }
 
   Widget _buildAdaptiveFooter(bool isDark) {
     // Si el monto tiene el foco, mostrar toolbar de calculadora
@@ -1005,8 +1016,9 @@ class _TransactionFormSheetState extends ConsumerState<TransactionFormSheet> {
   Color _getTipoColor(String tipo) {
     switch (tipo) {
       case 'gasto': return Colors.red;
-      case 'ingreso': return Colors.green;
+      case 'ingreso': return AppColors.success;
       case 'transferencia': return AppColors.primary;
+      case 'deuda_pago': return Colors.orange;
       default: return AppColors.primary;
     }
   }
@@ -1016,35 +1028,48 @@ class _TransactionFormSheetState extends ConsumerState<TransactionFormSheet> {
     return GestureDetector(
       onTap: () => setState(() {
         _tipo = type;
-        if (type != 'transferencia') {
+        if (type != 'transferencia' && type != 'deuda_pago') {
           _cuentaDestinoId = null;
           _deudaId = null;
           _metaId = null;
-        } else {
+        } else if (type == 'transferencia') {
           _categoriaId = null;
+          _deudaId = null;
+          _metaId = null;
+        } else if (type == 'deuda_pago') {
+           _categoriaId = null;
+           _metaId = null;
         }
       }),
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.symmetric(vertical: 12),
+        padding: const EdgeInsets.symmetric(horizontal: AppColors.md, vertical: 12),
         decoration: BoxDecoration(
-          color: isSelected ? color.withOpacity(0.1) : (isDark ? Colors.white.withOpacity(0.05) : Colors.grey[100]),
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(
-            color: isSelected ? color : Colors.transparent,
-            width: 1.5,
-          ),
+          color: isSelected ? color : (isDark ? Colors.white.withOpacity(0.05) : Colors.grey[100]),
+          borderRadius: BorderRadius.circular(AppColors.radiusLarge),
+          boxShadow: isSelected ? [
+            BoxShadow(
+              color: color.withOpacity(0.3),
+              blurRadius: 8,
+              offset: const Offset(0, 4),
+            )
+          ] : null,
         ),
-        child: Column(
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icon, color: isSelected ? color : Colors.grey, size: 20),
-            const SizedBox(height: 4),
+            Icon(
+              icon, 
+              color: isSelected ? Colors.white : Colors.grey, 
+              size: 18
+            ),
+            const SizedBox(width: AppColors.sm),
             Text(
               label,
               style: GoogleFonts.montserrat(
                 fontSize: AppColors.bodySmall,
-                fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-                color: isSelected ? color : Colors.grey,
+                fontWeight: FontWeight.w700,
+                color: isSelected ? Colors.white : Colors.grey,
               ),
             ),
           ],
@@ -1054,13 +1079,16 @@ class _TransactionFormSheetState extends ConsumerState<TransactionFormSheet> {
   }
 
   Widget _buildFormSectionHeader(String title) {
-    return Text(
-      title,
-      style: GoogleFonts.montserrat(
-        fontSize: AppColors.bodySmall,
-        fontWeight: FontWeight.w800,
-        letterSpacing: 1.2,
-        color: Colors.grey[500],
+    return Padding(
+      padding: const EdgeInsets.only(left: 4),
+      child: Text(
+        title,
+        style: GoogleFonts.montserrat(
+          fontSize: 11,
+          fontWeight: FontWeight.w800,
+          letterSpacing: 1.5,
+          color: Colors.grey.withOpacity(0.8),
+        ),
       ),
     );
   }
@@ -1074,35 +1102,53 @@ class _TransactionFormSheetState extends ConsumerState<TransactionFormSheet> {
   }) {
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(16),
+      borderRadius: BorderRadius.circular(AppColors.radiusLarge),
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        padding: const EdgeInsets.all(AppColors.md),
         decoration: BoxDecoration(
-          color: isDark ? Colors.white.withOpacity(0.05) : Colors.grey[100],
-          borderRadius: BorderRadius.circular(16),
+          color: isDark ? Colors.white.withOpacity(0.05) : Colors.grey[50],
+          borderRadius: BorderRadius.circular(AppColors.radiusLarge),
+          border: Border.all(
+            color: isDark ? Colors.white.withOpacity(0.05) : Colors.black.withOpacity(0.05),
+          ),
         ),
         child: Row(
           children: [
-            Icon(icon, size: 20, color: AppColors.primary),
-            const SizedBox(width: 12),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  label,
-                  style: const TextStyle(fontSize: AppColors.bodySmall, color: Colors.grey, fontWeight: FontWeight.w500),
-                ),
-                Text(
-                  value,
-                  style: GoogleFonts.montserrat(
-                    fontSize: AppColors.bodyMedium,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ],
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: AppColors.primary.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(AppColors.radiusMedium),
+              ),
+              child: Icon(icon, size: 20, color: AppColors.primary),
             ),
-            const Spacer(),
-            const Icon(Icons.chevron_right_rounded, size: 18, color: Colors.grey),
+            const SizedBox(width: AppColors.md),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    label,
+                    style: GoogleFonts.montserrat(
+                      fontSize: 11, 
+                      color: Colors.grey, 
+                      fontWeight: FontWeight.w600,
+                      letterSpacing: 0.5,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    value,
+                    style: GoogleFonts.montserrat(
+                      fontSize: AppColors.bodyLarge,
+                      fontWeight: FontWeight.w700,
+                      color: isDark ? Colors.white : AppColors.textPrimary,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const Icon(Icons.chevron_right_rounded, size: 22, color: Colors.grey),
           ],
         ),
       ),
@@ -1114,47 +1160,110 @@ class _TransactionFormSheetState extends ConsumerState<TransactionFormSheet> {
       showModalBottomSheet(
         context: context,
         backgroundColor: Colors.transparent,
-        builder: (context) => Container(
-          decoration: BoxDecoration(
-            color: Theme.of(context).scaffoldBackgroundColor,
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-          ),
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                _tipo == 'transferencia' 
-                    ? (isSource ? 'Selecciona origen' : 'Selecciona destino') 
-                    : 'Selecciona una cuenta', 
-                style: GoogleFonts.montserrat(fontWeight: FontWeight.bold, fontSize: AppColors.titleSmall)
-              ),
-              const SizedBox(height: 16),
-              Flexible(
-                child: ListView.builder(
-                  shrinkWrap: true,
-                  itemCount: list.length,
-                  itemBuilder: (context, index) {
-                    final acc = list[index];
-                    return ListTile(
-                      leading: const Icon(Icons.account_balance_wallet_outlined, color: AppColors.primary),
-                      title: Text(acc.nombre, style: const TextStyle(fontWeight: FontWeight.w600)),
-                      subtitle: Text(_moneyFormatter.format(acc.saldoActual)),
-                      onTap: () {
-                        setState(() {
-                          if (isSource) _cuentaOrigenId = acc.id;
-                          else _cuentaDestinoId = acc.id;
-                        });
-                        Navigator.pop(context);
-                      },
-                    );
-                  },
+        isScrollControlled: true,
+        builder: (context) {
+          final isDark = Theme.of(context).brightness == Brightness.dark;
+          return Container(
+            constraints: BoxConstraints(maxHeight: MediaQuery.of(context).size.height * 0.7),
+            decoration: BoxDecoration(
+              color: isDark ? AppColors.surfaceDark : Colors.white,
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(AppColors.radiusXLarge)),
+            ),
+            padding: const EdgeInsets.fromLTRB(20, 12, 20, 30),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: Colors.grey.withOpacity(0.3),
+                    borderRadius: BorderRadius.circular(2),
+                  ),
                 ),
-              ),
-            ],
-          ),
-        ),
+                const SizedBox(height: 24),
+                Row(
+                  children: [
+                    Text(
+                      _tipo == 'transferencia' 
+                          ? (isSource ? 'Selecciona origen' : 'Selecciona destino') 
+                          : 'Selecciona una cuenta', 
+                      style: GoogleFonts.montserrat(
+                        fontWeight: FontWeight.w800, 
+                        fontSize: AppColors.titleSmall
+                      )
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 20),
+                Flexible(
+                  child: ListView.separated(
+                    shrinkWrap: true,
+                    itemCount: list.length,
+                    separatorBuilder: (_, __) => const SizedBox(height: AppColors.sm),
+                    itemBuilder: (context, index) {
+                      final acc = list[index];
+                      final isSelected = isSource ? _cuentaOrigenId == acc.id : _cuentaDestinoId == acc.id;
+                      
+                      return InkWell(
+                        onTap: () {
+                          setState(() {
+                            if (isSource) _cuentaOrigenId = acc.id;
+                            else _cuentaDestinoId = acc.id;
+                          });
+                          Navigator.pop(context);
+                        },
+                        borderRadius: BorderRadius.circular(AppColors.radiusLarge),
+                        child: Container(
+                          padding: const EdgeInsets.all(AppColors.md),
+                          decoration: BoxDecoration(
+                            color: isSelected ? AppColors.primary.withOpacity(0.1) : Colors.transparent,
+                            borderRadius: BorderRadius.circular(AppColors.radiusLarge),
+                            border: Border.all(
+                              color: isSelected ? AppColors.primary : (isDark ? Colors.white10 : Colors.black12),
+                            ),
+                          ),
+                          child: Row(
+                            children: [
+                              CircleAvatar(
+                                backgroundColor: AppColors.primary.withOpacity(0.1),
+                                child: const Icon(Icons.account_balance_wallet_rounded, color: AppColors.primary, size: 20),
+                              ),
+                              const SizedBox(width: AppColors.md),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      acc.nombre, 
+                                      style: GoogleFonts.montserrat(
+                                        fontWeight: FontWeight.w700,
+                                        fontSize: AppColors.bodyMedium,
+                                      )
+                                    ),
+                                    Text(
+                                      _moneyFormatter.format(acc.saldoActual),
+                                      style: GoogleFonts.montserrat(
+                                        fontSize: AppColors.bodySmall,
+                                        color: Colors.grey,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              if (isSelected)
+                                const Icon(Icons.check_circle_rounded, color: AppColors.primary),
+                            ],
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+              ],
+            ),
+          );
+        },
       );
     });
   }
@@ -1239,53 +1348,121 @@ class _TransactionFormSheetState extends ConsumerState<TransactionFormSheet> {
     
     showModalBottomSheet(
       context: context,
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
-      builder: (context) => Container(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('Selecciona la deuda', style: GoogleFonts.montserrat(fontWeight: FontWeight.bold, fontSize: AppColors.titleSmall)),
-            const SizedBox(height: 16),
-            if (activeDebts.isEmpty)
-              const Padding(
-                padding: EdgeInsets.symmetric(vertical: 20),
-                child: Center(child: Text('No hay deudas activas')),
-              )
-            else
-              Flexible(
-                child: ListView.builder(
-                  shrinkWrap: true,
-                  itemCount: activeDebts.length,
-                  itemBuilder: (context, index) {
-                    final debt = activeDebts[index];
-                    return ListTile(
-                      leading: const Icon(Icons.money_off_rounded, color: Colors.orange),
-                      title: Text(debt.nombre),
-                      subtitle: Text('Resta: ${_moneyFormatter.format(debt.montoRestante)}'),
-                      onTap: () {
-                        setState(() {
-                          _deudaId = debt.id;
-                          // Si la deuda tiene una cuenta asociada (ej. Tarjeta de Crédito), la ponemos como destino
-                          if (debt.cuentaAsociadaId != null) {
-                            _cuentaDestinoId = debt.cuentaAsociadaId;
-                          }
-                          if (_montoNumerico == 0) {
-                             // Sugerir el monto a pagar
-                             _montoNumerico = debt.montoRestante;
-                             _montoController.text = _moneyFormatter.format(debt.montoRestante);
-                          }
-                        });
-                        Navigator.pop(context);
-                      },
-                    );
-                  },
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (context) {
+        final isDark = Theme.of(context).brightness == Brightness.dark;
+        return Container(
+          decoration: BoxDecoration(
+            color: isDark ? AppColors.surfaceDark : Colors.white,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(AppColors.radiusXLarge)),
+          ),
+          padding: const EdgeInsets.fromLTRB(24, 12, 24, 40),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: Colors.grey.withOpacity(0.3),
+                  borderRadius: BorderRadius.circular(2),
                 ),
               ),
-          ],
-        ),
-      ),
+              const SizedBox(height: 24),
+              Row(
+                children: [
+                  Text(
+                    'Vincular deuda', 
+                    style: GoogleFonts.montserrat(
+                      fontWeight: FontWeight.w800, 
+                      fontSize: AppColors.titleSmall
+                    )
+                  ),
+                ],
+              ),
+              const SizedBox(height: 20),
+              if (activeDebts.isEmpty)
+                const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 40),
+                  child: Center(child: Text('No hay deudas activas')),
+                )
+              else
+                Flexible(
+                  child: ListView.separated(
+                    shrinkWrap: true,
+                    itemCount: activeDebts.length,
+                    separatorBuilder: (_, __) => const SizedBox(height: 12),
+                    itemBuilder: (context, index) {
+                      final debt = activeDebts[index];
+                      final isSelected = _deudaId == debt.id;
+                      
+                      return InkWell(
+                        onTap: () {
+                          setState(() {
+                            _deudaId = debt.id;
+                            if (debt.cuentaAsociadaId != null) {
+                              _cuentaDestinoId = debt.cuentaAsociadaId;
+                            }
+                            if (_montoNumerico == 0) {
+                               _montoNumerico = debt.montoRestante;
+                               _montoController.text = _moneyFormatter.format(debt.montoRestante);
+                               _onMontoChanged();
+                            }
+                          });
+                          Navigator.pop(context);
+                        },
+                        borderRadius: BorderRadius.circular(AppColors.radiusLarge),
+                        child: Container(
+                          padding: const EdgeInsets.all(AppColors.md),
+                          decoration: BoxDecoration(
+                            color: isSelected ? Colors.orange.withOpacity(0.1) : Colors.transparent,
+                            borderRadius: BorderRadius.circular(AppColors.radiusLarge),
+                            border: Border.all(
+                              color: isSelected ? Colors.orange : (isDark ? Colors.white10 : Colors.black12),
+                            ),
+                          ),
+                          child: Row(
+                            children: [
+                              CircleAvatar(
+                                backgroundColor: Colors.orange.withOpacity(0.1),
+                                child: const Icon(Icons.money_off_rounded, color: Colors.orange, size: 20),
+                              ),
+                              const SizedBox(width: AppColors.md),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      debt.nombre, 
+                                      style: GoogleFonts.montserrat(
+                                        fontWeight: FontWeight.w700,
+                                        fontSize: AppColors.bodyMedium,
+                                      )
+                                    ),
+                                    Text(
+                                      'Monto restante: ${_moneyFormatter.format(debt.montoRestante)}',
+                                      style: GoogleFonts.montserrat(
+                                        fontSize: AppColors.bodySmall,
+                                        color: Colors.grey,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              if (isSelected)
+                                const Icon(Icons.check_circle_rounded, color: Colors.orange),
+                            ],
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+            ],
+          ),
+        );
+      },
     );
   }
 
