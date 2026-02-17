@@ -415,94 +415,120 @@ class _CategoryFormBottomSheetState
         return true;
       },
       child: DraggableScrollableSheet(
-        initialChildSize: 0.85,  // Corrección: homologado con otros canvas
-        minChildSize: 0.4,        // Corrección: reducido a 0.4
-        maxChildSize: 0.85,       // Corrección: reducido a 0.85
+        initialChildSize: 0.85,
+        minChildSize: 0.4,
+        maxChildSize: 0.85,
         expand: false,
         builder: (context, scrollController) {
           return Container(
             decoration: BoxDecoration(
               color: isDark ? AppColors.surfaceDark : Colors.white,
               borderRadius: const BorderRadius.only(
-                topLeft: Radius.circular(24),
-                topRight: Radius.circular(24),
+                topLeft: Radius.circular(AppColors.radiusXLarge),
+                topRight: Radius.circular(AppColors.radiusXLarge),
               ),
+              boxShadow: isDark
+                  ? null
+                  : [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.05),
+                        blurRadius: 10,
+                        spreadRadius: 0,
+                        offset: const Offset(0, -5),
+                      ),
+                    ],
             ),
             child: Column(
               children: [
+                // UX: Grabber bar para mejor sensación móvil
+                Center(
+                  child: Container(
+                    margin: const EdgeInsets.only(top: 12),
+                    width: 40,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: isDark ? Colors.white24 : Colors.grey[300],
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                ),
+
                 // Header con título y botón cerrar
                 Padding(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  padding: const EdgeInsets.fromLTRB(20, 16, 12, 12),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Text(
-                        isEdit ? 'Editar categoría' : 'Nueva categoría',
+                        isEdit ? 'Editar Categoría' : 'Nueva Categoría',
                         style: GoogleFonts.montserrat(
-                          fontSize: AppColors.titleSmall,
-                          fontWeight: FontWeight.w600,
+                          fontSize: AppColors.titleMedium,
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: -0.5,
                           color: isDark ? Colors.white : AppColors.textPrimary,
                         ),
                       ),
                       IconButton(
-                        icon: const Icon(Icons.close),
-                        color: isDark ? Colors.white70 : Colors.grey[700],
+                        icon: const Icon(Icons.close_rounded),
+                        color: isDark ? Colors.white60 : Colors.grey[400],
                         onPressed: () {
                           ref.read(selectedCategoryProvider.notifier).state = null;
                           Navigator.of(context).pop();
                         },
-                        padding: const EdgeInsets.all(4),
+                        padding: EdgeInsets.zero,
                         constraints: const BoxConstraints(),
                       ),
                     ],
                   ),
                 ),
-                
-                // Línea divisora
-                Divider(
-                  height: 1,
-                  color: isDark ? Colors.white10 : Colors.grey[300],
-                ),
-                
-                // Contenido con scroll
+
                 Expanded(
                   child: SingleChildScrollView(
                     controller: scrollController,
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                    padding: const EdgeInsets.symmetric(horizontal: 20),
                     child: Form(
                       key: _formKey,
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          // Campo de nombre
-                          AppTextField(
-                            label: 'Nombre de la categoría',
-                            controller: _nombreController,
-                            prefixIcon: Icons.title_outlined,
-                            enabled: !_isLoading,
-                          ),
-                          const SizedBox(height: 20),
-
-                          // Tipo de categoría como "radio divs"
-                          Text(
-                            'Tipo',
-                            style: GoogleFonts.montserrat(
-                              fontSize: AppColors.bodyMedium,
-                              fontWeight: FontWeight.w600,
-                              color: isDark ? Colors.white70 : Colors.grey[700],
-                            ),
-                          ),
                           const SizedBox(height: 8),
+                          
+                          // Sección 1: Identidad visual de la categoría
+                          _buildSectionTitle('IDENTIDAD', isDark),
+                          const SizedBox(height: 12),
+                          
+                          Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              // Preview circular dinámico
+                              _buildCategoryPreview(isDark),
+                              const SizedBox(width: 16),
+                              // Campo de nombre
+                              Expanded(
+                                child: AppTextField(
+                                  label: 'Nombre',
+                                  controller: _nombreController,
+                                  hintText: 'Ej: Supermercado',
+                                  enabled: !_isLoading,
+                                ),
+                              ),
+                            ],
+                          ),
+                          
+                          const SizedBox(height: 32),
+
+                          // Sección 2: Configuración de tipo
+                          _buildSectionTitle('CONFIGURACIÓN', isDark),
+                          const SizedBox(height: 12),
                           Row(
                             children: [
                               Expanded(
                                 child: _buildTypeCard(
                                   'ingreso',
                                   'Ingreso',
-                                  Icons.trending_up,
+                                  Icons.trending_up_rounded,
                                   isDark,
+                                  AppColors.success,
                                 ),
                               ),
                               const SizedBox(width: 12),
@@ -510,220 +536,199 @@ class _CategoryFormBottomSheetState
                                 child: _buildTypeCard(
                                   'gasto',
                                   'Gasto',
-                                  Icons.trending_down,
+                                  Icons.trending_down_rounded,
                                   isDark,
+                                  AppColors.error,
                                 ),
                               ),
                             ],
                           ),
-                          const SizedBox(height: 20),
-
-                          // Selector de color visual
-                          Text(
-                            'Color',
-                            style: GoogleFonts.montserrat(
-                              fontSize: AppColors.bodyMedium,
-                              fontWeight: FontWeight.w600,
-                              color: isDark ? Colors.white70 : Colors.grey[700],
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                          Wrap(
-                            spacing: 12,
-                            runSpacing: 12,
-                            children: AppColors.categoryColors.map((color) {
-                              final isSelected = _selectedColor == color;
-                              return GestureDetector(
-                                onTap: _isLoading
-                                    ? null
-                                    : () {
-                                        setState(() => _selectedColor = color);
-                                      },
-                                child: Container(
-                                  width: 48,
-                                  height: 48,
-                                  decoration: BoxDecoration(
-                                    color: color,
-                                    shape: BoxShape.circle,
-                                    border: Border.all(
-                                      color: isSelected
-                                          ? (isDark ? Colors.white : Colors.black)
-                                          : Colors.transparent,
-                                      width: 3,
-                                    ),
-                                    boxShadow: [
-                                      BoxShadow(
-                                        color: color.withOpacity(0.4),
-                                        blurRadius: 6,
-                                        spreadRadius: 1,
-                                        offset: const Offset(0, 2),
-                                      ),
-                                    ],
-                                  ),
-                                  child: isSelected
-                                      ? const Icon(
-                                          Icons.check,
-                                          color: Colors.white,
-                                          size: 24,
-                                        )
-                                      : null,
-                                ),
-                              );
-                            }).toList(),
-                          ),
-                          const SizedBox(height: 20),
-
-                          // Buscador y selector de ícono
-                          Text(
-                            'Ícono',
-                            style: GoogleFonts.montserrat(
-                              fontSize: AppColors.bodyMedium,
-                              fontWeight: FontWeight.w600,
-                              color: isDark ? Colors.white70 : Colors.grey[700],
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                          TextField(
-                            controller: _iconSearchController,
-                            decoration: InputDecoration(
-                              hintText: 'Buscar ícono...',
-                              hintStyle: GoogleFonts.montserrat(fontSize: AppColors.bodyMedium),
-                              prefixIcon: const Icon(Icons.search_outlined, size: 20),
-                              filled: true,
-                              fillColor: isDark ? AppColors.surfaceDark : Colors.grey[100],
-                              contentPadding: const EdgeInsets.symmetric(
-                                horizontal: 16,
-                                vertical: 12,
-                              ),
-                              border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(12),
-                                borderSide: BorderSide.none,
-                              ),
-                            ),
-                            enabled: !_isLoading,
-                          ),
-                          const SizedBox(height: 12),
                           
-                          // Grid de íconos filtrados
-                          Container(
-                            height: 90,
-                            decoration: BoxDecoration(
-                              color: isDark ? Colors.black12 : Colors.grey[50],
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: GridView.builder(
-                              padding: const EdgeInsets.all(8),
-                              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                                crossAxisCount: 6,
-                                crossAxisSpacing: 8,
-                                mainAxisSpacing: 8,
-                                childAspectRatio: 1.0,
-                              ),
-                              itemCount: _filteredIcons.length,
+                          const SizedBox(height: 32),
+
+                          // Sección 3: Estilo (Color)
+                          _buildSectionTitle('COLOR', isDark),
+                          const SizedBox(height: 12),
+                          SizedBox(
+                            height: 52,
+                            child: ListView.separated(
+                              scrollDirection: Axis.horizontal,
+                              itemCount: AppColors.categoryColors.length,
+                              separatorBuilder: (_, __) => const SizedBox(width: 10),
+                              padding: const EdgeInsets.symmetric(vertical: 2),
                               itemBuilder: (context, index) {
-                                final iconName = _filteredIcons[index];
-                                final isSelected = _selectedIcono == iconName;
+                                final color = AppColors.categoryColors[index];
+                                final isSelected = _selectedColor == color;
                                 return GestureDetector(
                                   onTap: _isLoading
                                       ? null
-                                      : () {
-                                          setState(() => _selectedIcono = iconName);
-                                        },
-                                  child: Container(
+                                      : () => setState(() => _selectedColor = color),
+                                  child: AnimatedContainer(
+                                    duration: const Duration(milliseconds: 200),
+                                    width: 44,
+                                    height: 44,
                                     decoration: BoxDecoration(
-                                      color: isSelected
-                                          ? AppColors.primary.withOpacity(0.15)
-                                          : (isDark ? Colors.white10 : Colors.white),
-                                      borderRadius: BorderRadius.circular(8),
+                                      color: color,
+                                      shape: BoxShape.circle,
                                       border: Border.all(
                                         color: isSelected
-                                            ? AppColors.primary
-                                            : (isDark ? Colors.white10 : Colors.grey[300]!),
-                                        width: isSelected ? 2 : 1,
+                                            ? (isDark ? Colors.white : AppColors.textPrimary)
+                                            : Colors.transparent,
+                                        width: 3,
                                       ),
+                                      boxShadow: isSelected ? [
+                                        BoxShadow(
+                                          color: color.withOpacity(0.4),
+                                          blurRadius: 8,
+                                          offset: const Offset(0, 4),
+                                        )
+                                      ] : null,
                                     ),
-                                    child: Icon(
-                                      _getIcon(iconName),
-                                      size: 24,
-                                      color: isSelected
-                                          ? AppColors.primary
-                                          : (isDark ? Colors.white70 : Colors.grey[700]),
-                                    ),
+                                    child: isSelected
+                                        ? const Icon(Icons.check_rounded, color: Colors.white, size: 24)
+                                        : null,
                                   ),
                                 );
                               },
                             ),
                           ),
+
+                          const SizedBox(height: 32),
+
+                          // Sección 4: Icono
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              _buildSectionTitle('ÍCONO', isDark),
+                              if (_iconSearchController.text.isNotEmpty)
+                                TextButton(
+                                  onPressed: () => _iconSearchController.clear(),
+                                  child: Text('Limpiar', 
+                                    style: GoogleFonts.montserrat(
+                                      fontSize: AppColors.bodySmall,
+                                      color: AppColors.primary,
+                                      fontWeight: FontWeight.w600,
+                                    )),
+                                ),
+                            ],
+                          ),
+                          const SizedBox(height: 8),
                           
-                          // Preview del ícono seleccionado
-                          if (_selectedIcono != null) ...[
-                            const SizedBox(height: 12),
-                            Container(
-                              padding: const EdgeInsets.all(12),
-                              decoration: BoxDecoration(
-                                color: isDark ? Colors.white10 : Colors.grey[100],
-                                borderRadius: BorderRadius.circular(12),
+                          // Buscador de iconos más minimalista
+                          Container(
+                            decoration: BoxDecoration(
+                              color: isDark ? Colors.white.withOpacity(0.05) : Colors.grey[100],
+                              borderRadius: BorderRadius.circular(AppColors.radiusMedium),
+                            ),
+                            child: TextField(
+                              controller: _iconSearchController,
+                              style: GoogleFonts.montserrat(
+                                fontSize: AppColors.bodyMedium,
+                                color: isDark ? Colors.white : AppColors.textPrimary,
                               ),
-                              child: Row(
-                                children: [
-                                  Icon(
-                                    _getIcon(_selectedIcono),
-                                    size: 28,
-                                    color: _selectedColor ?? AppColors.primary,
-                                  ),
-                                  const SizedBox(width: 12),
-                                  Expanded(
-                                    child: Text(
-                                      _selectedIcono!,
-                                      style: GoogleFonts.montserrat(
-                                        fontSize: AppColors.bodySmall,
-                                        color: isDark ? Colors.white70 : Colors.grey[700],
-                                      ),
+                              decoration: InputDecoration(
+                                hintText: 'Buscar por nombre o palabra clave...',
+                                hintStyle: GoogleFonts.montserrat(
+                                  fontSize: AppColors.bodyMedium,
+                                  color: isDark ? Colors.white38 : Colors.grey[500],
+                                ),
+                                prefixIcon: Icon(Icons.search_rounded, 
+                                  size: 20, 
+                                  color: isDark ? Colors.white38 : Colors.grey[500]
+                                ),
+                                border: InputBorder.none,
+                                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                              ),
+                              enabled: !_isLoading,
+                            ),
+                          ),
+                          
+                          const SizedBox(height: 16),
+                          
+                          // Grid de iconos más denso para celulares
+                          GridView.builder(
+                            shrinkWrap: true,
+                            physics: const NeverScrollableScrollPhysics(),
+                            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                              crossAxisCount: 6,
+                              crossAxisSpacing: 10,
+                              mainAxisSpacing: 10,
+                              childAspectRatio: 1,
+                            ),
+                            itemCount: _filteredIcons.length,
+                            itemBuilder: (context, index) {
+                              final iconName = _filteredIcons[index];
+                              final isSelected = _selectedIcono == iconName;
+                              return GestureDetector(
+                                onTap: _isLoading
+                                    ? null
+                                    : () => setState(() => _selectedIcono = iconName),
+                                child: AnimatedContainer(
+                                  duration: const Duration(milliseconds: 200),
+                                  decoration: BoxDecoration(
+                                    color: isSelected
+                                        ? (_selectedColor?.withOpacity(0.1) ?? AppColors.primary.withOpacity(0.1))
+                                        : (isDark ? Colors.white.withOpacity(0.05) : Colors.white),
+                                    borderRadius: BorderRadius.circular(AppColors.radiusSmall),
+                                    border: Border.all(
+                                      color: isSelected
+                                          ? (_selectedColor ?? AppColors.primary)
+                                          : (isDark ? Colors.white10 : Colors.grey[200]!),
+                                      width: isSelected ? 2 : 1,
                                     ),
                                   ),
-                                ],
-                              ),
-                            ),
-                          ],
+                                  child: Icon(
+                                    _getIcon(iconName),
+                                    size: 22,
+                                    color: isSelected
+                                        ? (_selectedColor ?? AppColors.primary)
+                                        : (isDark ? Colors.white70 : Colors.grey[600]),
+                                  ),
+                                ),
+                              );
+                            },
+                          ),
                           
-                          const SizedBox(height: 24),
+                          const SizedBox(height: 40),
                         ],
                       ),
                     ),
                   ),
                 ),
                 
-                // Botones de acción (fijo inferior)
-                Padding(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 16, vertical: 16),
+                // Botones de acción (Floating-style fix inferior)
+                Container(
+                  padding: EdgeInsets.fromLTRB(
+                    20, 16, 20, MediaQuery.of(context).padding.bottom + 16
+                  ),
+                  decoration: BoxDecoration(
+                    color: isDark ? AppColors.surfaceDark : Colors.white,
+                    border: Border(
+                      top: BorderSide(
+                        color: isDark ? Colors.white10 : Colors.grey[100]!,
+                        width: 1,
+                      ),
+                    ),
+                  ),
                   child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      SizedBox(
-                        width: 120,
+                      Expanded(
+                        flex: 1,
                         child: AppButton(
                           label: 'Cancelar',
-                          onPressed: _isLoading
-                              ? null
-                              : () {
-                                  ref.read(
-                                      selectedCategoryProvider
-                                          .notifier)
-                                      .state = null;
-                                  Navigator.of(context)
-                                      .pop();
-                                },
+                          onPressed: _isLoading ? null : () {
+                            ref.read(selectedCategoryProvider.notifier).state = null;
+                            Navigator.of(context).pop();
+                          },
                           variant: 'secondary',
                         ),
                       ),
-                      const SizedBox(width: 16),
-                      SizedBox(
-                        width: 120,
+                      const SizedBox(width: 12),
+                      Expanded(
+                        flex: 2,
                         child: AppButton(
-                          label: 'Guardar',
-                          onPressed:
-                              _isLoading ? null : _handleSave,
+                          label: isEdit ? 'Actualizar' : 'Crear Categoría',
+                          onPressed: _isLoading ? null : _handleSave,
                           isLoading: _isLoading,
                         ),
                       ),
@@ -738,47 +743,83 @@ class _CategoryFormBottomSheetState
     );
   }
 
-  /// Construye una tarjeta de tipo de categoría (Ingreso/Gasto)
-  Widget _buildTypeCard(String value, String label, IconData icon, bool isDark) {
+  /// Título de sección minimalista
+  Widget _buildSectionTitle(String title, bool isDark) {
+    return Text(
+      title,
+      style: GoogleFonts.montserrat(
+        fontSize: AppColors.bodySmall,
+        fontWeight: FontWeight.w800,
+        letterSpacing: 1.2,
+        color: isDark ? Colors.white38 : Colors.grey[500],
+      ),
+    );
+  }
+
+  /// Vista previa circular de la categoría
+  Widget _buildCategoryPreview(bool isDark) {
+    return Container(
+      width: 60,
+      height: 60,
+      decoration: BoxDecoration(
+        color: _selectedColor?.withOpacity(0.15) ?? (isDark ? Colors.white10 : Colors.grey[100]),
+        shape: BoxShape.circle,
+        border: Border.all(
+          color: _selectedColor?.withOpacity(0.3) ?? Colors.transparent,
+          width: 2,
+        ),
+      ),
+      child: Center(
+        child: Icon(
+          _getIcon(_selectedIcono),
+          size: 32,
+          color: _selectedColor ?? (isDark ? Colors.white70 : Colors.grey[600]),
+        ),
+      ),
+    );
+  }
+
+  /// Construye una tarjeta de tipo de categoría (Ingreso/Gasto) rediseñada
+  Widget _buildTypeCard(String value, String label, IconData icon, bool isDark, Color activeColor) {
     final isSelected = _selectedTipo == value;
     return GestureDetector(
-      onTap: _isLoading
-          ? null
-          : () {
-              setState(() => _selectedTipo = value);
-            },
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 12),
+      onTap: _isLoading ? null : () => setState(() => _selectedTipo = value),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 250),
+        padding: const EdgeInsets.symmetric(vertical: 16),
         decoration: BoxDecoration(
           color: isSelected
-              ? AppColors.primary.withOpacity(0.1)
-              : (isDark ? Colors.white.withOpacity(0.05) : Colors.grey[100]),
-          borderRadius: BorderRadius.circular(12),
+              ? activeColor.withOpacity(0.1)
+              : (isDark ? Colors.white.withOpacity(0.05) : Colors.grey[50]),
+          borderRadius: BorderRadius.circular(AppColors.radiusMedium),
           border: Border.all(
             color: isSelected
-                ? AppColors.primary
-                : (isDark ? Colors.white10 : Colors.grey[300]!),
+                ? activeColor
+                : (isDark ? Colors.white10 : Colors.grey[200]!),
             width: isSelected ? 2 : 1,
           ),
+          boxShadow: isSelected ? [
+            BoxShadow(
+              color: activeColor.withOpacity(0.15),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            )
+          ] : null,
         ),
         child: Column(
           children: [
             Icon(
               icon,
               size: 28,
-              color: isSelected
-                  ? AppColors.primary
-                  : (isDark ? Colors.white70 : Colors.grey[600]),
+              color: isSelected ? activeColor : (isDark ? Colors.white30 : Colors.grey[400]),
             ),
             const SizedBox(height: 8),
             Text(
               label,
               style: GoogleFonts.montserrat(
                 fontSize: AppColors.bodyMedium,
-                fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
-                color: isSelected
-                    ? AppColors.primary
-                    : (isDark ? Colors.white70 : Colors.grey[700]),
+                fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                color: isSelected ? activeColor : (isDark ? Colors.white70 : Colors.grey[600]),
               ),
             ),
           ],
@@ -787,3 +828,4 @@ class _CategoryFormBottomSheetState
     );
   }
 }
+
