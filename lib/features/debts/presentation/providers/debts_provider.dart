@@ -27,7 +27,7 @@ class DebtsNotifier extends StateNotifier<AsyncValue<void>> {
       await _repository.createDebt(debt);
       state = const AsyncValue.data(null);
       // FinanceService: refrescar todos los datos relacionados
-      _ref.read(financeServiceProvider).refreshAll(_ref);
+      _ref.read(financeServiceProvider).refreshAll();
     } catch (e, st) {
       state = AsyncValue.error(e, st);
     }
@@ -39,7 +39,7 @@ class DebtsNotifier extends StateNotifier<AsyncValue<void>> {
       await _repository.deleteDebt(id);
       state = const AsyncValue.data(null);
       // FinanceService: refrescar todos los datos relacionados
-      _ref.read(financeServiceProvider).refreshAll(_ref);
+      _ref.read(financeServiceProvider).refreshAll();
     } catch (e, st) {
       state = AsyncValue.error(e, st);
     }
@@ -51,7 +51,7 @@ class DebtsNotifier extends StateNotifier<AsyncValue<void>> {
       await _repository.updateDebt(debt);
       state = const AsyncValue.data(null);
       // FinanceService: refrescar todos los datos relacionados
-      _ref.read(financeServiceProvider).refreshAll(_ref);
+      _ref.read(financeServiceProvider).refreshAll();
     } catch (e, st) {
       state = AsyncValue.error(e, st);
     }
@@ -63,7 +63,7 @@ class DebtsNotifier extends StateNotifier<AsyncValue<void>> {
       await _repository.updateDebtAmount(debtId, amount, isPayment: isPayment);
       state = const AsyncValue.data(null);
       // Refrescar para ver impacto en disponible
-      _ref.read(financeServiceProvider).refreshAll(_ref);
+      _ref.read(financeServiceProvider).refreshAll();
     } catch (e, st) {
       state = AsyncValue.error(e, st);
     }

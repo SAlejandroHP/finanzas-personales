@@ -6,6 +6,7 @@ import 'package:fl_chart/fl_chart.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../accounts/presentation/providers/accounts_provider.dart';
+import '../../../categories/models/category_model.dart';
 import '../../../categories/presentation/providers/categories_provider.dart';
 import '../../../transactions/models/transaction_model.dart';
 import '../../../../core/widgets/app_toast.dart';
@@ -810,7 +811,7 @@ class DashboardScreen extends ConsumerWidget {
                 children: list.take(5).map((tx) {
                   final isExpense =
                       tx.tipo == 'gasto' ||
-                      tx.tipo == 'deuda_pago' ||
+                      tx.tipo == 'pago_deuda' ||
                       tx.tipo == 'meta_aporte';
                   return Padding(
                     padding: const EdgeInsets.only(bottom: 16),
@@ -951,7 +952,7 @@ class DashboardScreen extends ConsumerWidget {
                       .where(
                         (tx) =>
                             tx.tipo == 'gasto' ||
-                            tx.tipo == 'deuda_pago' ||
+                            tx.tipo == 'pago_deuda' ||
                             tx.tipo == 'meta_aporte',
                       )
                       .toList();
@@ -971,8 +972,15 @@ class DashboardScreen extends ConsumerWidget {
                   // Agrupar por categoría
                   final Map<String, double> categoryMap = {};
 
-                  for (final tx in expensesOnly) {
-                    final catId = tx.categoriaId ?? 'sin_cat';
+                  for (final tx in (expensesOnly as List<TransactionModel>)) {
+                    String catId;
+                    if (tx.tipo == 'pago_deuda') {
+                      catId = 'cat_pago_deuda';
+                    } else if (tx.tipo == 'meta_aporte') {
+                      catId = 'cat_meta_aporte';
+                    } else {
+                      catId = tx.categoriaId ?? 'sin_cat';
+                    }
                     categoryMap[catId] = (categoryMap[catId] ?? 0) + tx.monto;
                   }
 
@@ -982,6 +990,42 @@ class DashboardScreen extends ConsumerWidget {
 
                   final topForChart = sortedCats.take(4).toList();
                   final topForLegend = sortedCats.take(5).toList();
+
+                  // Función auxiliar para obtener datos de categoría (incluso virtuales)
+                  CategoryModel getCategory(String id) {
+                    if (id == 'cat_pago_deuda') {
+                      return CategoryModel(
+                        id: 'cat_pago_deuda',
+                        userId: '',
+                        nombre: 'Pago de deuda',
+                        tipo: 'gasto',
+                        color: '#FF8A65', // Coral (Asociado a deudas)
+                        createdAt: DateTime.now(),
+                      );
+                    } else if (id == 'cat_meta_aporte') {
+                      return CategoryModel(
+                        id: 'cat_meta_aporte',
+                        userId: '',
+                        nombre: 'Aporte a Meta',
+                        tipo: 'gasto',
+                        color: '#4DB6AC', // Teal (Asociado a metas)
+                        createdAt: DateTime.now(),
+                      );
+                    } else if (id == 'sin_cat') {
+                      return CategoryModel(
+                        id: 'sin_cat',
+                        userId: '',
+                        nombre: 'Sin categoría',
+                        tipo: 'gasto',
+                        color: '#BDBDBD',
+                        createdAt: DateTime.now(),
+                      );
+                    }
+                    return categories.firstWhere(
+                      (c) => c.id == id,
+                      orElse: () => categories.first,
+                    );
+                  }
 
                   return Column(
                     children: [
@@ -996,10 +1040,7 @@ class DashboardScreen extends ConsumerWidget {
                                 sectionsSpace: 2,
                                 centerSpaceRadius: 20,
                                 sections: topForChart.map((entry) {
-                                  final category = categories.firstWhere(
-                                    (c) => c.id == entry.key,
-                                    orElse: () => categories.first,
-                                  );
+                                  final category = getCategory(entry.key);
 
                                   Color color = AppColors.primary;
                                   if (category.color != null) {
@@ -1029,10 +1070,7 @@ class DashboardScreen extends ConsumerWidget {
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: topForLegend.map((entry) {
-                                final category = categories.firstWhere(
-                                  (c) => c.id == entry.key,
-                                  orElse: () => categories.first,
-                                );
+                                final category = getCategory(entry.key);
 
                                 Color dotColor = AppColors.primary;
                                 if (category.color != null) {
@@ -1349,15 +1387,26 @@ class DashboardScreen extends ConsumerWidget {
   /// Construye un icono compacto de categoría
   Widget _buildCompactCategoryIcon(WidgetRef ref, TransactionModel tx) {
     if (tx.categoriaId == null) {
+      Color color = Colors.grey[400]!;
+      IconData icon = Icons.description_outlined;
+
+      if (tx.tipo == 'pago_deuda') {
+        color = Colors.orange;
+        icon = Icons.money_off_rounded;
+      } else if (tx.tipo == 'meta_aporte') {
+        color = Colors.teal;
+        icon = Icons.flag_rounded;
+      }
+
       return Container(
         width: 32,
         height: 32,
         decoration: BoxDecoration(
           shape: BoxShape.circle,
-          color: Colors.grey[400],
+          color: color,
         ),
-        child: const Icon(
-          Icons.description_outlined,
+        child: Icon(
+          icon,
           color: Colors.white,
           size: 16,
         ),

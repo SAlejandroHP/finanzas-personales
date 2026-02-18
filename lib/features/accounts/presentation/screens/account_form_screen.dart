@@ -336,7 +336,7 @@ class _AccountFormScreenState extends ConsumerState<AccountFormScreen> {
       }
 
       // FinanceService: coordina el refresco total después de la operación exitosa
-      ref.read(financeServiceProvider).refreshAll(ref);
+      ref.read(financeServiceProvider).refreshAll();
 
       if (mounted) {
         showAppToast(

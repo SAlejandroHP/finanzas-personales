@@ -11,6 +11,11 @@ abstract class AppTheme {
     return ThemeData.light(
       useMaterial3: true,
     ).copyWith(
+      splashFactory: NoSplash.splashFactory,
+      splashColor: Colors.transparent,
+      highlightColor: Colors.transparent,
+      hoverColor: Colors.transparent,
+      focusColor: Colors.transparent,
       colorScheme: ColorScheme.fromSeed(
         seedColor: AppColors.primary,
         brightness: Brightness.light,
@@ -57,7 +62,7 @@ abstract class AppTheme {
         ),
       ),
       switchTheme: SwitchThemeData(
-        trackOutlineColor: MaterialStateProperty.all(Colors.transparent),
+        trackOutlineColor: WidgetStateProperty.all(Colors.transparent),
       ),
     );
   }
@@ -68,6 +73,11 @@ abstract class AppTheme {
     return ThemeData.dark(
       useMaterial3: true,
     ).copyWith(
+      splashFactory: NoSplash.splashFactory,
+      splashColor: Colors.transparent,
+      highlightColor: Colors.transparent,
+      hoverColor: Colors.transparent,
+      focusColor: Colors.transparent,
       colorScheme: ColorScheme.fromSeed(
         seedColor: AppColors.primary,
         brightness: Brightness.dark,
@@ -117,7 +127,7 @@ abstract class AppTheme {
         ),
       ),
       switchTheme: SwitchThemeData(
-        trackOutlineColor: MaterialStateProperty.all(Colors.transparent),
+        trackOutlineColor: WidgetStateProperty.all(Colors.transparent),
       ),
     );
   }

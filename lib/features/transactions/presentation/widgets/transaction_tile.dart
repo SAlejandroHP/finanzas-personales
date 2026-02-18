@@ -46,7 +46,7 @@ class TransactionTile extends ConsumerWidget { // Corrección v4: Cambiado a Con
         return Colors.green;
       case 'transferencia':
         return Colors.blue;
-      case 'deuda_pago':
+      case 'pago_deuda':
         return Colors.orange;
       case 'meta_aporte':
         return Colors.purple;
@@ -477,7 +477,7 @@ class TransactionTile extends ConsumerWidget { // Corrección v4: Cambiado a Con
                                 } else {
                                   await ref.read(transactionsNotifierProvider.notifier).markAsPending(transaction);
                                 }
-                                ref.read(financeServiceProvider).updateAfterTransaction(updatedTx, ref);
+                                ref.read(financeServiceProvider).updateAfterTransaction(updatedTx);
                               },
                             ),
                           ),

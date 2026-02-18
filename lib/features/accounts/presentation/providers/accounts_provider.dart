@@ -167,7 +167,7 @@ class AccountsNotifier extends StateNotifier<AsyncValue<void>> {
       state = const AsyncValue.data(null);
       
       // FinanceService: centraliza actualizaciones de todos los providers
-      _ref.read(financeServiceProvider).refreshAll(_ref);
+      _ref.read(financeServiceProvider).refreshAll();
     } catch (e) {
       _setError(e.toString());
       state = AsyncValue.error(e, StackTrace.current);
@@ -187,7 +187,7 @@ class AccountsNotifier extends StateNotifier<AsyncValue<void>> {
       state = const AsyncValue.data(null);
       
       // FinanceService: refrescar providers
-      _ref.read(financeServiceProvider).refreshAll(_ref);
+      _ref.read(financeServiceProvider).refreshAll();
     } catch (e) {
       _setError(e.toString());
       state = AsyncValue.error(e, StackTrace.current);
@@ -207,7 +207,7 @@ class AccountsNotifier extends StateNotifier<AsyncValue<void>> {
       state = const AsyncValue.data(null);
       
       // FinanceService: refrescar providers
-      _ref.read(financeServiceProvider).refreshAll(_ref);
+      _ref.read(financeServiceProvider).refreshAll();
     } catch (e) {
       _setError(e.toString());
       state = AsyncValue.error(e, StackTrace.current);

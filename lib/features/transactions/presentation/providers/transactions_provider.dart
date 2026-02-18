@@ -209,7 +209,7 @@ final monthlyExpensesProvider = Provider<double>((ref) {
         t.fecha.month == now.month &&
         // Gastos reales: Salidas de dinero del sistema (compras o pagos a deudas externas)
         // No incluimos transferencias internas entre cuentas propias para evitar doble contabilidad.
-        (t.tipo == 'gasto' || (t.tipo == 'deuda_pago' && t.cuentaDestinoId == null))
+        (t.tipo == 'gasto' || (t.tipo == 'pago_deuda' && t.cuentaDestinoId == null))
       ).fold(0.0, (sum, t) => sum + t.monto);
     },
     orElse: () => 0.0,
@@ -256,13 +256,10 @@ class TransactionsNotifier extends StateNotifier<AsyncValue<void>> {
     try {
       await _repository.createTransaction(transaction);
       
-      // Sincronizar deuda si aplica
-      await _syncDebt(transaction);
-
       state = const AsyncValue.data(null);
 
-      // FinanceService: coordina el refresco de todos los providers
-      await _ref.read(financeServiceProvider).updateAfterTransaction(transaction, _ref);
+      // FinanceService: coordina la actualización en cascada (saldos, TC, deudas) y refresco
+      await _ref.read(financeServiceProvider).updateAfterTransaction(transaction);
     } catch (e) {
       _setError(e.toString());
       state = AsyncValue.error(e, StackTrace.current);
@@ -278,16 +275,19 @@ class TransactionsNotifier extends StateNotifier<AsyncValue<void>> {
     _clearError();
 
     try {
-      // Para un update perfecto, deberíamos revertir la anterior, pero como
-      // no tenemos la anterior aquí fácilmente, al menos sincronizamos la nueva.
-      // Corrección: Sincronizar deuda (esto es incremental en la BD)
-      await _syncDebt(transaction);
+      // 1. Revertir efectos de la versión anterior si estaba completa
+      final oldTx = (_ref.read(transactionsListProvider).value ?? []).firstWhereOrNull((t) => t.id == transaction.id);
+      if (oldTx != null && oldTx.estado == 'completa') {
+        await _ref.read(financeServiceProvider).updateAfterTransaction(oldTx, isUndo: true);
+      }
 
+      // 2. Aplicar cambio en DB
       await _repository.updateTransaction(transaction);
+      
       state = const AsyncValue.data(null);
 
-      // FinanceService: coordina el refresco de proveedores
-      await _ref.read(financeServiceProvider).updateAfterTransaction(transaction, _ref);
+      // 3. Aplicar efectos de la nueva versión (si está completa)
+      await _ref.read(financeServiceProvider).updateAfterTransaction(transaction);
     } catch (e) {
       _setError(e.toString());
       state = AsyncValue.error(e, StackTrace.current);
@@ -303,20 +303,22 @@ class TransactionsNotifier extends StateNotifier<AsyncValue<void>> {
     _clearError();
 
     try {
-      // 1. Obtener la transacción antes de borrarla para revertir efectos
+      // 1. Obtener la transacción antes de borrarla para revertir efectos en cascada
       final transactions = _ref.read(transactionsListProvider).value ?? [];
       final tx = transactions.firstWhereOrNull((t) => t.id == id);
       
-      if (tx != null) {
-        await _syncDebt(tx, isUndo: true);
+      if (tx != null && tx.estado == 'completa') {
+        await _ref.read(financeServiceProvider).updateAfterTransaction(tx, isUndo: true);
       }
 
       // 2. Eliminar en Repositorio
       await _repository.deleteTransaction(id);
       state = const AsyncValue.data(null);
 
-      // 3. FinanceService: refrescar todos los datos relacionados
-      _ref.read(financeServiceProvider).refreshAll(_ref);
+      // 3. FinanceService: refrescar si no lo hizo ya updateAfterTransaction
+      if (tx == null || tx.estado != 'completa') {
+        _ref.read(financeServiceProvider).refreshAll();
+      }
     } catch (e) {
       _setError(e.toString());
       state = AsyncValue.error(e, StackTrace.current);
@@ -335,13 +337,10 @@ class TransactionsNotifier extends StateNotifier<AsyncValue<void>> {
       final updatedTx = transaction.copyWith(estado: 'completa');
       await _repository.markAsComplete(transaction);
       
-      // Sincronizar deuda al completar
-      await _syncDebt(updatedTx);
-
       state = const AsyncValue.data(null);
 
-      // FinanceService: coordina el refresco
-      await _ref.read(financeServiceProvider).updateAfterTransaction(updatedTx, _ref);
+      // FinanceService: coordina la actualización en cascada y refresco
+      await _ref.read(financeServiceProvider).updateAfterTransaction(updatedTx);
     } catch (e) {
       _setError(e.toString());
       state = AsyncValue.error(e, StackTrace.current);
@@ -357,67 +356,24 @@ class TransactionsNotifier extends StateNotifier<AsyncValue<void>> {
     _clearError();
 
     try {
-      // Si estaba completa, debemos revertir el efecto en la deuda
+      // Si estaba completa, debemos revertir el efecto en cascada (saldos, TC)
       if (transaction.estado == 'completa') {
-        await _syncDebt(transaction, isUndo: true);
+        await _ref.read(financeServiceProvider).updateAfterTransaction(transaction, isUndo: true);
       }
 
       await _repository.markAsPending(transaction);
       state = const AsyncValue.data(null);
 
-      // FinanceService: coordina el refresco
-      _ref.read(financeServiceProvider).refreshAll(_ref);
+      // Si no era completa, refrescamos de todas formas
+      if (transaction.estado != 'completa') {
+        _ref.read(financeServiceProvider).refreshAll();
+      }
     } catch (e) {
       _setError(e.toString());
       state = AsyncValue.error(e, StackTrace.current);
       rethrow;
     } finally {
       _setLoading(false);
-    }
-  }
-
-  /// Sincroniza el monto de las deudas (incluyendo TC) basado en la transacción
-  Future<void> _syncDebt(TransactionModel transaction, {bool isUndo = false}) async {
-    // Solo sincronizamos si la transacción está comple-mentada o estamos deshaciendo una completa
-    if (transaction.estado != 'completa' && !isUndo) return;
-
-    try {
-      // 1. Caso: Pago de deuda externa o TC (tipo 'deuda_pago')
-      if (transaction.tipo == 'deuda_pago' && transaction.deudaId != null) {
-        await _ref.read(debtsNotifierProvider.notifier).updateDebtAmount(
-          transaction.deudaId!, 
-          transaction.monto, 
-          isPayment: !isUndo 
-        );
-      } 
-      // 2. Caso: Gasto o Ingreso en Tarjeta de Crédito (afecta deuda de TC)
-      else {
-        final accounts = _ref.read(accountsListProvider).value ?? [];
-        final account = accounts.firstWhereOrNull((a) => a.id == transaction.cuentaOrigenId);
-        
-        if (account != null && account.tipo == 'tarjeta_credito') {
-          // Buscamos la deuda asociada a esta TC
-          final debts = _ref.read(debtsListProvider).value ?? [];
-          final associatedDebt = debts.firstWhereOrNull((d) => d.cuentaAsociadaId == account.id);
-          
-          if (associatedDebt != null) {
-            // Si es ingreso -> Pago a TC -> Resta de deuda (isPayment: true)
-            // Si es gasto -> Consumo -> Suma a deuda (isPayment: false)
-            // isUndo invierte la lógica
-            bool isPayment = transaction.tipo == 'ingreso';
-            if (isUndo) isPayment = !isPayment;
-            
-            await _ref.read(debtsNotifierProvider.notifier).updateDebtAmount(
-              associatedDebt.id, 
-              transaction.monto, 
-              isPayment: isPayment 
-            );
-          }
-        }
-      }
-    } catch (e) {
-      // Log error but don't block transaction
-      print('Error al sincronizar deuda: $e');
     }
   }
 
@@ -431,7 +387,7 @@ class TransactionsNotifier extends StateNotifier<AsyncValue<void>> {
       final historicalTx = await _repository.payRecurringEarly(transaction);
       
       // 2. Usar FinanceService para impactar los saldos
-      await _ref.read(financeServiceProvider).updateAfterTransaction(historicalTx, _ref);
+      await _ref.read(financeServiceProvider).updateAfterTransaction(historicalTx);
 
       state = const AsyncValue.data(null);
     } catch (e) {

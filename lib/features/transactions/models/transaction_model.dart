@@ -7,7 +7,7 @@ class TransactionModel {
   /// ID del usuario propietario de la transacción
   final String userId;
 
-  /// Tipo de transacción: 'gasto', 'ingreso', 'transferencia', 'deuda_pago', 'meta_aporte'
+  /// Tipo de transacción: 'gasto', 'ingreso', 'transferencia', 'pago_deuda', 'meta_aporte'
   final String tipo;
 
   /// Monto de la transacción
@@ -89,7 +89,7 @@ class TransactionModel {
     'gasto',
     'ingreso',
     'transferencia',
-    'deuda_pago',
+    'pago_deuda',
     'meta_aporte',
   ];
 
@@ -105,7 +105,7 @@ class TransactionModel {
     // Mapeo inverso: Si es 'transferencia' pero tiene deuda_id o meta_id, recuperar tipo original
     String tipoFinal = json['tipo'] as String;
     if (tipoFinal == 'transferencia') {
-      if (json['deuda_id'] != null) tipoFinal = 'deuda_pago';
+      if (json['deuda_id'] != null) tipoFinal = 'pago_deuda';
       else if (json['meta_id'] != null) tipoFinal = 'meta_aporte';
     }
 
@@ -142,9 +142,9 @@ class TransactionModel {
   /// Convierte la instancia a JSON para enviar a Supabase
   Map<String, dynamic> toJson() {
     // Mapeo para DB: La DB solo acepta 'gasto', 'ingreso', 'transferencia'
-    // 'deuda_pago' y 'meta_aporte' se guardan como 'transferencia'
+    // 'pago_deuda' y 'meta_aporte' se guardan como 'transferencia'
     String tipoDB = tipo;
-    if (tipo == 'deuda_pago' || tipo == 'meta_aporte') {
+    if (tipo == 'pago_deuda' || tipo == 'meta_aporte') {
       tipoDB = 'transferencia';
     }
 

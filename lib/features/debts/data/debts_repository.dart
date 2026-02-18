@@ -115,7 +115,6 @@ class DebtsRepository {
           .from('deudas')
           .update({
             'monto_restante': nuevoRestante,
-            'updated_at': DateTime.now().toIso8601String(),
             'estado': nuevoRestante <= 0 ? 'pagada' : 'activa'
           })
           .eq('id', id);

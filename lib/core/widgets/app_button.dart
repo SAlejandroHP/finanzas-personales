@@ -36,7 +36,7 @@ class AppButton extends StatelessWidget {
   final double? height;
 
   const AppButton({
-    Key? key,
+    super.key,
     required this.label,
     this.onPressed,
     this.backgroundColor,
@@ -47,7 +47,7 @@ class AppButton extends StatelessWidget {
     this.variant = 'primary',
     this.size = 'medium',
     this.height,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -133,12 +133,15 @@ class AppButton extends StatelessWidget {
       color: Colors.transparent,
       child: InkWell(
         onTap: isLoading ? null : onPressed,
+        splashColor: Colors.transparent,
+        highlightColor: Colors.transparent,
+        hoverColor: Colors.transparent,
         borderRadius: BorderRadius.circular(AppColors.radiusMedium),
         child: Container(
           height: buttonHeight,
           padding: EdgeInsets.symmetric(horizontal: padding),
           decoration: BoxDecoration(
-            color: isLoading ? bgColor.withOpacity(0.6) : bgColor,
+            color: isLoading ? bgColor.withValues(alpha: 0.6) : bgColor,
             border: variant == 'outlined'
                 ? Border.all(color: textColorFinal, width: 2)
                 : null,

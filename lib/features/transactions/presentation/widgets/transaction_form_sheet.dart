@@ -30,7 +30,7 @@ Future<void> showTransactionFormSheet(
     isScrollControlled: true,
     useRootNavigator: true,
     backgroundColor: Colors.transparent,
-    barrierColor: Colors.black.withOpacity(0.5),
+    barrierColor: Colors.black.withValues(alpha: 0.5),
     builder: (context) => TransactionFormSheet(
       transaction: transaction,
       isRecurringDefault: isRecurringDefault,
@@ -44,10 +44,10 @@ class TransactionFormSheet extends ConsumerStatefulWidget {
   final bool isRecurringDefault;
 
   const TransactionFormSheet({
-    Key? key,
+    super.key,
     this.transaction,
     this.isRecurringDefault = false,
-  }) : super(key: key);
+  });
 
   @override
   ConsumerState<TransactionFormSheet> createState() =>
@@ -65,7 +65,7 @@ class _TransactionFormSheetState extends ConsumerState<TransactionFormSheet> {
   late String? _deudaId; // Para pago_deuda
   late String? _metaId; // Para aporte_meta
   late String _estado; // Corrección v2: 'completada' o 'pendiente'
-  
+
   // Recurrente
   late bool _isRecurring;
   late String _recurringRule;
@@ -78,14 +78,14 @@ class _TransactionFormSheetState extends ConsumerState<TransactionFormSheet> {
   late TextEditingController _descripcionController;
   final _montoFocusNode = FocusNode();
   final _descripcionFocusNode = FocusNode();
-  
+
   // Corrección: Formatter para moneda MXN
   late final intl.NumberFormat _moneyFormatter;
 
   @override
   void initState() {
     super.initState();
-    
+
     // Corrección: Inicializar formatter de moneda MXN
     _moneyFormatter = intl.NumberFormat.currency(
       locale: 'es_MX',
@@ -104,8 +104,9 @@ class _TransactionFormSheetState extends ConsumerState<TransactionFormSheet> {
       _categoriaId = widget.transaction!.categoriaId;
       _deudaId = widget.transaction!.deudaId;
       _metaId = widget.transaction!.metaId;
-      _estado = widget.transaction!.estado; // Corrección v2: Leer estado existente
-      
+      _estado =
+          widget.transaction!.estado; // Corrección v2: Leer estado existente
+
       _isRecurring = widget.transaction!.isRecurring;
       _recurringRule = widget.transaction!.recurringRule ?? 'monthly_day_13';
       _autoComplete = widget.transaction!.autoComplete;
@@ -123,11 +124,14 @@ class _TransactionFormSheetState extends ConsumerState<TransactionFormSheet> {
       // Corrección v2: Establecer estado basado en fecha (default "completa" si hoy)
       final ahora = DateTime.now();
       final hoyFin = DateTime(ahora.year, ahora.month, ahora.day, 23, 59, 59);
-      _estado = _fecha.isBefore(hoyFin) || 
-                (_fecha.day == ahora.day && _fecha.month == ahora.month && _fecha.year == ahora.year) 
-                ? 'completa' 
-                : 'pendiente';
-      
+      _estado =
+          _fecha.isBefore(hoyFin) ||
+              (_fecha.day == ahora.day &&
+                  _fecha.month == ahora.month &&
+                  _fecha.year == ahora.year)
+          ? 'completa'
+          : 'pendiente';
+
       _isRecurring = widget.isRecurringDefault;
       _recurringRule = 'monthly_day_13'; // Default para nuevas
       _autoComplete = false;
@@ -159,12 +163,12 @@ class _TransactionFormSheetState extends ConsumerState<TransactionFormSheet> {
   /// Solo evalúa si la expresión es válida, sin crash
   void _onMontoChanged() {
     final text = _montoController.text.trim();
-    
+
     // Corrección: Extraer números limpios (remover formatos $, comas)
     final cleanText = text
         .replaceAll(RegExp(r'[^\d\.\+\-\*\/\(\)]'), '')
         .trim();
-    
+
     if (cleanText.isEmpty) {
       _calculatorResult.value = null;
       _montoNumerico = 0.0;
@@ -173,7 +177,7 @@ class _TransactionFormSheetState extends ConsumerState<TransactionFormSheet> {
 
     // Intenta evaluar la expresión
     final result = _evaluateExpressionSafely(cleanText);
-    
+
     if (result != null && result > 0) {
       // Corrección: Actualizar valor interno numérico
       _montoNumerico = result;
@@ -201,11 +205,11 @@ class _TransactionFormSheetState extends ConsumerState<TransactionFormSheet> {
       }
 
       // Usa math_expressions para evaluación segura
-      final parser = Parser();
+      final parser = ShuntingYardParser();
       final expression = parser.parse(expr);
       final contextModel = ContextModel();
       final result = expression.evaluate(EvaluationType.REAL, contextModel);
-      
+
       // Corrección: Validar que es un número válido
       if (result is num && result.isFinite && result > 0) {
         return result.toDouble();
@@ -220,7 +224,7 @@ class _TransactionFormSheetState extends ConsumerState<TransactionFormSheet> {
   /// Abre el date picker con cierre automático al seleccionar fecha
   Future<void> _selectDate() async {
     DateTime? selectedDate;
-    
+
     await showDialog(
       context: context,
       builder: (BuildContext context) {
@@ -242,17 +246,20 @@ class _TransactionFormSheetState extends ConsumerState<TransactionFormSheet> {
         );
       },
     );
-    
+
     if (selectedDate != null && mounted) {
       setState(() {
         _fecha = selectedDate!;
         // Recalcula el estado basado en la nueva fecha (Corrección v2)
         final ahora = DateTime.now();
         final hoyFin = DateTime(ahora.year, ahora.month, ahora.day, 23, 59, 59);
-        _estado = selectedDate!.isBefore(hoyFin) || 
-                  (selectedDate!.day == ahora.day && selectedDate!.month == ahora.month && selectedDate!.year == ahora.year)
-                  ? 'completa' 
-                  : 'pendiente';
+        _estado =
+            selectedDate!.isBefore(hoyFin) ||
+                (selectedDate!.day == ahora.day &&
+                    selectedDate!.month == ahora.month &&
+                    selectedDate!.year == ahora.year)
+            ? 'completa'
+            : 'pendiente';
       });
     }
   }
@@ -271,19 +278,26 @@ class _TransactionFormSheetState extends ConsumerState<TransactionFormSheet> {
     // 1. Validar límite de crédito (Requisito 28)
     final accountsList = ref.read(accountsWithBalanceProvider).value ?? [];
     if (_cuentaOrigenId != null) {
-      final selectedAccount = accountsList.firstWhereOrNull((a) => a.id == _cuentaOrigenId);
-      if (selectedAccount != null && selectedAccount.tipo == 'tarjeta_credito' && _tipo == 'gasto') {
+      final selectedAccount = accountsList.firstWhereOrNull(
+        (a) => a.id == _cuentaOrigenId,
+      );
+      if (selectedAccount != null &&
+          selectedAccount.tipo == 'tarjeta_credito' &&
+          _tipo == 'gasto') {
         // Para tarjetas de crédito, saldoActual es el disponible.
         // Si estamos editando, el disponible real es (disponible_actual + monto_anterior)
         double disponibleReal = selectedAccount.saldoActual;
-        if (widget.transaction != null && widget.transaction!.cuentaOrigenId == _cuentaOrigenId && widget.transaction!.tipo == 'gasto') {
+        if (widget.transaction != null &&
+            widget.transaction!.cuentaOrigenId == _cuentaOrigenId &&
+            widget.transaction!.tipo == 'gasto') {
           disponibleReal += widget.transaction!.monto;
         }
 
         if (_montoNumerico > disponibleReal) {
           showAppToast(
             context,
-            message: 'El monto excede el crédito disponible (${_moneyFormatter.format(disponibleReal)})',
+            message:
+                'El monto excede el crédito disponible (${_moneyFormatter.format(disponibleReal)})',
             type: ToastType.error,
           );
           return;
@@ -292,13 +306,15 @@ class _TransactionFormSheetState extends ConsumerState<TransactionFormSheet> {
     }
 
     // 2. Validar que no se pague más de lo que se debe (Requisito: Seguridad)
-    if (_tipo == 'deuda_pago' && _deudaId != null) {
+    if (_tipo == 'pago_deuda' && _deudaId != null) {
       final debtsList = ref.read(debtsListProvider).value ?? [];
       final selectedDebt = debtsList.firstWhereOrNull((d) => d.id == _deudaId);
       if (selectedDebt != null) {
         double restanteReal = selectedDebt.montoRestante;
         // Si estamos editando, sumamos lo que ya habíamos pagado
-        if (widget.transaction != null && widget.transaction!.deudaId == _deudaId && widget.transaction!.tipo == 'deuda_pago') {
+        if (widget.transaction != null &&
+            widget.transaction!.deudaId == _deudaId &&
+            widget.transaction!.tipo == 'pago_deuda') {
           restanteReal += widget.transaction!.monto;
         }
 
@@ -322,10 +338,13 @@ class _TransactionFormSheetState extends ConsumerState<TransactionFormSheet> {
       if (!['completa', 'pendiente'].contains(estadoFinal)) {
         final ahora = DateTime.now();
         final hoyFin = DateTime(ahora.year, ahora.month, ahora.day, 23, 59, 59);
-        estadoFinal = _fecha.isBefore(hoyFin) || 
-                      (_fecha.day == ahora.day && _fecha.month == ahora.month && _fecha.year == ahora.year)
-                      ? 'completa' 
-                      : 'pendiente';
+        estadoFinal =
+            _fecha.isBefore(hoyFin) ||
+                (_fecha.day == ahora.day &&
+                    _fecha.month == ahora.month &&
+                    _fecha.year == ahora.year)
+            ? 'completa'
+            : 'pendiente';
       }
 
       final transaction = TransactionModel(
@@ -339,9 +358,13 @@ class _TransactionFormSheetState extends ConsumerState<TransactionFormSheet> {
             ? null
             : _descripcionController.text,
         cuentaOrigenId: _cuentaOrigenId!,
-        cuentaDestinoId: (_tipo == 'transferencia' || _tipo == 'deuda_pago') ? _cuentaDestinoId : null,
-        categoriaId: (_tipo == 'gasto' || _tipo == 'ingreso') ? _categoriaId : null,
-        deudaId: _tipo == 'deuda_pago' ? _deudaId : null,
+        cuentaDestinoId: (_tipo == 'transferencia' || _tipo == 'pago_deuda')
+            ? _cuentaDestinoId
+            : null,
+        categoriaId: (_tipo == 'gasto' || _tipo == 'ingreso')
+            ? _categoriaId
+            : null,
+        deudaId: _tipo == 'pago_deuda' ? _deudaId : null,
         metaId: _tipo == 'meta_aporte' ? _metaId : null,
         createdAt: widget.transaction?.createdAt ?? DateTime.now(),
         isRecurring: _isRecurring,
@@ -352,15 +375,25 @@ class _TransactionFormSheetState extends ConsumerState<TransactionFormSheet> {
       );
 
       if (widget.transaction != null) {
-        await ref.read(transactionsNotifierProvider.notifier).updateTransaction(transaction);
-        
-        // Llama a FinanceService para refrescar saldos y providers en toda la app
-        ref.read(financeServiceProvider).updateAfterTransaction(transaction, ref);
+        await ref
+            .read(transactionsNotifierProvider.notifier)
+            .updateTransaction(transaction);
       } else {
-        await ref.read(transactionsNotifierProvider.notifier).createTransaction(transaction);
-
-        // Llama a FinanceService para refrescar saldos y providers en toda la app
-        ref.read(financeServiceProvider).updateAfterTransaction(transaction, ref);
+        if (_tipo == 'pago_deuda' && _deudaId != null) {
+          await ref.read(financeServiceProvider).processDebtPayment(
+            debtId: _deudaId!,
+            amount: _montoNumerico,
+            accountId: _cuentaOrigenId!,
+            description: _descripcionController.text.isEmpty
+                ? null
+                : _descripcionController.text,
+            fecha: _fecha,
+          );
+        } else {
+          await ref
+              .read(transactionsNotifierProvider.notifier)
+              .createTransaction(transaction);
+        }
       }
 
       if (mounted) {
@@ -373,11 +406,7 @@ class _TransactionFormSheetState extends ConsumerState<TransactionFormSheet> {
       }
     } catch (e) {
       if (mounted) {
-        showAppToast(
-          context,
-          message: 'Error: $e',
-          type: ToastType.error,
-        );
+        showAppToast(context, message: 'Error: $e', type: ToastType.error);
       }
     }
   }
@@ -393,7 +422,9 @@ class _TransactionFormSheetState extends ConsumerState<TransactionFormSheet> {
     return Container(
       decoration: BoxDecoration(
         color: surfaceColor,
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(AppColors.radiusXLarge)),
+        borderRadius: const BorderRadius.vertical(
+          top: Radius.circular(AppColors.radiusXLarge),
+        ),
       ),
       child: Padding(
         padding: EdgeInsets.only(bottom: bottomInset),
@@ -407,7 +438,10 @@ class _TransactionFormSheetState extends ConsumerState<TransactionFormSheet> {
               children: [
                 // Barra táctil superior (Grabber Handle)
                 Container(
-                  margin: const EdgeInsets.only(top: AppColors.sm, bottom: AppColors.xs),
+                  margin: const EdgeInsets.only(
+                    top: AppColors.sm,
+                    bottom: AppColors.xs,
+                  ),
                   width: 40,
                   height: 4,
                   decoration: BoxDecoration(
@@ -415,15 +449,20 @@ class _TransactionFormSheetState extends ConsumerState<TransactionFormSheet> {
                     borderRadius: BorderRadius.circular(AppColors.radiusSmall),
                   ),
                 ),
-                
+
                 // Header con Título
                 Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: AppColors.lg, vertical: AppColors.sm),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: AppColors.lg,
+                    vertical: AppColors.sm,
+                  ),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Text(
-                        widget.transaction != null ? 'Editar Movimiento' : 'Nuevo Movimiento',
+                        widget.transaction != null
+                            ? 'Editar Movimiento'
+                            : 'Nuevo Movimiento',
                         style: GoogleFonts.montserrat(
                           fontSize: AppColors.titleMedium,
                           fontWeight: FontWeight.w700,
@@ -431,10 +470,15 @@ class _TransactionFormSheetState extends ConsumerState<TransactionFormSheet> {
                         ),
                       ),
                       IconButton(
-                        icon: const Icon(Icons.close_rounded, size: AppColors.iconMedium),
+                        icon: const Icon(
+                          Icons.close_rounded,
+                          size: AppColors.iconMedium,
+                        ),
                         onPressed: () => Navigator.pop(context),
                         style: IconButton.styleFrom(
-                          backgroundColor: isDark ? Colors.white.withOpacity(0.05) : Colors.grey[100],
+                          backgroundColor: isDark
+                              ? Colors.white.withValues(alpha: 0.05)
+                              : Colors.grey[100],
                         ),
                       ),
                     ],
@@ -446,12 +490,14 @@ class _TransactionFormSheetState extends ConsumerState<TransactionFormSheet> {
                   child: SingleChildScrollView(
                     controller: scrollController,
                     physics: const BouncingScrollPhysics(),
-                    padding: const EdgeInsets.symmetric(horizontal: AppColors.lg),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: AppColors.lg,
+                    ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         const SizedBox(height: AppColors.md),
-                        
+
                         // AREA HERO: Monto principal
                         Center(
                           child: Column(
@@ -471,7 +517,10 @@ class _TransactionFormSheetState extends ConsumerState<TransactionFormSheet> {
                                   controller: _montoController,
                                   focusNode: _montoFocusNode,
                                   textAlign: TextAlign.center,
-                                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                                  keyboardType:
+                                      const TextInputType.numberWithOptions(
+                                        decimal: true,
+                                      ),
                                   style: GoogleFonts.montserrat(
                                     fontSize: 44,
                                     fontWeight: FontWeight.w800,
@@ -480,7 +529,9 @@ class _TransactionFormSheetState extends ConsumerState<TransactionFormSheet> {
                                   decoration: InputDecoration(
                                     hintText: '\$ 0.00',
                                     hintStyle: TextStyle(
-                                      color: (isDark ? Colors.white24 : Colors.black12),
+                                      color: (isDark
+                                          ? Colors.white24
+                                          : Colors.black12),
                                     ),
                                     border: InputBorder.none,
                                     enabledBorder: InputBorder.none,
@@ -493,12 +544,20 @@ class _TransactionFormSheetState extends ConsumerState<TransactionFormSheet> {
                               ValueListenableBuilder<double?>(
                                 valueListenable: _calculatorResult,
                                 builder: (context, result, _) {
-                                  if (result == null) return const SizedBox(height: 24);
+                                  if (result == null)
+                                    return const SizedBox(height: 24);
                                   return Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: AppColors.md, vertical: 6),
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: AppColors.md,
+                                      vertical: 6,
+                                    ),
                                     decoration: BoxDecoration(
-                                      color: AppColors.success.withOpacity(0.1),
-                                      borderRadius: BorderRadius.circular(AppColors.radiusCircular),
+                                      color: AppColors.success.withValues(
+                                        alpha: 0.1,
+                                      ),
+                                      borderRadius: BorderRadius.circular(
+                                        AppColors.radiusCircular,
+                                      ),
                                     ),
                                     child: Text(
                                       '= ${_moneyFormatter.format(result)}',
@@ -514,7 +573,7 @@ class _TransactionFormSheetState extends ConsumerState<TransactionFormSheet> {
                             ],
                           ),
                         ),
-                        
+
                         const SizedBox(height: AppColors.lg),
 
                         // Selectores de Tipo (Pills)
@@ -523,73 +582,114 @@ class _TransactionFormSheetState extends ConsumerState<TransactionFormSheet> {
                           physics: const BouncingScrollPhysics(),
                           child: Row(
                             children: [
-                              _buildTypeButton('gasto', 'Gasto', Icons.south_west_rounded, Colors.red, isDark),
+                              _buildTypeButton(
+                                'gasto',
+                                'Gasto',
+                                Icons.south_west_rounded,
+                                Colors.red,
+                                isDark,
+                              ),
                               const SizedBox(width: AppColors.sm),
-                              _buildTypeButton('ingreso', 'Ingreso', Icons.north_east_rounded, AppColors.success, isDark),
+                              _buildTypeButton(
+                                'ingreso',
+                                'Ingreso',
+                                Icons.north_east_rounded,
+                                AppColors.success,
+                                isDark,
+                              ),
                               const SizedBox(width: AppColors.sm),
-                              _buildTypeButton('transferencia', 'Transf.', Icons.swap_horiz_rounded, AppColors.primary, isDark),
+                              _buildTypeButton(
+                                'transferencia',
+                                'Transf.',
+                                Icons.swap_horiz_rounded,
+                                AppColors.primary,
+                                isDark,
+                              ),
                               const SizedBox(width: AppColors.sm),
-                              _buildTypeButton('deuda_pago', 'Pago Deuda', Icons.credit_score_rounded, Colors.orange, isDark),
+                              _buildTypeButton(
+                                'pago_deuda',
+                                'Pago Deuda',
+                                Icons.credit_score_rounded,
+                                Colors.orange,
+                                isDark,
+                              ),
                             ],
                           ),
                         ),
-                        
+
                         const SizedBox(height: AppColors.xl),
 
                         _buildFormSectionHeader('DETALLES DE LA TRANSACCIÓN'),
                         const SizedBox(height: AppColors.md),
-                        
+
                         // Tarjeta de Cuenta
                         _buildSelectorTile(
-                          label: (_tipo == 'transferencia' || _tipo == 'deuda_pago') ? 'De cuenta origen' : 'Cuenta principal',
+                          label:
+                              (_tipo == 'transferencia' ||
+                                  _tipo == 'pago_deuda')
+                              ? 'De cuenta origen'
+                              : 'Cuenta principal',
                           value: _getAccountName(_cuentaOrigenId, accounts),
                           icon: Icons.account_balance_wallet_rounded,
-                          onTap: () => _showAccountSelector(context, accounts, true),
+                          onTap: () =>
+                              _showAccountSelector(context, accounts, true),
                           isDark: isDark,
                         ),
-                        
+
                         // Campos Condicionales
-                        if (_tipo == 'transferencia' || _tipo == 'deuda_pago') ...[
+                        if (_tipo == 'transferencia' ||
+                            _tipo == 'pago_deuda') ...[
                           const SizedBox(height: AppColors.md),
                           _buildSelectorTile(
                             label: 'Hacia cuenta destino',
                             value: _getAccountName(_cuentaDestinoId, accounts),
                             icon: Icons.login_rounded,
-                            onTap: () => _showAccountSelector(context, accounts, false),
+                            onTap: () =>
+                                _showAccountSelector(context, accounts, false),
                             isDark: isDark,
                           ),
                         ],
-                        
+
                         if (_tipo == 'gasto' || _tipo == 'ingreso') ...[
                           const SizedBox(height: AppColors.md),
                           _buildSelectorTile(
                             label: 'Categoría',
                             value: _getCategoryName(_categoriaId, categories),
                             icon: Icons.category_rounded,
-                            onTap: () => _showCategorySelector(context, categories),
+                            onTap: () =>
+                                _showCategorySelector(context, categories),
                             isDark: isDark,
                           ),
                         ],
 
-                        if (_tipo == 'deuda_pago') ...[
+                        if (_tipo == 'pago_deuda') ...[
                           const SizedBox(height: AppColors.md),
-                          ref.watch(debtsListProvider).when(
-                            data: (debts) => _buildSelectorTile(
-                              label: 'Deuda vinculada',
-                              value: _getDebtName(_deudaId, debts),
-                              icon: Icons.money_off_rounded,
-                              onTap: () => _showDebtSelector(context, debts),
-                              isDark: isDark,
-                            ),
-                            loading: () => const Center(child: CircularProgressIndicator()),
-                            error: (_, __) => const Text('Error al cargar deudas'),
-                          ),
+                          ref
+                              .watch(debtsListProvider)
+                              .when(
+                                data: (debts) => _buildSelectorTile(
+                                  label: 'Deuda vinculada',
+                                  value: _getDebtName(_deudaId, debts),
+                                  icon: Icons.money_off_rounded,
+                                  onTap: () =>
+                                      _showDebtSelector(context, debts),
+                                  isDark: isDark,
+                                ),
+                                loading: () => const Center(
+                                  child: CircularProgressIndicator(),
+                                ),
+                                error: (_, _) =>
+                                    const Text('Error al cargar deudas'),
+                              ),
                         ],
 
                         const SizedBox(height: AppColors.md),
                         _buildSelectorTile(
                           label: 'Fecha del movimiento',
-                          value: intl.DateFormat('EEEE d MMMM, yyyy', 'es').format(_fecha),
+                          value: intl.DateFormat(
+                            'EEEE d MMMM, yyyy',
+                            'es',
+                          ).format(_fecha),
                           icon: Icons.calendar_today_rounded,
                           onTap: _selectDate,
                           isDark: isDark,
@@ -598,36 +698,49 @@ class _TransactionFormSheetState extends ConsumerState<TransactionFormSheet> {
                         const SizedBox(height: AppColors.xl),
                         _buildFormSectionHeader('NOTAS Y RECURRENCIA'),
                         const SizedBox(height: AppColors.md),
-                        
+
                         // Campo de Texto para Notas
                         TextField(
                           controller: _descripcionController,
                           focusNode: _descripcionFocusNode,
-                          style: GoogleFonts.montserrat(fontSize: AppColors.bodyMedium),
+                          style: GoogleFonts.montserrat(
+                            fontSize: AppColors.bodyMedium,
+                          ),
                           decoration: InputDecoration(
                             hintText: 'Añadir una nota...',
-                            prefixIcon: const Icon(Icons.notes_rounded, color: Colors.grey),
+                            prefixIcon: const Icon(
+                              Icons.notes_rounded,
+                              color: Colors.grey,
+                            ),
                             filled: true,
-                            fillColor: isDark ? Colors.white.withOpacity(0.05) : Colors.grey[50],
+                            fillColor: isDark
+                                ? Colors.white.withValues(alpha: 0.05)
+                                : Colors.grey[50],
                             border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(AppColors.radiusMedium),
+                              borderRadius: BorderRadius.circular(
+                                AppColors.radiusMedium,
+                              ),
                               borderSide: BorderSide.none,
                             ),
                             contentPadding: const EdgeInsets.all(AppColors.md),
                           ),
                         ),
-                        
+
                         const SizedBox(height: AppColors.md),
 
                         // Sección Recurrente Mejorada
                         Container(
                           padding: const EdgeInsets.all(AppColors.md),
                           decoration: BoxDecoration(
-                            color: isDark ? Colors.white.withOpacity(0.03) : Colors.grey[50],
-                            borderRadius: BorderRadius.circular(AppColors.radiusLarge),
+                            color: isDark
+                                ? Colors.white.withValues(alpha: 0.03)
+                                : Colors.grey[50],
+                            borderRadius: BorderRadius.circular(
+                              AppColors.radiusLarge,
+                            ),
                             border: Border.all(
-                              color: _isRecurring 
-                                  ? AppColors.primary.withOpacity(0.3) 
+                              color: _isRecurring
+                                  ? AppColors.primary.withValues(alpha: 0.3)
                                   : Colors.transparent,
                             ),
                           ),
@@ -638,21 +751,28 @@ class _TransactionFormSheetState extends ConsumerState<TransactionFormSheet> {
                                   Container(
                                     padding: const EdgeInsets.all(8),
                                     decoration: BoxDecoration(
-                                      color: _isRecurring 
-                                          ? AppColors.primary.withOpacity(0.1) 
-                                          : Colors.grey.withOpacity(0.1),
-                                      borderRadius: BorderRadius.circular(AppColors.radiusSmall),
+                                      color: _isRecurring
+                                          ? AppColors.primary.withValues(
+                                              alpha: 0.1,
+                                            )
+                                          : Colors.grey.withValues(alpha: 0.1),
+                                      borderRadius: BorderRadius.circular(
+                                        AppColors.radiusSmall,
+                                      ),
                                     ),
                                     child: Icon(
-                                      Icons.repeat_rounded, 
-                                      color: _isRecurring ? AppColors.primary : Colors.grey,
-                                      size: 20
+                                      Icons.repeat_rounded,
+                                      color: _isRecurring
+                                          ? AppColors.primary
+                                          : Colors.grey,
+                                      size: 20,
                                     ),
                                   ),
                                   const SizedBox(width: AppColors.md),
                                   Expanded(
                                     child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
                                       children: [
                                         Text(
                                           'Gasto Recurrente',
@@ -673,13 +793,19 @@ class _TransactionFormSheetState extends ConsumerState<TransactionFormSheet> {
                                   ),
                                   Switch.adaptive(
                                     value: _isRecurring,
-                                    activeColor: AppColors.primary,
+                                    activeTrackColor: AppColors.primary,
                                     onChanged: (val) {
                                       setState(() {
                                         _isRecurring = val;
                                         if (val) {
-                                          if (!_recurringRule.contains(_fecha.day.toString()) && _recurringRule.startsWith('monthly_day_')) {
-                                             _recurringRule = 'monthly_day_${_fecha.day}';
+                                          if (!_recurringRule.contains(
+                                                _fecha.day.toString(),
+                                              ) &&
+                                              _recurringRule.startsWith(
+                                                'monthly_day_',
+                                              )) {
+                                            _recurringRule =
+                                                'monthly_day_${_fecha.day}';
                                           }
                                         }
                                       });
@@ -687,66 +813,119 @@ class _TransactionFormSheetState extends ConsumerState<TransactionFormSheet> {
                                   ),
                                 ],
                               ),
-                              
+
                               if (_isRecurring) ...[
                                 Padding(
-                                  padding: const EdgeInsets.only(top: AppColors.md),
-                                  child: Divider(color: isDark ? Colors.white10 : Colors.black12),
+                                  padding: const EdgeInsets.only(
+                                    top: AppColors.md,
+                                  ),
+                                  child: Divider(
+                                    color: isDark
+                                        ? Colors.white10
+                                        : Colors.black12,
+                                  ),
                                 ),
                                 const SizedBox(height: AppColors.sm),
-                                
+
                                 // Frecuencia
                                 InkWell(
-                                  onTap: () {
-                                    // Podríamos mostrar un selector más bonito aquí
-                                  },
+                                  onTap: () {},
+                                  splashColor: Colors.transparent,
+                                  highlightColor: Colors.transparent,
+                                  hoverColor: Colors.transparent,
                                   child: Row(
                                     children: [
-                                      const Icon(Icons.update_rounded, size: 20, color: Colors.grey),
+                                      const Icon(
+                                        Icons.update_rounded,
+                                        size: 20,
+                                        color: Colors.grey,
+                                      ),
                                       const SizedBox(width: AppColors.md),
                                       Expanded(
                                         child: DropdownButtonHideUnderline(
                                           child: DropdownButton<String>(
                                             value: _recurringRule,
                                             isExpanded: true,
-                                            icon: const Icon(Icons.keyboard_arrow_down_rounded),
+                                            icon: const Icon(
+                                              Icons.keyboard_arrow_down_rounded,
+                                            ),
                                             style: GoogleFonts.montserrat(
                                               fontSize: AppColors.bodyMedium,
                                               fontWeight: FontWeight.w600,
-                                              color: isDark ? Colors.white : AppColors.textPrimary,
+                                              color: isDark
+                                                  ? Colors.white
+                                                  : AppColors.textPrimary,
                                             ),
                                             items: [
-                                              const DropdownMenuItem(value: 'quincenal', child: Text('Quincenal (15 y último)')),
-                                              const DropdownMenuItem(value: 'monthly_day_13', child: Text('Mensual (día 13)')),
-                                              const DropdownMenuItem(value: 'monthly_day_30', child: Text('Mensual (día 30)')),
-                                              if (_recurringRule != 'quincenal' && _recurringRule != 'monthly_day_13' && _recurringRule != 'monthly_day_30')
-                                                DropdownMenuItem(value: _recurringRule, child: Text(_getRuleLabel(_recurringRule))),
+                                              const DropdownMenuItem(
+                                                value: 'quincenal',
+                                                child: Text(
+                                                  'Quincenal (15 y último)',
+                                                ),
+                                              ),
+                                              const DropdownMenuItem(
+                                                value: 'monthly_day_13',
+                                                child: Text('Mensual (día 13)'),
+                                              ),
+                                              const DropdownMenuItem(
+                                                value: 'monthly_day_30',
+                                                child: Text('Mensual (día 30)'),
+                                              ),
+                                              if (_recurringRule !=
+                                                      'quincenal' &&
+                                                  _recurringRule !=
+                                                      'monthly_day_13' &&
+                                                  _recurringRule !=
+                                                      'monthly_day_30')
+                                                DropdownMenuItem(
+                                                  value: _recurringRule,
+                                                  child: Text(
+                                                    _getRuleLabel(
+                                                      _recurringRule,
+                                                    ),
+                                                  ),
+                                                ),
                                             ],
-                                            onChanged: (val) { if (val != null) setState(() => _recurringRule = val); },
+                                            onChanged: (val) {
+                                              if (val != null)
+                                                setState(
+                                                  () => _recurringRule = val,
+                                                );
+                                            },
                                           ),
                                         ),
                                       ),
                                     ],
                                   ),
                                 ),
-                                
+
                                 const SizedBox(height: AppColors.md),
-                                
+
                                 // Auto-comp Check
                                 Row(
                                   children: [
-                                    Icon(Icons.check_circle_outline_rounded, size: 20, color: _autoComplete ? AppColors.success : Colors.grey),
+                                    Icon(
+                                      Icons.check_circle_outline_rounded,
+                                      size: 20,
+                                      color: _autoComplete
+                                          ? AppColors.success
+                                          : Colors.grey,
+                                    ),
                                     const SizedBox(width: AppColors.md),
                                     Expanded(
                                       child: Text(
                                         'Auto-completar automáticamente',
-                                        style: GoogleFonts.montserrat(fontSize: AppColors.bodySmall, fontWeight: FontWeight.w600),
+                                        style: GoogleFonts.montserrat(
+                                          fontSize: AppColors.bodySmall,
+                                          fontWeight: FontWeight.w600,
+                                        ),
                                       ),
                                     ),
                                     Switch.adaptive(
                                       value: _autoComplete,
-                                      activeColor: AppColors.success,
-                                      onChanged: (val) => setState(() => _autoComplete = val),
+                                      activeTrackColor: AppColors.success,
+                                      onChanged: (val) =>
+                                          setState(() => _autoComplete = val),
                                     ),
                                   ],
                                 ),
@@ -770,20 +949,25 @@ class _TransactionFormSheetState extends ConsumerState<TransactionFormSheet> {
                             ],
                           ),
                         ),
-                        
+
                         const SizedBox(height: AppColors.md),
 
                         // Toggle de Estado Pagado
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: AppColors.md, vertical: 4),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: AppColors.md,
+                            vertical: 4,
+                          ),
                           decoration: BoxDecoration(
-                            color: _estado == 'completa' 
-                                ? AppColors.success.withOpacity(0.05) 
-                                : Colors.grey.withOpacity(0.05),
-                            borderRadius: BorderRadius.circular(AppColors.radiusLarge),
+                            color: _estado == 'completa'
+                                ? AppColors.success.withValues(alpha: 0.05)
+                                : Colors.grey.withValues(alpha: 0.05),
+                            borderRadius: BorderRadius.circular(
+                              AppColors.radiusLarge,
+                            ),
                             border: Border.all(
-                              color: _estado == 'completa' 
-                                  ? AppColors.success.withOpacity(0.3) 
+                              color: _estado == 'completa'
+                                  ? AppColors.success.withValues(alpha: 0.3)
                                   : Colors.transparent,
                             ),
                           ),
@@ -792,12 +976,18 @@ class _TransactionFormSheetState extends ConsumerState<TransactionFormSheet> {
                               Container(
                                 padding: const EdgeInsets.all(8),
                                 decoration: BoxDecoration(
-                                  color: _estado == 'completa' ? AppColors.success.withOpacity(0.1) : Colors.grey.withOpacity(0.1),
+                                  color: _estado == 'completa'
+                                      ? AppColors.success.withValues(alpha: 0.1)
+                                      : Colors.grey.withValues(alpha: 0.1),
                                   shape: BoxShape.circle,
                                 ),
                                 child: Icon(
-                                  _estado == 'completa' ? Icons.check_rounded : Icons.pending_actions_rounded,
-                                  color: _estado == 'completa' ? AppColors.success : Colors.grey,
+                                  _estado == 'completa'
+                                      ? Icons.check_rounded
+                                      : Icons.pending_actions_rounded,
+                                  color: _estado == 'completa'
+                                      ? AppColors.success
+                                      : Colors.grey,
                                   size: 20,
                                 ),
                               ),
@@ -814,16 +1004,24 @@ class _TransactionFormSheetState extends ConsumerState<TransactionFormSheet> {
                                       ),
                                     ),
                                     Text(
-                                      _estado == 'completa' ? 'Esta transacción ya se liquidó' : 'Quedará como pendiente',
-                                      style: GoogleFonts.montserrat(fontSize: AppColors.bodySmall, color: Colors.grey),
+                                      _estado == 'completa'
+                                          ? 'Esta transacción ya se liquidó'
+                                          : 'Quedará como pendiente',
+                                      style: GoogleFonts.montserrat(
+                                        fontSize: AppColors.bodySmall,
+                                        color: Colors.grey,
+                                      ),
                                     ),
                                   ],
                                 ),
                               ),
                               Switch.adaptive(
                                 value: _estado == 'completa',
-                                activeColor: AppColors.success,
-                                onChanged: (val) => setState(() => _estado = val ? 'completa' : 'pendiente'),
+                                activeTrackColor: AppColors.success,
+                                onChanged: (val) => setState(
+                                  () =>
+                                      _estado = val ? 'completa' : 'pendiente',
+                                ),
                               ),
                             ],
                           ),
@@ -834,7 +1032,7 @@ class _TransactionFormSheetState extends ConsumerState<TransactionFormSheet> {
                     ),
                   ),
                 ),
-                
+
                 // Footer Adaptativo (Calculadora o Botón)
                 _buildAdaptiveFooter(isDark),
               ],
@@ -855,7 +1053,9 @@ class _TransactionFormSheetState extends ConsumerState<TransactionFormSheet> {
     return Container(
       padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
       child: AppButton(
-        label: widget.transaction != null ? 'Actualizar Movimiento' : 'Registrar Movimiento',
+        label: widget.transaction != null
+            ? 'Actualizar Movimiento'
+            : 'Registrar Movimiento',
         onPressed: _saveTransaction,
         isFullWidth: true,
         height: AppColors.buttonHeight,
@@ -869,10 +1069,12 @@ class _TransactionFormSheetState extends ConsumerState<TransactionFormSheet> {
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       decoration: BoxDecoration(
         color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
-        border: Border(top: BorderSide(color: isDark ? Colors.white10 : Colors.black12)),
+        border: Border(
+          top: BorderSide(color: isDark ? Colors.white10 : Colors.black12),
+        ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 10,
             offset: const Offset(0, -5),
           ),
@@ -882,31 +1084,38 @@ class _TransactionFormSheetState extends ConsumerState<TransactionFormSheet> {
         top: false,
         child: Row(
           children: [
-            ...operators.map((op) => Expanded(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 4),
-                child: InkWell(
-                  onTap: () => _insertOperator(op),
-                  borderRadius: BorderRadius.circular(8),
-                  child: Container(
-                    height: 44,
-                    alignment: Alignment.center,
-                    decoration: BoxDecoration(
-                      color: isDark ? Colors.white.withOpacity(0.05) : Colors.grey[100],
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Text(
-                      op,
-                      style: GoogleFonts.montserrat(
-                        fontSize: AppColors.titleMedium,
-                        fontWeight: FontWeight.w600,
-                        color: AppColors.primary,
+            ...operators.map(
+              (op) => Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 4),
+                  child: InkWell(
+                    onTap: () => _insertOperator(op),
+                    splashColor: Colors.transparent,
+                    highlightColor: Colors.transparent,
+                    hoverColor: Colors.transparent,
+                    borderRadius: BorderRadius.circular(8),
+                    child: Container(
+                      height: 44,
+                      alignment: Alignment.center,
+                      decoration: BoxDecoration(
+                        color: isDark
+                            ? Colors.white.withValues(alpha: 0.05)
+                            : Colors.grey[100],
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Text(
+                        op,
+                        style: GoogleFonts.montserrat(
+                          fontSize: AppColors.titleMedium,
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.primary,
+                        ),
                       ),
                     ),
                   ),
                 ),
               ),
-            )),
+            ),
             const SizedBox(width: 8),
             // Botón Hecho / Cerrar
             InkWell(
@@ -915,7 +1124,9 @@ class _TransactionFormSheetState extends ConsumerState<TransactionFormSheet> {
                 // Si hay un resultado, lo aplicamos "limpio"
                 if (_calculatorResult.value != null) {
                   setState(() {
-                    _montoController.text = _moneyFormatter.format(_calculatorResult.value);
+                    _montoController.text = _moneyFormatter.format(
+                      _calculatorResult.value,
+                    );
                     _onMontoChanged(); // Re-evaluar
                   });
                 }
@@ -928,7 +1139,11 @@ class _TransactionFormSheetState extends ConsumerState<TransactionFormSheet> {
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: const Center(
-                  child: Icon(Icons.check_rounded, color: Colors.white, size: 24),
+                  child: Icon(
+                    Icons.check_rounded,
+                    color: Colors.white,
+                    size: 24,
+                  ),
                 ),
               ),
             ),
@@ -963,21 +1178,30 @@ class _TransactionFormSheetState extends ConsumerState<TransactionFormSheet> {
         final day = int.parse(rule.split('_').last);
         int m = _fecha.month;
         int y = _fecha.year;
-        if (_fecha.day < day) {} else {
-          m++; if (m > 12) { m = 1; y++; }
+        if (_fecha.day < day) {
+        } else {
+          m++;
+          if (m > 12) {
+            m = 1;
+            y++;
+          }
         }
         final lastDay = DateTime(y, m + 1, 0).day;
         next = DateTime(y, m, day > lastDay ? lastDay : day);
       } catch (_) {}
     } else if (rule == 'quincenal') {
       final lastDay = DateTime(_fecha.year, _fecha.month + 1, 0).day;
-      if (_fecha.day < 15) next = DateTime(_fecha.year, _fecha.month, 15);
-      else if (_fecha.day < lastDay) next = DateTime(_fecha.year, _fecha.month, lastDay);
-      else next = DateTime(_fecha.year, _fecha.month + 1, 15);
+      if (_fecha.day < 15) {
+        next = DateTime(_fecha.year, _fecha.month, 15);
+      } else if (_fecha.day < lastDay)
+        next = DateTime(_fecha.year, _fecha.month, lastDay);
+      else
+        next = DateTime(_fecha.year, _fecha.month + 1, 15);
     }
-    
+
     // Aplicar ajuste de fin de semana para la vista previa
-    if (_weekendAdjustment && (rule == 'quincenal' || rule == 'monthly_day_30')) {
+    if (_weekendAdjustment &&
+        (rule == 'quincenal' || rule == 'monthly_day_30')) {
       if (next.weekday == DateTime.saturday) {
         next = next.subtract(const Duration(days: 1));
       } else if (next.weekday == DateTime.sunday) {
@@ -991,44 +1215,63 @@ class _TransactionFormSheetState extends ConsumerState<TransactionFormSheet> {
   void _insertOperator(String op) {
     final text = _montoController.text;
     final selection = _montoController.selection;
-    
+
     // Si no hay selección válida, poner al final
     if (!selection.isValid) {
       _montoController.text = text + op;
-      _montoController.selection = TextSelection.collapsed(offset: _montoController.text.length);
+      _montoController.selection = TextSelection.collapsed(
+        offset: _montoController.text.length,
+      );
       return;
     }
 
     final newText = text.replaceRange(selection.start, selection.end, op);
     _montoController.text = newText;
-    _montoController.selection = TextSelection.collapsed(offset: selection.start + op.length);
+    _montoController.selection = TextSelection.collapsed(
+      offset: selection.start + op.length,
+    );
   }
 
   String _getTipoAction(String tipo) {
     switch (tipo) {
-      case 'gasto': return 'gastar';
-      case 'ingreso': return 'recibir';
-      case 'transferencia': return 'transferir';
-      default: return 'registrar';
+      case 'gasto':
+        return 'gastar';
+      case 'ingreso':
+        return 'recibir';
+      case 'transferencia':
+        return 'transferir';
+      default:
+        return 'registrar';
     }
   }
 
   Color _getTipoColor(String tipo) {
     switch (tipo) {
-      case 'gasto': return Colors.red;
-      case 'ingreso': return AppColors.success;
-      case 'transferencia': return AppColors.primary;
-      case 'deuda_pago': return Colors.orange;
-      default: return AppColors.primary;
+      case 'gasto':
+        return Colors.red;
+      case 'ingreso':
+        return AppColors.success;
+      case 'transferencia':
+        return AppColors.primary;
+      case 'pago_deuda':
+        return Colors.orange;
+      default:
+        return AppColors.primary;
     }
   }
 
-  Widget _buildTypeButton(String type, String label, IconData icon, Color color, bool isDark) {
+  Widget _buildTypeButton(
+    String type,
+    String label,
+    IconData icon,
+    Color color,
+    bool isDark,
+  ) {
     final isSelected = _tipo == type;
     return GestureDetector(
       onTap: () => setState(() {
         _tipo = type;
-        if (type != 'transferencia' && type != 'deuda_pago') {
+        if (type != 'transferencia' && type != 'pago_deuda') {
           _cuentaDestinoId = null;
           _deudaId = null;
           _metaId = null;
@@ -1036,32 +1279,41 @@ class _TransactionFormSheetState extends ConsumerState<TransactionFormSheet> {
           _categoriaId = null;
           _deudaId = null;
           _metaId = null;
-        } else if (type == 'deuda_pago') {
-           _categoriaId = null;
-           _metaId = null;
+        } else if (type == 'pago_deuda') {
+          _categoriaId = null;
+          _metaId = null;
         }
       }),
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.symmetric(horizontal: AppColors.md, vertical: 12),
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppColors.md,
+          vertical: 12,
+        ),
         decoration: BoxDecoration(
-          color: isSelected ? color : (isDark ? Colors.white.withOpacity(0.05) : Colors.grey[100]),
+          color: isSelected
+              ? color
+              : (isDark
+                    ? Colors.white.withValues(alpha: 0.05)
+                    : Colors.grey[100]),
           borderRadius: BorderRadius.circular(AppColors.radiusLarge),
-          boxShadow: isSelected ? [
-            BoxShadow(
-              color: color.withOpacity(0.3),
-              blurRadius: 8,
-              offset: const Offset(0, 4),
-            )
-          ] : null,
+          boxShadow: isSelected
+              ? [
+                  BoxShadow(
+                    color: color.withValues(alpha: 0.3),
+                    blurRadius: 8,
+                    offset: const Offset(0, 4),
+                  ),
+                ]
+              : null,
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
             Icon(
-              icon, 
-              color: isSelected ? Colors.white : Colors.grey, 
-              size: 18
+              icon,
+              color: isSelected ? Colors.white : Colors.grey,
+              size: 18,
             ),
             const SizedBox(width: AppColors.sm),
             Text(
@@ -1087,7 +1339,7 @@ class _TransactionFormSheetState extends ConsumerState<TransactionFormSheet> {
           fontSize: 11,
           fontWeight: FontWeight.w800,
           letterSpacing: 1.5,
-          color: Colors.grey.withOpacity(0.8),
+          color: Colors.grey.withValues(alpha: 0.8),
         ),
       ),
     );
@@ -1102,14 +1354,21 @@ class _TransactionFormSheetState extends ConsumerState<TransactionFormSheet> {
   }) {
     return InkWell(
       onTap: onTap,
+      splashColor: Colors.transparent,
+      highlightColor: Colors.transparent,
+      hoverColor: Colors.transparent,
       borderRadius: BorderRadius.circular(AppColors.radiusLarge),
       child: Container(
         padding: const EdgeInsets.all(AppColors.md),
         decoration: BoxDecoration(
-          color: isDark ? Colors.white.withOpacity(0.05) : Colors.grey[50],
+          color: isDark
+              ? Colors.white.withValues(alpha: 0.05)
+              : Colors.grey[50],
           borderRadius: BorderRadius.circular(AppColors.radiusLarge),
           border: Border.all(
-            color: isDark ? Colors.white.withOpacity(0.05) : Colors.black.withOpacity(0.05),
+            color: isDark
+                ? Colors.white.withValues(alpha: 0.05)
+                : Colors.black.withValues(alpha: 0.05),
           ),
         ),
         child: Row(
@@ -1117,7 +1376,7 @@ class _TransactionFormSheetState extends ConsumerState<TransactionFormSheet> {
             Container(
               padding: const EdgeInsets.all(10),
               decoration: BoxDecoration(
-                color: AppColors.primary.withOpacity(0.1),
+                color: AppColors.primary.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(AppColors.radiusMedium),
               ),
               child: Icon(icon, size: 20, color: AppColors.primary),
@@ -1130,8 +1389,8 @@ class _TransactionFormSheetState extends ConsumerState<TransactionFormSheet> {
                   Text(
                     label,
                     style: GoogleFonts.montserrat(
-                      fontSize: 11, 
-                      color: Colors.grey, 
+                      fontSize: 11,
+                      color: Colors.grey,
                       fontWeight: FontWeight.w600,
                       letterSpacing: 0.5,
                     ),
@@ -1148,14 +1407,22 @@ class _TransactionFormSheetState extends ConsumerState<TransactionFormSheet> {
                 ],
               ),
             ),
-            const Icon(Icons.chevron_right_rounded, size: 22, color: Colors.grey),
+            const Icon(
+              Icons.chevron_right_rounded,
+              size: 22,
+              color: Colors.grey,
+            ),
           ],
         ),
       ),
     );
   }
 
-  void _showAccountSelector(BuildContext context, AsyncValue<List<AccountModel>> accounts, bool isSource) {
+  void _showAccountSelector(
+    BuildContext context,
+    AsyncValue<List<AccountModel>> accounts,
+    bool isSource,
+  ) {
     accounts.whenData((list) {
       showModalBottomSheet(
         context: context,
@@ -1164,10 +1431,14 @@ class _TransactionFormSheetState extends ConsumerState<TransactionFormSheet> {
         builder: (context) {
           final isDark = Theme.of(context).brightness == Brightness.dark;
           return Container(
-            constraints: BoxConstraints(maxHeight: MediaQuery.of(context).size.height * 0.7),
+            constraints: BoxConstraints(
+              maxHeight: MediaQuery.of(context).size.height * 0.7,
+            ),
             decoration: BoxDecoration(
               color: isDark ? AppColors.surfaceDark : Colors.white,
-              borderRadius: const BorderRadius.vertical(top: Radius.circular(AppColors.radiusXLarge)),
+              borderRadius: const BorderRadius.vertical(
+                top: Radius.circular(AppColors.radiusXLarge),
+              ),
             ),
             padding: const EdgeInsets.fromLTRB(20, 12, 20, 30),
             child: Column(
@@ -1177,7 +1448,7 @@ class _TransactionFormSheetState extends ConsumerState<TransactionFormSheet> {
                   width: 40,
                   height: 4,
                   decoration: BoxDecoration(
-                    color: Colors.grey.withOpacity(0.3),
+                    color: Colors.grey.withValues(alpha: 0.3),
                     borderRadius: BorderRadius.circular(2),
                   ),
                 ),
@@ -1185,13 +1456,15 @@ class _TransactionFormSheetState extends ConsumerState<TransactionFormSheet> {
                 Row(
                   children: [
                     Text(
-                      _tipo == 'transferencia' 
-                          ? (isSource ? 'Selecciona origen' : 'Selecciona destino') 
-                          : 'Selecciona una cuenta', 
+                      _tipo == 'transferencia'
+                          ? (isSource
+                                ? 'Selecciona origen'
+                                : 'Selecciona destino')
+                          : 'Selecciona una cuenta',
                       style: GoogleFonts.montserrat(
-                        fontWeight: FontWeight.w800, 
-                        fontSize: AppColors.titleSmall
-                      )
+                        fontWeight: FontWeight.w800,
+                        fontSize: AppColors.titleSmall,
+                      ),
                     ),
                   ],
                 ),
@@ -1200,34 +1473,57 @@ class _TransactionFormSheetState extends ConsumerState<TransactionFormSheet> {
                   child: ListView.separated(
                     shrinkWrap: true,
                     itemCount: list.length,
-                    separatorBuilder: (_, __) => const SizedBox(height: AppColors.sm),
+                    separatorBuilder: (_, _) =>
+                        const SizedBox(height: AppColors.sm),
                     itemBuilder: (context, index) {
                       final acc = list[index];
-                      final isSelected = isSource ? _cuentaOrigenId == acc.id : _cuentaDestinoId == acc.id;
-                      
+                      final isSelected = isSource
+                          ? _cuentaOrigenId == acc.id
+                          : _cuentaDestinoId == acc.id;
+
                       return InkWell(
+                        splashColor: Colors.transparent,
+                        highlightColor: Colors.transparent,
+                        hoverColor: Colors.transparent,
                         onTap: () {
                           setState(() {
-                            if (isSource) _cuentaOrigenId = acc.id;
-                            else _cuentaDestinoId = acc.id;
+                            if (isSource) {
+                              _cuentaOrigenId = acc.id;
+                            } else {
+                              _cuentaDestinoId = acc.id;
+                            }
                           });
                           Navigator.pop(context);
                         },
-                        borderRadius: BorderRadius.circular(AppColors.radiusLarge),
+                        borderRadius: BorderRadius.circular(
+                          AppColors.radiusLarge,
+                        ),
                         child: Container(
                           padding: const EdgeInsets.all(AppColors.md),
                           decoration: BoxDecoration(
-                            color: isSelected ? AppColors.primary.withOpacity(0.1) : Colors.transparent,
-                            borderRadius: BorderRadius.circular(AppColors.radiusLarge),
+                            color: isSelected
+                                ? AppColors.primary.withValues(alpha: 0.1)
+                                : Colors.transparent,
+                            borderRadius: BorderRadius.circular(
+                              AppColors.radiusLarge,
+                            ),
                             border: Border.all(
-                              color: isSelected ? AppColors.primary : (isDark ? Colors.white10 : Colors.black12),
+                              color: isSelected
+                                  ? AppColors.primary
+                                  : (isDark ? Colors.white10 : Colors.black12),
                             ),
                           ),
                           child: Row(
                             children: [
                               CircleAvatar(
-                                backgroundColor: AppColors.primary.withOpacity(0.1),
-                                child: const Icon(Icons.account_balance_wallet_rounded, color: AppColors.primary, size: 20),
+                                backgroundColor: AppColors.primary.withValues(
+                                  alpha: 0.1,
+                                ),
+                                child: const Icon(
+                                  Icons.account_balance_wallet_rounded,
+                                  color: AppColors.primary,
+                                  size: 20,
+                                ),
                               ),
                               const SizedBox(width: AppColors.md),
                               Expanded(
@@ -1235,11 +1531,11 @@ class _TransactionFormSheetState extends ConsumerState<TransactionFormSheet> {
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     Text(
-                                      acc.nombre, 
+                                      acc.nombre,
                                       style: GoogleFonts.montserrat(
                                         fontWeight: FontWeight.w700,
                                         fontSize: AppColors.bodyMedium,
-                                      )
+                                      ),
                                     ),
                                     Text(
                                       _moneyFormatter.format(acc.saldoActual),
@@ -1252,7 +1548,10 @@ class _TransactionFormSheetState extends ConsumerState<TransactionFormSheet> {
                                 ),
                               ),
                               if (isSelected)
-                                const Icon(Icons.check_circle_rounded, color: AppColors.primary),
+                                const Icon(
+                                  Icons.check_circle_rounded,
+                                  color: AppColors.primary,
+                                ),
                             ],
                           ),
                         ),
@@ -1268,14 +1567,24 @@ class _TransactionFormSheetState extends ConsumerState<TransactionFormSheet> {
     });
   }
 
-  void _showCategorySelector(BuildContext context, AsyncValue<List<CategoryModel>> categories) {
+  void _showCategorySelector(
+    BuildContext context,
+    AsyncValue<List<CategoryModel>> categories,
+  ) {
     categories.whenData((list) {
       // Filtrar por tipo (gasto/ingreso)
-      final initialFiltered = list.where((c) => (_tipo == 'gasto' && c.tipo == 'gasto') || (_tipo == 'ingreso' && c.tipo == 'ingreso')).toList();
-      
+      final initialFiltered = list
+          .where(
+            (c) =>
+                (_tipo == 'gasto' && c.tipo == 'gasto') ||
+                (_tipo == 'ingreso' && c.tipo == 'ingreso'),
+          )
+          .toList();
+
       showModalBottomSheet(
         context: context,
-        isScrollControlled: true, // Permite que el modal crezca según el contenido
+        isScrollControlled:
+            true, // Permite que el modal crezca según el contenido
         backgroundColor: Colors.transparent,
         builder: (context) {
           return StatefulBuilder(
@@ -1283,10 +1592,10 @@ class _TransactionFormSheetState extends ConsumerState<TransactionFormSheet> {
               // Variable para el texto de busqueda (local al modal)
               // Nota: Como StatefulBuilder reconstruye todo, necesitamos mantener el estado fuera o usar un wrapper.
               // En este caso simple, filtramos la lista original 'initialFiltered' basándonos en un controller que definimos aqui.
-              // PERO: Definir el controller DENTRO del builder lo reiniciará en cada rebuild. 
-              // Solución: Usar un Widget separado para el contenido del modal es lo ideal, 
+              // PERO: Definir el controller DENTRO del builder lo reiniciará en cada rebuild.
+              // Solución: Usar un Widget separado para el contenido del modal es lo ideal,
               // pero para mantenerlo en este archivo usaré un enfoque directo creando el controller una vez.
-              
+
               return _CategorySelectorModal(
                 categories: initialFiltered,
                 selectedId: _categoriaId,
@@ -1297,7 +1606,7 @@ class _TransactionFormSheetState extends ConsumerState<TransactionFormSheet> {
                 getIcon: _getIcon,
                 getColor: _getColorFromHex,
               );
-            }
+            },
           );
         },
       );
@@ -1315,22 +1624,25 @@ class _TransactionFormSheetState extends ConsumerState<TransactionFormSheet> {
         }
       },
       loading: () => '...',
-      error: (_, __) => 'Error',
+      error: (_, _) => 'Error',
     );
   }
 
-  String _getCategoryName(String? id, AsyncValue<List<CategoryModel>> categories) {
+  String _getCategoryName(
+    String? id,
+    AsyncValue<List<CategoryModel>> categories,
+  ) {
     if (id == null) return 'Seleccionar';
     return categories.when(
       data: (list) {
-         try {
+        try {
           return list.firstWhere((c) => c.id == id).nombre;
         } catch (_) {
           return 'Seleccionar';
         }
       },
       loading: () => '...',
-      error: (_, __) => 'Error',
+      error: (_, _) => 'Error',
     );
   }
 
@@ -1345,7 +1657,7 @@ class _TransactionFormSheetState extends ConsumerState<TransactionFormSheet> {
 
   void _showDebtSelector(BuildContext context, List<DebtModel> debts) {
     final activeDebts = debts.where((d) => d.estado == 'activa').toList();
-    
+
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
@@ -1355,7 +1667,9 @@ class _TransactionFormSheetState extends ConsumerState<TransactionFormSheet> {
         return Container(
           decoration: BoxDecoration(
             color: isDark ? AppColors.surfaceDark : Colors.white,
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(AppColors.radiusXLarge)),
+            borderRadius: const BorderRadius.vertical(
+              top: Radius.circular(AppColors.radiusXLarge),
+            ),
           ),
           padding: const EdgeInsets.fromLTRB(24, 12, 24, 40),
           child: Column(
@@ -1365,7 +1679,7 @@ class _TransactionFormSheetState extends ConsumerState<TransactionFormSheet> {
                 width: 40,
                 height: 4,
                 decoration: BoxDecoration(
-                  color: Colors.grey.withOpacity(0.3),
+                  color: Colors.grey.withValues(alpha: 0.3),
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
@@ -1373,11 +1687,11 @@ class _TransactionFormSheetState extends ConsumerState<TransactionFormSheet> {
               Row(
                 children: [
                   Text(
-                    'Vincular deuda', 
+                    'Vincular deuda',
                     style: GoogleFonts.montserrat(
-                      fontWeight: FontWeight.w800, 
-                      fontSize: AppColors.titleSmall
-                    )
+                      fontWeight: FontWeight.w800,
+                      fontSize: AppColors.titleSmall,
+                    ),
                   ),
                 ],
               ),
@@ -1392,12 +1706,15 @@ class _TransactionFormSheetState extends ConsumerState<TransactionFormSheet> {
                   child: ListView.separated(
                     shrinkWrap: true,
                     itemCount: activeDebts.length,
-                    separatorBuilder: (_, __) => const SizedBox(height: 12),
+                    separatorBuilder: (_, _) => const SizedBox(height: 12),
                     itemBuilder: (context, index) {
                       final debt = activeDebts[index];
                       final isSelected = _deudaId == debt.id;
-                      
+
                       return InkWell(
+                        splashColor: Colors.transparent,
+                        highlightColor: Colors.transparent,
+                        hoverColor: Colors.transparent,
                         onTap: () {
                           setState(() {
                             _deudaId = debt.id;
@@ -1405,28 +1722,44 @@ class _TransactionFormSheetState extends ConsumerState<TransactionFormSheet> {
                               _cuentaDestinoId = debt.cuentaAsociadaId;
                             }
                             if (_montoNumerico == 0) {
-                               _montoNumerico = debt.montoRestante;
-                               _montoController.text = _moneyFormatter.format(debt.montoRestante);
-                               _onMontoChanged();
+                              _montoNumerico = debt.montoRestante;
+                              _montoController.text = _moneyFormatter.format(
+                                debt.montoRestante,
+                              );
+                              _onMontoChanged();
                             }
                           });
                           Navigator.pop(context);
                         },
-                        borderRadius: BorderRadius.circular(AppColors.radiusLarge),
+                        borderRadius: BorderRadius.circular(
+                          AppColors.radiusLarge,
+                        ),
                         child: Container(
                           padding: const EdgeInsets.all(AppColors.md),
                           decoration: BoxDecoration(
-                            color: isSelected ? Colors.orange.withOpacity(0.1) : Colors.transparent,
-                            borderRadius: BorderRadius.circular(AppColors.radiusLarge),
+                            color: isSelected
+                                ? Colors.orange.withValues(alpha: 0.1)
+                                : Colors.transparent,
+                            borderRadius: BorderRadius.circular(
+                              AppColors.radiusLarge,
+                            ),
                             border: Border.all(
-                              color: isSelected ? Colors.orange : (isDark ? Colors.white10 : Colors.black12),
+                              color: isSelected
+                                  ? Colors.orange
+                                  : (isDark ? Colors.white10 : Colors.black12),
                             ),
                           ),
                           child: Row(
                             children: [
                               CircleAvatar(
-                                backgroundColor: Colors.orange.withOpacity(0.1),
-                                child: const Icon(Icons.money_off_rounded, color: Colors.orange, size: 20),
+                                backgroundColor: Colors.orange.withValues(
+                                  alpha: 0.1,
+                                ),
+                                child: const Icon(
+                                  Icons.money_off_rounded,
+                                  color: Colors.orange,
+                                  size: 20,
+                                ),
                               ),
                               const SizedBox(width: AppColors.md),
                               Expanded(
@@ -1434,11 +1767,11 @@ class _TransactionFormSheetState extends ConsumerState<TransactionFormSheet> {
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     Text(
-                                      debt.nombre, 
+                                      debt.nombre,
                                       style: GoogleFonts.montserrat(
                                         fontWeight: FontWeight.w700,
                                         fontSize: AppColors.bodyMedium,
-                                      )
+                                      ),
                                     ),
                                     Text(
                                       'Monto restante: ${_moneyFormatter.format(debt.montoRestante)}',
@@ -1451,7 +1784,10 @@ class _TransactionFormSheetState extends ConsumerState<TransactionFormSheet> {
                                 ),
                               ),
                               if (isSelected)
-                                const Icon(Icons.check_circle_rounded, color: Colors.orange),
+                                const Icon(
+                                  Icons.check_circle_rounded,
+                                  color: Colors.orange,
+                                ),
                             ],
                           ),
                         ),
@@ -1530,13 +1866,12 @@ class _CategorySelectorModal extends StatefulWidget {
   final Color Function(String?) getColor;
 
   const _CategorySelectorModal({
-    Key? key,
     required this.categories,
     required this.selectedId,
     required this.onSelected,
     required this.getIcon,
     required this.getColor,
-  }) : super(key: key);
+  });
 
   @override
   State<_CategorySelectorModal> createState() => _CategorySelectorModalState();
@@ -1576,14 +1911,12 @@ class _CategorySelectorModalState extends State<_CategorySelectorModal> {
     final maxHeight = MediaQuery.of(context).size.height * 0.95;
 
     return Container(
-      constraints: BoxConstraints(
-        maxHeight: maxHeight,
-      ),
+      constraints: BoxConstraints(maxHeight: maxHeight),
       padding: EdgeInsets.only(
-        top: 24, 
-        left: 20, 
-        right: 20, 
-        bottom: bottomInset > 0 ? bottomInset + 16 : 30 
+        top: 24,
+        left: 20,
+        right: 20,
+        bottom: bottomInset > 0 ? bottomInset + 16 : 30,
       ),
       decoration: BoxDecoration(
         color: Theme.of(context).scaffoldBackgroundColor,
@@ -1598,7 +1931,7 @@ class _CategorySelectorModalState extends State<_CategorySelectorModal> {
               width: 40,
               height: 4,
               decoration: BoxDecoration(
-                color: Colors.grey.withOpacity(0.3),
+                color: Colors.grey.withValues(alpha: 0.3),
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
@@ -1622,14 +1955,23 @@ class _CategorySelectorModalState extends State<_CategorySelectorModal> {
             decoration: InputDecoration(
               hintText: 'Buscar categoría...',
               hintStyle: TextStyle(color: Colors.grey),
-              prefixIcon: const Icon(Icons.search, size: 20, color: Colors.grey),
+              prefixIcon: const Icon(
+                Icons.search,
+                size: 20,
+                color: Colors.grey,
+              ),
               filled: true,
-              fillColor: isDark ? Colors.white.withOpacity(0.05) : Colors.grey[100],
+              fillColor: isDark
+                  ? Colors.white.withValues(alpha: 0.05)
+                  : Colors.grey[100],
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
                 borderSide: BorderSide.none,
               ),
-              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 16,
+                vertical: 12,
+              ),
             ),
           ),
           const SizedBox(height: 20),
@@ -1648,30 +1990,36 @@ class _CategorySelectorModalState extends State<_CategorySelectorModal> {
                     child: GridView.builder(
                       shrinkWrap: true,
                       physics: const NeverScrollableScrollPhysics(),
-                      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                        crossAxisCount: 3,
-                        childAspectRatio: 1.0,
-                        crossAxisSpacing: 12,
-                        mainAxisSpacing: 12,
-                      ),
+                      gridDelegate:
+                          const SliverGridDelegateWithFixedCrossAxisCount(
+                            crossAxisCount: 3,
+                            childAspectRatio: 1.0,
+                            crossAxisSpacing: 12,
+                            mainAxisSpacing: 12,
+                          ),
                       itemCount: _filteredCategories.length,
                       itemBuilder: (context, index) {
                         final cat = _filteredCategories[index];
                         final isSelected = widget.selectedId == cat.id;
                         final catColor = widget.getColor(cat.color);
-                        
+
                         return InkWell(
+                          splashColor: Colors.transparent,
+                          highlightColor: Colors.transparent,
+                          hoverColor: Colors.transparent,
                           onTap: () => widget.onSelected(cat.id),
                           borderRadius: BorderRadius.circular(20),
                           child: Container(
                             decoration: BoxDecoration(
-                              color: isSelected 
-                                  ? catColor.withOpacity(0.15) 
-                                  : isDark 
-                                      ? Colors.white.withOpacity(0.05) 
-                                      : Colors.grey[50],
+                              color: isSelected
+                                  ? catColor.withValues(alpha: 0.15)
+                                  : isDark
+                                  ? Colors.white.withValues(alpha: 0.05)
+                                  : Colors.grey[50],
                               border: Border.all(
-                                color: isSelected ? catColor : Colors.transparent,
+                                color: isSelected
+                                    ? catColor
+                                    : Colors.transparent,
                                 width: 2,
                               ),
                               borderRadius: BorderRadius.circular(20),
@@ -1682,7 +2030,7 @@ class _CategorySelectorModalState extends State<_CategorySelectorModal> {
                                 Container(
                                   padding: const EdgeInsets.all(12),
                                   decoration: BoxDecoration(
-                                    color: catColor.withOpacity(0.1),
+                                    color: catColor.withValues(alpha: 0.1),
                                     shape: BoxShape.circle,
                                   ),
                                   child: Icon(
@@ -1693,7 +2041,9 @@ class _CategorySelectorModalState extends State<_CategorySelectorModal> {
                                 ),
                                 const SizedBox(height: 8),
                                 Padding(
-                                  padding: const EdgeInsets.symmetric(horizontal: 4),
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 4,
+                                  ),
                                   child: Text(
                                     cat.nombre,
                                     textAlign: TextAlign.center,
@@ -1701,12 +2051,14 @@ class _CategorySelectorModalState extends State<_CategorySelectorModal> {
                                     overflow: TextOverflow.ellipsis,
                                     style: GoogleFonts.montserrat(
                                       fontSize: AppColors.bodySmall,
-                                      fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-                                      color: isSelected 
-                                          ? catColor 
-                                          : isDark 
-                                              ? Colors.white70 
-                                              : Colors.black87,
+                                      fontWeight: isSelected
+                                          ? FontWeight.w700
+                                          : FontWeight.w500,
+                                      color: isSelected
+                                          ? catColor
+                                          : isDark
+                                          ? Colors.white70
+                                          : Colors.black87,
                                     ),
                                   ),
                                 ),
