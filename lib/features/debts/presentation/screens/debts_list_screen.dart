@@ -13,12 +13,7 @@ class DebtsListScreen extends ConsumerWidget {
   const DebtsListScreen({Key? key}) : super(key: key);
 
   void _showDebtForm(BuildContext context, {DebtModel? debt}) {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (context) => DebtFormSheet(debt: debt),
-    );
+    showDebtFormSheet(context, debt: debt);
   }
 
   @override
@@ -64,10 +59,13 @@ class DebtsListScreen extends ConsumerWidget {
         loading: () => const Center(child: LoadingIndicator()),
         error: (error, _) => Center(child: Text('Error: $error')),
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () => _showDebtForm(context),
-        backgroundColor: AppColors.primary,
-        child: const Icon(Icons.add, color: Colors.white),
+      floatingActionButton: Padding(
+        padding: const EdgeInsets.only(bottom: 60), // Subido para que no lo tape el menú
+        child: FloatingActionButton(
+          onPressed: () => _showDebtForm(context),
+          backgroundColor: AppColors.primary,
+          child: const Icon(Icons.add, color: Colors.white),
+        ),
       ),
     );
   }

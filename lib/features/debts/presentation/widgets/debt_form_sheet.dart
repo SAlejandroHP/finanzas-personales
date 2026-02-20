@@ -1,517 +1,481 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:uuid/uuid.dart';
 import 'package:intl/intl.dart' as intl;
+import 'package:uuid/uuid.dart';
 import 'package:math_expressions/math_expressions.dart';
+import 'package:collection/collection.dart';
+
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/widgets/app_button.dart';
-import '../../../../core/widgets/app_text_field.dart';
 import '../../../../core/widgets/app_toast.dart';
 import '../../../accounts/presentation/providers/accounts_provider.dart';
-import 'package:finanzas/features/debts/models/debt_model.dart';
+import '../../../accounts/models/account_model.dart';
+import '../../models/debt_model.dart';
 import '../providers/debts_provider.dart';
+import '../../../transactions/models/transaction_model.dart';
+import '../../../transactions/presentation/providers/transactions_provider.dart';
 
-/// Bottom sheet para crear o editar una deuda.
+/// Función que abre el bottom sheet para agregar/editar una deuda
+Future<void> showDebtFormSheet(
+  BuildContext context, {
+  DebtModel? debt,
+}) async {
+  return showModalBottomSheet(
+    context: context,
+    isScrollControlled: true,
+    useRootNavigator: true,
+    backgroundColor: Colors.transparent,
+    barrierColor: Colors.black.withOpacity(0.5),
+    builder: (context) => DebtFormSheet(debt: debt),
+  );
+}
+
 class DebtFormSheet extends ConsumerStatefulWidget {
   final DebtModel? debt;
 
-  const DebtFormSheet({Key? key, this.debt}) : super(key: key);
+  const DebtFormSheet({super.key, this.debt});
 
   @override
   ConsumerState<DebtFormSheet> createState() => _DebtFormSheetState();
 }
 
 class _DebtFormSheetState extends ConsumerState<DebtFormSheet> {
-  final _formKey = GlobalKey<FormState>();
-  final _nombreController = TextEditingController();
-  final _montoTotalController = TextEditingController();
-  final _montoRestanteController = TextEditingController();
-  final _descripcionController = TextEditingController();
+  late String _tipo;
+  late double _montoTotal;
+  late DateTime? _fechaVencimiento;
+  late String? _cuentaAsociadaId;
 
-  final _montoTotalFocusNode = FocusNode();
-  final _montoRestanteFocusNode = FocusNode();
   final _calculatorResult = ValueNotifier<double?>(null);
-  
-  // Formatter para moneda
+  late TextEditingController _montoController;
+  late TextEditingController _nombreController;
+  late TextEditingController _descripcionController;
+  final _montoFocusNode = FocusNode();
+  final _nombreFocusNode = FocusNode();
+  final _descripcionFocusNode = FocusNode();
+
   late final intl.NumberFormat _moneyFormatter;
-  
-  String _tipo = 'prestamo_personal';
-  DateTime? _fechaVencimiento;
-  String? _cuentaAsociadaId;
-  bool _isLoading = false;
 
   @override
   void initState() {
     super.initState();
-
     _moneyFormatter = intl.NumberFormat.currency(
       locale: 'es_MX',
       symbol: '\$ ',
       decimalDigits: 2,
     );
 
-    // listeners para calculadora
-    _montoTotalController.addListener(() => _onMontoChanged(_montoTotalController));
-    _montoRestanteController.addListener(() => _onMontoChanged(_montoRestanteController));
-
-    _montoTotalFocusNode.addListener(() => setState(() {}));
-    _montoRestanteFocusNode.addListener(() => setState(() {}));
-
     if (widget.debt != null) {
-      _nombreController.text = widget.debt!.nombre;
-      _montoTotalController.text = widget.debt!.montoTotal.toString();
-      _montoRestanteController.text = widget.debt!.montoRestante.toString();
-      _descripcionController.text = widget.debt!.descripcion ?? '';
       _tipo = widget.debt!.tipo;
+      _montoTotal = widget.debt!.montoTotal;
       _fechaVencimiento = widget.debt!.fechaVencimiento;
       _cuentaAsociadaId = widget.debt!.cuentaAsociadaId;
+    } else {
+      _tipo = 'prestamo_personal';
+      _montoTotal = 0.0;
+      _fechaVencimiento = null;
+      _cuentaAsociadaId = null;
     }
+
+    _montoController = TextEditingController(
+      text: _montoTotal > 0 ? _moneyFormatter.format(_montoTotal) : '',
+    );
+    _nombreController = TextEditingController(text: widget.debt?.nombre ?? '');
+    _descripcionController = TextEditingController(text: widget.debt?.descripcion ?? '');
+
+    _montoController.addListener(_onMontoChanged);
+    _montoFocusNode.addListener(() => setState(() {}));
+    _nombreFocusNode.addListener(() => setState(() {}));
   }
 
   @override
   void dispose() {
+    _montoController.dispose();
     _nombreController.dispose();
-    _montoTotalController.dispose();
-    _montoRestanteController.dispose();
     _descripcionController.dispose();
-    _montoTotalFocusNode.dispose();
-    _montoRestanteFocusNode.dispose();
+    _montoFocusNode.dispose();
+    _nombreFocusNode.dispose();
+    _descripcionFocusNode.dispose();
     _calculatorResult.dispose();
     super.dispose();
   }
 
-  void _onMontoChanged(TextEditingController controller) {
-    final text = controller.text.trim();
-    final cleanText = text.replaceAll(RegExp(r'[^\d\.\+\-\*\/\(\)]'), '').trim();
-    
+  void _onMontoChanged() {
+    final text = _montoController.text.trim();
+    final cleanText = text.replaceAll(RegExp(r'[^0-9.\+\-\*\/()]'), '').trim();
+
     if (cleanText.isEmpty) {
       _calculatorResult.value = null;
+      _montoTotal = 0.0;
       return;
     }
 
     final result = _evaluateExpressionSafely(cleanText);
     if (result != null && result > 0) {
+      _montoTotal = result;
       _calculatorResult.value = result;
     } else {
-      _calculatorResult.value = null;
+      final numValue = double.tryParse(cleanText);
+      if (numValue != null && numValue > 0) {
+        _montoTotal = numValue;
+        _calculatorResult.value = null;
+      } else {
+        _calculatorResult.value = null;
+      }
     }
   }
 
   double? _evaluateExpressionSafely(String expr) {
     try {
-      if (!RegExp(r'^[\d+\-*/().\s]+$').hasMatch(expr)) return null;
-      final parser = Parser();
+      if (!RegExp(r'^[0-9+\-*/().\s]+$').hasMatch(expr)) return null;
+      final parser = ShuntingYardParser();
       final expression = parser.parse(expr);
       final contextModel = ContextModel();
       final result = expression.evaluate(EvaluationType.REAL, contextModel);
       if (result is num && result.isFinite && result > 0) return result.toDouble();
       return null;
-    } catch (e) {
+    } catch (_) {
       return null;
     }
   }
 
-  void _insertOperator(String op) {
-    TextEditingController? controller;
-    if (_montoTotalFocusNode.hasFocus) controller = _montoTotalController;
-    else if (_montoRestanteFocusNode.hasFocus) controller = _montoRestanteController;
-
-    if (controller == null) return;
-
-    final text = controller.text;
-    final selection = controller.selection;
-    
-    if (!selection.isValid) {
-      controller.text = text + op;
-      controller.selection = TextSelection.collapsed(offset: controller.text.length);
-      return;
-    }
-
-    final newText = text.replaceRange(selection.start, selection.end, op);
-    controller.text = newText;
-    controller.selection = TextSelection.collapsed(offset: selection.start + op.length);
-  }
-
-  Widget _buildAdaptiveFooter(bool isDark) {
-    if (_montoTotalFocusNode.hasFocus || _montoRestanteFocusNode.hasFocus) {
-      return _buildCalculatorToolbar(isDark);
-    }
-
-    return Padding(
-      padding: const EdgeInsets.all(20),
-      child: AppButton(
-        label: widget.debt != null ? 'Actualizar Deuda' : 'Guardar Deuda',
-        isLoading: _isLoading,
-        onPressed: _save,
-        isFullWidth: true,
-      ),
-    );
-  }
-
-  Widget _buildCalculatorToolbar(bool isDark) {
-    final operators = ['+', '-', '*', '/'];
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
-        border: Border(top: BorderSide(color: isDark ? Colors.white10 : Colors.black12)),
-      ),
-      child: SafeArea(
-        top: false,
-        child: Row(
-          children: [
-            ...operators.map((op) => Expanded(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 4),
-                child: InkWell(
-                  onTap: () => _insertOperator(op),
-                  borderRadius: BorderRadius.circular(8),
-                  child: Container(
-                    height: 44,
-                    alignment: Alignment.center,
-                    decoration: BoxDecoration(
-                      color: isDark ? Colors.white.withOpacity(0.05) : Colors.grey[100],
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Text(op, style: GoogleFonts.montserrat(fontSize: AppColors.titleMedium, fontWeight: FontWeight.w600, color: AppColors.primary)),
-                  ),
-                ),
-              ),
-            )),
-            const SizedBox(width: 8),
-            ValueListenableBuilder<double?>(
-              valueListenable: _calculatorResult,
-              builder: (context, result, _) {
-                return InkWell(
-                  onTap: () {
-                    final focusNode = _montoTotalFocusNode.hasFocus ? _montoTotalFocusNode : _montoRestanteFocusNode;
-                    final controller = _montoTotalFocusNode.hasFocus ? _montoTotalController : _montoRestanteController;
-                    
-                    if (result != null) {
-                      controller.text = result.toStringAsFixed(2);
-                    }
-                    focusNode.unfocus();
-                  },
-                  child: Container(
-                    height: 44,
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    decoration: BoxDecoration(color: AppColors.primary, borderRadius: BorderRadius.circular(8)),
-                    child: const Center(child: Icon(Icons.check_rounded, color: Colors.white, size: 24)),
-                  ),
-                );
-              }
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
   Future<void> _selectDate() async {
-    final picked = await showDatePicker(
+    final DateTime? picked = await showDatePicker(
       context: context,
-      initialDate: _fechaVencimiento ?? DateTime.now(),
+      initialDate: _fechaVencimiento ?? DateTime.now().add(const Duration(days: 30)),
       firstDate: DateTime.now().subtract(const Duration(days: 365)),
-      lastDate: DateTime.now().add(const Duration(days: 365 * 5)),
-      builder: (context, child) {
-        return Theme(
-          data: Theme.of(context).copyWith(
-            colorScheme: ColorScheme.light(
-              primary: AppColors.primary,
-              onPrimary: Colors.white,
-              onSurface: AppColors.textPrimary,
-            ),
-          ),
-          child: child!,
-        );
-      },
+      lastDate: DateTime.now().add(const Duration(days: 365 * 10)),
     );
     if (picked != null) {
       setState(() => _fechaVencimiento = picked);
     }
   }
 
-  Future<void> _save() async {
-    if (!_formKey.currentState!.validate()) return;
+  Future<void> _saveDebt() async {
+    final nombre = _nombreController.text.trim();
+    if (nombre.isEmpty || _montoTotal <= 0) {
+      showAppToast(context, message: 'Nombre y monto son obligatorios', type: ToastType.error);
+      return;
+    }
 
-    setState(() => _isLoading = true);
     try {
-      final montoTotal = double.parse(_montoTotalController.text);
-      final montoRestante = _montoRestanteController.text.isEmpty 
-          ? montoTotal 
-          : double.parse(_montoRestanteController.text);
-
+      final debtId = widget.debt?.id ?? const Uuid().v4();
       final debt = DebtModel(
-        id: widget.debt?.id ?? const Uuid().v4(),
-        userId: '', // Se asigna en el repositorio
-        nombre: _nombreController.text.trim(),
+        id: debtId,
+        userId: '',
+        nombre: nombre,
         tipo: _tipo,
-        montoTotal: montoTotal,
-        montoRestante: montoRestante,
+        montoTotal: _montoTotal,
+        montoRestante: widget.debt?.montoRestante ?? _montoTotal,
         fechaVencimiento: _fechaVencimiento,
         cuentaAsociadaId: _cuentaAsociadaId,
         descripcion: _descripcionController.text.trim().isEmpty ? null : _descripcionController.text.trim(),
-        estado: montoRestante <= 0 ? 'pagada' : 'activa',
+        estado: _montoTotal <= 0 ? 'pagada' : 'activa',
         createdAt: widget.debt?.createdAt ?? DateTime.now(),
       );
 
-      if (widget.debt != null) {
-        await ref.read(debtsNotifierProvider.notifier).updateDebt(debt);
-      } else {
+      if (widget.debt == null) {
         await ref.read(debtsNotifierProvider.notifier).createDebt(debt);
+        if (_cuentaAsociadaId != null) {
+           final transaction = TransactionModel(
+             id: const Uuid().v4(),
+             userId: '',
+             tipo: 'ingreso',
+             monto: _montoTotal,
+             fecha: DateTime.now(),
+             estado: 'completa',
+             descripcion: 'Préstamo: $nombre',
+             cuentaOrigenId: _cuentaAsociadaId!,
+             deudaId: debtId,
+             createdAt: DateTime.now(),
+           );
+           await ref.read(transactionsNotifierProvider.notifier).createTransaction(transaction);
+        }
+      } else {
+        await ref.read(debtsNotifierProvider.notifier).updateDebt(debt);
       }
 
       if (mounted) {
-        showAppToast(context, message: 'Deuda guardada', type: ToastType.success);
+        showAppToast(context, message: 'Deuda registrada exitosamente', type: ToastType.success);
         Navigator.pop(context);
       }
     } catch (e) {
-      showAppToast(context, message: 'Error: $e', type: ToastType.error);
-    } finally {
-      if (mounted) setState(() => _isLoading = false);
+       if (mounted) showAppToast(context, message: 'Error: ${e.toString()}', type: ToastType.error);
     }
   }
 
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final surfaceColor = isDark ? AppColors.surfaceDark : Colors.white;
     final accounts = ref.watch(accountsWithBalanceProvider);
+    final bottomInset = MediaQuery.of(context).viewInsets.bottom;
 
-    return DraggableScrollableSheet(
-      initialChildSize: 0.85,
-      minChildSize: 0.5,
-      maxChildSize: 0.95,
-      expand: false,
-      builder: (context, scrollController) {
-        return Container(
-          decoration: BoxDecoration(
-            color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-          ),
-          child: Column(
-            children: [
-              // Header
-              Padding(
-                padding: const EdgeInsets.all(16),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      widget.debt != null ? 'Editar Deuda' : 'Nueva Deuda',
-                      style: GoogleFonts.montserrat(
-                        fontSize: AppColors.titleSmall,
-                        fontWeight: FontWeight.w700,
-                        color: isDark ? Colors.white : AppColors.textPrimary,
-                      ),
-                    ),
-                    IconButton(
-                      icon: const Icon(Icons.close),
-                      onPressed: () => Navigator.pop(context),
-                    ),
-                  ],
+    return Container(
+      decoration: BoxDecoration(
+        color: surfaceColor,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(AppColors.radiusXLarge)),
+      ),
+      child: Padding(
+        padding: EdgeInsets.only(bottom: bottomInset),
+        child: DraggableScrollableSheet(
+          initialChildSize: 0.85,
+          minChildSize: 0.5,
+          maxChildSize: 0.95,
+          expand: false,
+          builder: (context, scrollController) {
+            return Column(
+              children: [
+                Container(
+                  margin: const EdgeInsets.only(top: 12, bottom: 8),
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: isDark ? Colors.white24 : Colors.black12,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
                 ),
-              ),
-              const Divider(height: 1),
-              
-              // Form
-              Expanded(
-                child: ListView(
-                  controller: scrollController,
-                  padding: const EdgeInsets.all(20),
-                  children: [
-                    Form(
-                      key: _formKey,
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          AppTextField(
-                            controller: _nombreController,
-                            label: 'Nombre de la deuda',
-                            hintText: 'ej. Préstamo a mi hermano',
-                            prefixIcon: Icons.title,
-                            validator: (v) => v?.isEmpty ?? true ? 'Requerido' : null,
-                          ),
-                          const SizedBox(height: 16),
-                          
-                          // Tipo de deuda
-                          Text(
-                            'Tipo de deuda',
-                            style: GoogleFonts.montserrat(
-                              fontSize: AppColors.bodySmall,
-                              fontWeight: FontWeight.w600,
-                              color: Colors.grey,
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                          DropdownButtonFormField<String>(
-                            value: _tipo,
-                            decoration: InputDecoration(
-                              filled: true,
-                              fillColor: isDark ? Colors.white.withOpacity(0.05) : Colors.grey[50],
-                              border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(12),
-                                borderSide: BorderSide.none,
-                              ),
-                              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                            ),
-                            items: const [
-                              DropdownMenuItem(value: 'prestamo_personal', child: Text('Préstamo Personal')),
-                              DropdownMenuItem(value: 'prestamo_bancario', child: Text('Préstamo Bancario')),
-                              DropdownMenuItem(value: 'servicio', child: Text('Servicio (Luz, Agua, etc.)')),
-                              DropdownMenuItem(value: 'otro', child: Text('Otro')),
-                            ],
-                            onChanged: (v) => setState(() => _tipo = v!),
-                          ),
-                          const SizedBox(height: 16),
-                          
-                          Row(
-                            crossAxisAlignment: CrossAxisAlignment.start,
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        widget.debt != null ? 'Editar Deuda' : 'Nueva Deuda',
+                        style: GoogleFonts.montserrat(
+                          fontSize: 20,
+                          fontWeight: FontWeight.w700,
+                          color: isDark ? Colors.white : AppColors.textPrimary,
+                        ),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.close_rounded),
+                        onPressed: () => Navigator.pop(context),
+                        style: IconButton.styleFrom(
+                          backgroundColor: isDark ? Colors.white10 : Colors.grey[100],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Expanded(
+                  child: SingleChildScrollView(
+                    controller: scrollController,
+                    padding: const EdgeInsets.symmetric(horizontal: 24),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const SizedBox(height: 20),
+                        Center(
+                          child: Column(
                             children: [
-                              Expanded(
-                                child: Column(
-                                  children: [
-                                    AppTextField(
-                                      controller: _montoTotalController,
-                                      focusNode: _montoTotalFocusNode,
-                                      label: 'Monto Total',
-                                      keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                                      prefixIcon: Icons.attach_money,
-                                      validator: (v) => v?.isEmpty ?? true ? 'Requerido' : null,
-                                      onChanged: (v) {
-                                        if (widget.debt == null) {
-                                          _montoRestanteController.text = v;
-                                        }
-                                      },
-                                      onSubmitted: (_) {
-                                        if (_calculatorResult.value != null) {
-                                          _montoTotalController.text = _calculatorResult.value!.toStringAsFixed(2);
-                                        }
-                                        _montoTotalFocusNode.unfocus();
-                                      },
-                                    ),
-                                    if (_montoTotalFocusNode.hasFocus)
-                                      ValueListenableBuilder<double?>(
-                                        valueListenable: _calculatorResult,
-                                        builder: (context, result, _) {
-                                          if (result == null) return const SizedBox.shrink();
-                                          return Padding(
-                                            padding: const EdgeInsets.only(top: 4),
-                                            child: Text('= ${_moneyFormatter.format(result)}', style: GoogleFonts.montserrat(fontSize: AppColors.bodySmall, color: Colors.green, fontWeight: FontWeight.w600)),
-                                          );
-                                        },
-                                      ),
-                                  ],
+                              Text(
+                                'MONTO TOTAL DE LA DEUDA',
+                                style: GoogleFonts.montserrat(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w800,
+                                  color: Colors.grey,
+                                  letterSpacing: 1.5,
                                 ),
                               ),
-                              const SizedBox(width: 16),
-                              Expanded(
-                                child: Column(
-                                  children: [
-                                    AppTextField(
-                                      controller: _montoRestanteController,
-                                      focusNode: _montoRestanteFocusNode,
-                                      label: 'Monto Restante',
-                                      keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                                      prefixIcon: Icons.money_off,
-                                      hintText: 'Default: Total',
-                                      onSubmitted: (_) {
-                                        if (_calculatorResult.value != null) {
-                                          _montoRestanteController.text = _calculatorResult.value!.toStringAsFixed(2);
-                                        }
-                                        _montoRestanteFocusNode.unfocus();
-                                      },
-                                    ),
-                                    if (_montoRestanteFocusNode.hasFocus)
-                                      ValueListenableBuilder<double?>(
-                                        valueListenable: _calculatorResult,
-                                        builder: (context, result, _) {
-                                          if (result == null) return const SizedBox.shrink();
-                                          return Padding(
-                                            padding: const EdgeInsets.only(top: 4),
-                                            child: Text('= ${_moneyFormatter.format(result)}', style: GoogleFonts.montserrat(fontSize: AppColors.bodySmall, color: Colors.green, fontWeight: FontWeight.w600)),
-                                          );
-                                        },
-                                      ),
-                                  ],
+                              const SizedBox(height: 8),
+                              TextField(
+                                controller: _montoController,
+                                focusNode: _montoFocusNode,
+                                textAlign: TextAlign.center,
+                                keyboardType: TextInputType.none,
+                                showCursor: true,
+                                style: GoogleFonts.montserrat(
+                                  fontSize: 44,
+                                  fontWeight: FontWeight.w800,
+                                  color: AppColors.secondary,
                                 ),
+                                decoration: const InputDecoration(
+                                  border: InputBorder.none,
+                                  hintText: '\$ 0.00',
+                                  hintStyle: TextStyle(color: Colors.grey),
+                                ),
+                              ),
+                              ValueListenableBuilder<double?>(
+                                valueListenable: _calculatorResult,
+                                builder: (context, result, _) {
+                                  if (result == null) return const SizedBox(height: 20);
+                                  return Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                                    decoration: BoxDecoration(
+                                      color: AppColors.secondary.withOpacity(0.1),
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                    child: Text(
+                                      '= ${_moneyFormatter.format(result)}',
+                                      style: GoogleFonts.montserrat(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.w700,
+                                        color: AppColors.secondary,
+                                      ),
+                                    ),
+                                  );
+                                },
                               ),
                             ],
                           ),
-                          const SizedBox(height: 16),
-                          
-                          // Fecha de vencimiento
-                          _buildSelectorTile(
-                            label: 'Fecha de vencimiento (Opcional)',
-                            value: _fechaVencimiento != null 
-                                ? intl.DateFormat('dd/MM/yyyy').format(_fechaVencimiento!) 
-                                : 'No seleccionada',
-                            icon: Icons.calendar_today,
-                            onTap: _selectDate,
-                            isDark: isDark,
-                          ),
-                          const SizedBox(height: 16),
-                          
-                          // Cuenta asociada
-                          accounts.when(
-                            data: (list) => Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  'Cuenta asociada (Opcional)',
-                                  style: GoogleFonts.montserrat(
-                                    fontSize: AppColors.bodySmall,
-                                    fontWeight: FontWeight.w600,
-                                    color: Colors.grey,
-                                  ),
-                                ),
-                                const SizedBox(height: 8),
-                                DropdownButtonFormField<String>(
-                                  value: _cuentaAsociadaId,
-                                  decoration: InputDecoration(
-                                    filled: true,
-                                    fillColor: isDark ? Colors.white.withOpacity(0.05) : Colors.grey[50],
-                                    border: OutlineInputBorder(
-                                      borderRadius: BorderRadius.circular(12),
-                                      borderSide: BorderSide.none,
-                                    ),
-                                    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                                  ),
-                                  hint: const Text('Ninguna'),
-                                  items: [
-                                    const DropdownMenuItem(value: null, child: Text('Ninguna')),
-                                    ...list.map((acc) => DropdownMenuItem(
-                                      value: acc.id,
-                                      child: Text(acc.nombre),
-                                    )),
-                                  ],
-                                  onChanged: (v) => setState(() => _cuentaAsociadaId = v),
-                                ),
-                              ],
-                            ),
-                            loading: () => const LinearProgressIndicator(),
-                            error: (_, __) => const Text('Error al cargar cuentas'),
-                          ),
-                          const SizedBox(height: 16),
-                          
-                          AppTextField(
-                            controller: _descripcionController,
-                            label: 'Descripción / Notas',
-                            maxLines: 3,
-                            prefixIcon: Icons.notes,
-                          ),
-                          const SizedBox(height: 40),
-                        ],
-                      ),
+                        ),
+                        const SizedBox(height: 32),
+                        _buildSectionHeader('INFORMACIÓN BÁSICA'),
+                        const SizedBox(height: 16),
+                        _buildTextField(
+                          controller: _nombreController,
+                          focusNode: _nombreFocusNode,
+                          label: 'Nombre de la deuda',
+                          hint: 'Ej: Préstamo Banco, Deuda Familiar...',
+                          icon: Icons.edit_note_rounded,
+                          isDark: isDark,
+                        ),
+                        const SizedBox(height: 16),
+                        _buildTypePills(isDark),
+                        const SizedBox(height: 24),
+                        _buildSectionHeader('DETALLES Y VENCIMIENTO'),
+                        const SizedBox(height: 16),
+                        _buildSelectorTile(
+                          label: 'Fecha de vencimiento',
+                          value: _fechaVencimiento != null 
+                              ? intl.DateFormat('dd MMM, yyyy', 'es').format(_fechaVencimiento!)
+                              : 'Opcional',
+                          icon: Icons.calendar_today_rounded,
+                          onTap: _selectDate,
+                          isDark: isDark,
+                        ),
+                        const SizedBox(height: 16),
+                        _buildSelectorTile(
+                          label: '¿Dónde recibes el dinero?',
+                          value: _getAccountName(_cuentaAsociadaId, accounts),
+                          icon: Icons.account_balance_wallet_rounded,
+                          onTap: () => _showAccountSelector(context, accounts),
+                          isDark: isDark,
+                        ),
+                        const SizedBox(height: 16),
+                        _buildTextField(
+                          controller: _descripcionController,
+                          focusNode: _descripcionFocusNode,
+                          label: 'Notas adicionales',
+                          hint: 'Opcional...',
+                          icon: Icons.notes_rounded,
+                          isDark: isDark,
+                          maxLines: 2,
+                        ),
+                        const SizedBox(height: 120),
+                      ],
                     ),
-                  ],
+                  ),
                 ),
-              ),
-              _buildAdaptiveFooter(isDark),
+                _buildAdaptiveFooter(isDark),
+              ],
+            );
+          },
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSectionHeader(String title) {
+    return Padding(
+      padding: const EdgeInsets.only(left: 4),
+      child: Text(
+        title,
+        style: GoogleFonts.montserrat(
+          fontSize: 11,
+          fontWeight: FontWeight.w800,
+          letterSpacing: 1.5,
+          color: Colors.grey.withOpacity(0.8),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTextField({
+    required TextEditingController controller,
+    required FocusNode focusNode,
+    required String label,
+    required String hint,
+    required IconData icon,
+    required bool isDark,
+    int maxLines = 1,
+  }) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: isDark ? Colors.white.withOpacity(0.05) : Colors.grey[50],
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: isDark ? Colors.white10 : Colors.black.withOpacity(0.05)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(icon, size: 16, color: Colors.grey),
+              const SizedBox(width: 8),
+              Text(label, style: GoogleFonts.montserrat(fontSize: 11, color: Colors.grey, fontWeight: FontWeight.w600)),
             ],
           ),
-        );
-      },
+          TextField(
+            controller: controller,
+            focusNode: focusNode,
+            maxLines: maxLines,
+            style: GoogleFonts.montserrat(fontSize: 16, fontWeight: FontWeight.w700),
+            decoration: InputDecoration(
+              hintText: hint,
+              hintStyle: const TextStyle(color: Colors.grey, fontWeight: FontWeight.w400),
+              border: InputBorder.none,
+              isDense: true,
+              contentPadding: const EdgeInsets.only(top: 8),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTypePills(bool isDark) {
+    final types = [
+      {'id': 'prestamo_personal', 'name': 'Personal', 'icon': Icons.people_outline},
+      {'id': 'prestamo_bancario', 'name': 'Bancario', 'icon': Icons.account_balance_outlined},
+      {'id': 'servicio', 'name': 'Servicio', 'icon': Icons.receipt_long_outlined},
+      {'id': 'otro', 'name': 'Otro', 'icon': Icons.more_horiz_outlined},
+    ];
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      physics: const BouncingScrollPhysics(),
+      child: Row(
+        children: types.map((t) {
+          final isSelected = _tipo == t['id'];
+          return GestureDetector(
+            onTap: () => setState(() => _tipo = t['id'] as String),
+            child: Container(
+              margin: const EdgeInsets.only(right: 12),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              decoration: BoxDecoration(
+                color: isSelected ? AppColors.primary : (isDark ? Colors.white10 : Colors.grey[100]),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Row(
+                children: [
+                  Icon(t['icon'] as IconData, color: isSelected ? Colors.white : Colors.grey, size: 18),
+                  const SizedBox(width: 8),
+                  Text(
+                    t['name'] as String,
+                    style: GoogleFonts.montserrat(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
+                      color: isSelected ? Colors.white : Colors.grey,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
+        }).toList(),
+      ),
     );
   }
 
@@ -524,38 +488,172 @@ class _DebtFormSheetState extends ConsumerState<DebtFormSheet> {
   }) {
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(12),
+      borderRadius: BorderRadius.circular(16),
       child: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
           color: isDark ? Colors.white.withOpacity(0.05) : Colors.grey[50],
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: isDark ? Colors.white10 : Colors.black.withOpacity(0.05)),
         ),
         child: Row(
           children: [
-            Icon(icon, size: 20, color: AppColors.primary),
-            const SizedBox(width: 12),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  label,
-                  style: const TextStyle(fontSize: AppColors.bodySmall, color: Colors.grey, fontWeight: FontWeight.w500),
-                ),
-                Text(
-                  value,
-                  style: GoogleFonts.montserrat(
-                    fontSize: AppColors.bodyMedium,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ],
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: AppColors.primary.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Icon(icon, size: 20, color: AppColors.primary),
             ),
-            const Spacer(),
-            const Icon(Icons.chevron_right, size: 18, color: Colors.grey),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(label, style: GoogleFonts.montserrat(fontSize: 11, color: Colors.grey, fontWeight: FontWeight.w600)),
+                  Text(value, style: GoogleFonts.montserrat(fontSize: 16, fontWeight: FontWeight.w700)),
+                ],
+              ),
+            ),
+            const Icon(Icons.chevron_right_rounded, color: Colors.grey),
           ],
         ),
       ),
     );
+  }
+
+  Widget _buildAdaptiveFooter(bool isDark) {
+    if (_montoFocusNode.hasFocus) {
+      return _buildCalculatorToolbar(isDark);
+    }
+    return Container(
+      padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
+      child: AppButton(
+        label: widget.debt != null ? 'Actualizar Deuda' : 'Registrar Deuda',
+        onPressed: _saveDebt,
+        isFullWidth: true,
+      ),
+    );
+  }
+
+  Widget _buildCalculatorToolbar(bool isDark) {
+    final operators = ['+', '-', '*', '/'];
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
+      child: SafeArea(
+        top: false,
+        child: Row(
+          children: [
+            ...operators.map((op) => Expanded(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 4),
+                child: IconButton(
+                  onPressed: () => _insertOperator(op),
+                  icon: Text(op, style: GoogleFonts.montserrat(fontSize: 24, color: AppColors.primary, fontWeight: FontWeight.w600)),
+                  style: IconButton.styleFrom(backgroundColor: isDark ? Colors.white10 : Colors.grey[100]),
+                ),
+              ),
+            )),
+            const SizedBox(width: 8),
+            IconButton(
+              onPressed: () {
+                _montoFocusNode.unfocus();
+                if (_calculatorResult.value != null) {
+                  setState(() {
+                    _montoController.text = _moneyFormatter.format(_calculatorResult.value);
+                    _onMontoChanged();
+                  });
+                }
+              },
+              icon: const Icon(Icons.check_rounded, color: Colors.white, size: 28),
+              style: IconButton.styleFrom(
+                backgroundColor: AppColors.primary,
+                padding: const EdgeInsets.all(12),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _insertOperator(String op) {
+    final text = _montoController.text;
+    final selection = _montoController.selection;
+    final newText = text.replaceRange(selection.start.clamp(0, text.length), selection.end.clamp(0, text.length), op);
+    _montoController.text = newText;
+    _montoController.selection = TextSelection.collapsed(offset: (selection.start + op.length).clamp(0, _montoController.text.length));
+  }
+
+  String _getAccountName(String? id, AsyncValue<List<AccountModel>> accounts) {
+    if (id == null) return 'Ninguna';
+    return accounts.maybeWhen(
+      data: (list) => list.firstWhereOrNull((a) => a.id == id)?.nombre ?? 'Ninguna',
+      orElse: () => '...',
+    );
+  }
+
+  void _showAccountSelector(BuildContext context, AsyncValue<List<AccountModel>> accounts) {
+    accounts.whenData((list) {
+      showModalBottomSheet(
+        context: context,
+        backgroundColor: Colors.transparent,
+        builder: (context) {
+          final isDark = Theme.of(context).brightness == Brightness.dark;
+          return Container(
+            padding: const EdgeInsets.all(24),
+            decoration: BoxDecoration(
+              color: isDark ? AppColors.surfaceDark : Colors.white,
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(AppColors.radiusXLarge)),
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text('¿Dónde cae el dinero?', style: GoogleFonts.montserrat(fontWeight: FontWeight.w800, fontSize: 18)),
+                const SizedBox(height: 12),
+                Text('Si seleccionas una cuenta, se creará un ingreso por el monto de la deuda.', 
+                  textAlign: TextAlign.center,
+                  style: GoogleFonts.montserrat(fontSize: 12, color: Colors.grey)),
+                const SizedBox(height: 20),
+                Flexible(
+                  child: ListView.separated(
+                    shrinkWrap: true,
+                    itemCount: list.length,
+                    separatorBuilder: (_, __) => const SizedBox(height: 8),
+                    itemBuilder: (context, index) {
+                      final acc = list[index];
+                      return ListTile(
+                        onTap: () {
+                          setState(() => _cuentaAsociadaId = acc.id);
+                          Navigator.pop(context);
+                        },
+                        leading: Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(color: AppColors.primary.withOpacity(0.1), shape: BoxShape.circle),
+                          child: Icon(Icons.account_balance_wallet_outlined, color: AppColors.primary, size: 20),
+                        ),
+                        title: Text(acc.nombre, style: GoogleFonts.montserrat(fontWeight: FontWeight.w600)),
+                        subtitle: Text(acc.tipo),
+                        trailing: _cuentaAsociadaId == acc.id ? const Icon(Icons.check_circle, color: AppColors.primary) : null,
+                      );
+                    },
+                  ),
+                ),
+                const SizedBox(height: 8),
+                TextButton(
+                  onPressed: () {
+                    setState(() => _cuentaAsociadaId = null);
+                    Navigator.pop(context);
+                  }, 
+                  child: const Text('Ninguna (Solo registrar deuda)')
+                ),
+              ],
+            ),
+          );
+        },
+      );
+    });
   }
 }

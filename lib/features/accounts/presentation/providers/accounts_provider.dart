@@ -34,69 +34,13 @@ final accountsListProvider = StreamProvider<List<AccountModel>>((ref) async* {
 });
 
 /// Provider que calcula los saldos reales de las cuentas basándose en transacciones
-/// Real-time calculation from transactions to ensure data consistency
+/// NOTA: Se ha simplificado para confiar en el saldo_actual de la base de datos,
+/// el cual es mantenido consistente por FinanceService en tiempo real.
 final accountsWithBalanceProvider = Provider<AsyncValue<List<AccountModel>>>((ref) {
   final accountsAsync = ref.watch(accountsListProvider);
-  final transactionsAsync = ref.watch(transactionsListProvider);
   
   return accountsAsync.when(
-    data: (accounts) {
-      return transactionsAsync.when(
-        data: (transactions) {
-          return AsyncValue.data(accounts.map((account) {
-            final isTC = account.tipo == 'tarjeta_credito';
-            
-            // Lógica de saldo base:
-            // Para cuentas normales, empezamos con saldoInicial (su capital al crear la cuenta).
-            // Para Tarjetas de Crédito, saldoInicial es el LÍMITE.
-            // Pero si el usuario tenía deuda al inicio, el saldo disponible real era menor.
-            // Para corregir esto dinámicamente:
-            double balance = account.saldoInicial;
-            
-            if (isTC) {
-              // Si es TC, calculamos la "Deuda Inicial" que no está en transacciones.
-              // En la base de datos, saldoActual representa (Limite - Deuda) al momento de carga.
-              // Como queremos que las transacciones SEAN la fuente de verdad, partimos del disponible
-              // inicial que el usuario registró (0.90 en tu caso de Nu).
-              // Así, el pago de $1,999.10 elevará el disponible a los $2000.00 del límite.
-              balance = account.saldoActual; 
-            }
-            
-            for (final tx in transactions) {
-              if (tx.estado != 'completa') continue;
-              
-              // Dinero que sale de esta cuenta
-              if (tx.cuentaOrigenId == account.id) {
-                if (tx.tipo == 'ingreso') {
-                  // Caso raro: Ingreso que se asigna a esta cuenta como origen
-                  balance += tx.monto;
-                } else {
-                  balance -= tx.monto;
-                }
-              }
-              
-              // Dinero que entra a esta cuenta
-              if (tx.cuentaDestinoId == account.id) {
-                balance += tx.monto;
-              }
-            }
-            
-            // Lógica de tope para Tarjetas de Crédito: 
-            // El crédito disponible no puede ser mayor al límite contratado.
-            if (isTC && balance > account.saldoInicial) {
-              balance = account.saldoInicial;
-            }
-            
-            // Lógica de piso (opcional): El saldo de debito no debería ser negativo, 
-            // pero lo permitimos para reflejar sobregiros si existen.
-
-            return account.copyWith(saldoActual: balance);
-          }).toList());
-        },
-        loading: () => const AsyncValue.loading(),
-        error: (e, st) => AsyncValue.error(e, st),
-      );
-    },
+    data: (accounts) => AsyncValue.data(accounts),
     loading: () => const AsyncValue.loading(),
     error: (e, st) => AsyncValue.error(e, st),
   );
