@@ -3,6 +3,8 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:uuid/uuid.dart';
 import '../models/transaction_model.dart';
 import '../../../core/network/supabase_client.dart';
+import '../../accounts/models/account_model.dart';
+import '../../debts/models/debt_model.dart';
 
 /// Repositorio para gestionar las operaciones de transacciones en Supabase.
 /// Maneja todas las operaciones CRUD y suscripciones realtime.
@@ -170,7 +172,10 @@ class TransactionsRepository {
       // Inserta la transacción
       await _supabase.from('transacciones').insert(txData.toJson());
 
-      // La actualización de saldos ahora se maneja vía FinanceService desde el Notifier/UI
+      // Sincronizar saldos si está completa
+      if (txData.estado == 'completa') {
+        await _syncCascadingEffects(txData);
+      }
     } catch (e) {
       throw Exception('Error al crear transacción: $e');
     }
@@ -271,18 +276,29 @@ class TransactionsRepository {
         throw Exception('Usuario no autenticado');
       }
 
+      // 1. Obtener la transacción anterior para revertir efectos si era completa
+      final oldTxData = await _supabase.from('transacciones').select().eq('id', transaction.id).single();
+      final oldTx = TransactionModel.fromJson(oldTxData);
+
+      if (oldTx.estado == 'completa') {
+        await _syncCascadingEffects(oldTx, isUndo: true);
+      }
+
       final updatedTransaction = transaction.copyWith(
         userId: userId,
         updatedAt: DateTime.now(),
       );
 
-      // Actualizar en la base de datos
+      // 2. Actualizar en la base de datos
       await _supabase
           .from('transacciones')
           .update(updatedTransaction.toJson())
           .eq('id', transaction.id);
       
-      // La actualización de saldos ahora se maneja vía FinanceService
+      // 3. Sincronizar efectos de la nueva versión si está completa
+      if (updatedTransaction.estado == 'completa') {
+        await _syncCascadingEffects(updatedTransaction);
+      }
     } catch (e) {
       throw Exception('Error al actualizar transacción: $e');
     }
@@ -291,8 +307,16 @@ class TransactionsRepository {
   /// Elimina una transacción
   Future<void> deleteTransaction(String id) async {
     try {
+      // 1. Obtener la transacción antes de borrarla para revertir efectos en cascada
+      final txData = await _supabase.from('transacciones').select().eq('id', id).maybeSingle();
+      if (txData != null) {
+        final tx = TransactionModel.fromJson(txData);
+        if (tx.estado == 'completa') {
+          await _syncCascadingEffects(tx, isUndo: true);
+        }
+      }
+
       await _supabase.from('transacciones').delete().eq('id', id);
-      // La actualización de saldos ahora se maneja vía FinanceService
     } catch (e) {
       throw Exception('Error al eliminar transacción: $e');
     }
@@ -353,6 +377,11 @@ class TransactionsRepository {
         throw Exception('Usuario no autenticado');
       }
 
+      // Verificamos si ya está completa en BD para evitar duplicados
+      final currentTxData = await _supabase.from('transacciones').select().eq('id', transaction.id).single();
+      final currentTx = TransactionModel.fromJson(currentTxData);
+      if (currentTx.estado == 'completa') return;
+
       final updatedTransaction = transaction.copyWith(
         userId: userId,
         estado: 'completa', // Debe ser 'completa', no 'completada'
@@ -365,7 +394,8 @@ class TransactionsRepository {
           .update(updatedTransaction.toJson())
           .eq('id', transaction.id);
 
-      // La actualización de saldos ahora se maneja vía FinanceService
+      // Sincronizar efectos
+      await _syncCascadingEffects(updatedTransaction);
     } catch (e) {
       throw Exception('Error al marcar transacción como completada: $e');
     }
@@ -379,19 +409,26 @@ class TransactionsRepository {
         throw Exception('Usuario no autenticado');
       }
 
-      final updatedTransaction = transaction.copyWith(
+      // 1. Obtener estado actual en BD
+      final currentTxData = await _supabase.from('transacciones').select().eq('id', transaction.id).single();
+      final currentTx = TransactionModel.fromJson(currentTxData);
+
+      // 2. Si estaba completa, revertir efectos
+      if (currentTx.estado == 'completa') {
+        await _syncCascadingEffects(currentTx, isUndo: true);
+      }
+
+      final updatedTransaction = currentTx.copyWith(
         userId: userId,
         estado: 'pendiente',
         updatedAt: DateTime.now(),
       );
 
-      // Actualiza el estado en la BD
+      // 3. Actualiza el estado en la BD
       await _supabase
           .from('transacciones')
           .update(updatedTransaction.toJson())
           .eq('id', transaction.id);
-
-      // La actualización de saldos ahora se maneja vía FinanceService
     } catch (e) {
       throw Exception('Error al marcar transacción como pendiente: $e');
     }
@@ -443,5 +480,116 @@ class TransactionsRepository {
   void dispose() {
     _realtimeSubscription?.unsubscribe();
     _transactionsController.close();
+  }
+
+  /// Método privado para sincronizar efectos en cascada (Saldos y Deudas)
+  /// SIGUE REGLA: Centraliza lógica pero se ejecuta DESPUÉS del cambio en BD de la transacción
+  Future<void> _syncCascadingEffects(TransactionModel tx, {bool isUndo = false}) async {
+    // 1. Validar que la transacción afecte saldos
+    // Solo procesamos transacciones completas para efectos de saldo (salvo si estamos deshaciendo)
+    if (tx.estado != 'completa' && !isUndo) return;
+
+    try {
+      // --- A. Sync Cuenta Origen ---
+      final sourceAccData = await _supabase.from('cuentas').select().eq('id', tx.cuentaOrigenId).maybeSingle();
+      if (sourceAccData != null) {
+        final sourceAcc = AccountModel.fromJson(sourceAccData);
+        bool isSubtraction = (tx.tipo == 'gasto' || tx.tipo == 'transferencia' || tx.tipo == 'pago_deuda');
+        if (isUndo) isSubtraction = !isSubtraction;
+
+        double nuevoSaldo = isSubtraction 
+            ? sourceAcc.saldoActual - tx.monto 
+            : sourceAcc.saldoActual + tx.monto;
+        
+        await _supabase.from('cuentas').update({'saldo_actual': nuevoSaldo, 'updated_at': DateTime.now().toIso8601String()}).eq('id', sourceAcc.id);
+
+        // Si es TC, sincronizar deuda asociada
+        if (sourceAcc.tipo == 'tarjeta_credito') {
+          final debtData = await _supabase.from('deudas').select().eq('cuenta_asociada_id', sourceAcc.id).maybeSingle();
+          if (debtData != null) {
+            final debt = DebtModel.fromJson(debtData);
+            bool isPaymentToDebt = tx.tipo == 'ingreso'; // Ingreso a cuenta de TC es pago a deuda
+            if (isUndo) isPaymentToDebt = !isPaymentToDebt;
+            
+            double nuevoMontoRestante = isPaymentToDebt ? debt.montoRestante - tx.monto : debt.montoRestante + tx.monto;
+            if (nuevoMontoRestante < 0) nuevoMontoRestante = 0;
+            
+            await _supabase.from('deudas').update({
+              'monto_restante': nuevoMontoRestante,
+              'estado': nuevoMontoRestante <= 0 ? 'pagada' : 'activa',
+              'updated_at': DateTime.now().toIso8601String()
+            }).eq('id', debt.id);
+          }
+        }
+      }
+
+      // --- B. Sync Cuenta Destino ---
+      if (tx.cuentaDestinoId != null) {
+        final destAccData = await _supabase.from('cuentas').select().eq('id', tx.cuentaDestinoId!).maybeSingle();
+        if (destAccData != null) {
+          final destAcc = AccountModel.fromJson(destAccData);
+          bool isAddition = true;
+          if (isUndo) isAddition = false;
+
+          double nuevoSaldo = isAddition 
+              ? destAcc.saldoActual + tx.monto 
+              : destAcc.saldoActual - tx.monto;
+          
+          await _supabase.from('cuentas').update({'saldo_actual': nuevoSaldo, 'updated_at': DateTime.now().toIso8601String()}).eq('id', destAcc.id);
+
+          if (destAcc.tipo == 'tarjeta_credito') {
+            final debtData = await _supabase.from('deudas').select().eq('cuenta_asociada_id', destAcc.id).maybeSingle();
+            if (debtData != null) {
+              final debt = DebtModel.fromJson(debtData);
+              bool isPaymentToDebt = true; // Todo ingreso/transferencia a TC cuenta como pago
+              if (isUndo) isPaymentToDebt = false;
+              
+              double nuevoMontoRestante = isPaymentToDebt ? debt.montoRestante - tx.monto : debt.montoRestante + tx.monto;
+              if (nuevoMontoRestante < 0) nuevoMontoRestante = 0;
+              
+              await _supabase.from('deudas').update({
+                'monto_restante': nuevoMontoRestante,
+                'estado': nuevoMontoRestante <= 0 ? 'pagada' : 'activa'
+              }).eq('id', debt.id);
+            }
+          }
+        }
+      }
+
+      // --- C. Sync Deuda Directa (Pago de Deuda externa) ---
+      if (tx.tipo == 'pago_deuda' && tx.deudaId != null) {
+        // Solo si no se sincronizó ya por ser cuenta destino
+        if (tx.cuentaDestinoId == null) {
+          final debtData = await _supabase.from('deudas').select().eq('id', tx.deudaId!).maybeSingle();
+          if (debtData != null) {
+            final debt = DebtModel.fromJson(debtData);
+            bool isPayment = true;
+            if (isUndo) isPayment = false;
+            
+            double nuevoMontoRestante = isPayment ? debt.montoRestante - tx.monto : debt.montoRestante + tx.monto;
+            if (nuevoMontoRestante < 0) nuevoMontoRestante = 0;
+            
+            await _supabase.from('deudas').update({
+              'monto_restante': nuevoMontoRestante,
+              'estado': nuevoMontoRestante <= 0 ? 'pagada' : 'activa'
+            }).eq('id', debt.id);
+
+            // Si la deuda está asociada a otra cuenta de TC (ej. pago desde débito a TC)
+            if (debt.cuentaAsociadaId != null) {
+              final associatedAccData = await _supabase.from('cuentas').select().eq('id', debt.cuentaAsociadaId!).maybeSingle();
+              if (associatedAccData != null) {
+                final associatedAcc = AccountModel.fromJson(associatedAccData);
+                if (associatedAcc.tipo == 'tarjeta_credito') {
+                  double diff = isPayment ? tx.monto : -tx.monto;
+                  await _supabase.from('cuentas').update({'saldo_actual': associatedAcc.saldoActual + diff}).eq('id', associatedAcc.id);
+                }
+              }
+            }
+          }
+        }
+      }
+    } catch (e) {
+      throw Exception('Error en sincronización en cascada: $e');
+    }
   }
 }

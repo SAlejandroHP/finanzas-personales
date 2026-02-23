@@ -10,6 +10,7 @@ import '../widgets/account_card.dart';
 import '../../../../core/widgets/bank_logo.dart';
 import '../widgets/account_form_bottom_sheet.dart';
 import '../providers/currencies_provider.dart';
+import '../../../debts/presentation/providers/debts_provider.dart';
 import '../../models/bank_model.dart';
 import '../providers/banks_provider.dart';
 
@@ -23,6 +24,8 @@ class AccountsListScreen extends ConsumerWidget {
     final backgroundColor = isDark ? AppColors.backgroundDark : AppColors.backgroundColor;
     final appBarColor = isDark ? AppColors.backgroundDark : AppColors.backgroundColor;
     final accountsAsync = ref.watch(accountsWithBalanceProvider);
+    final totalBalance = ref.watch(totalBalanceProvider);
+    final totalDebts = ref.watch(totalDebtsProvider);
 
     return Scaffold(
       backgroundColor: backgroundColor,
@@ -59,7 +62,7 @@ class AccountsListScreen extends ConsumerWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _buildSummaryCard(context, accounts, isDark),
+                _buildSummaryCard(context, totalBalance, totalDebts, isDark),
                 
                 // Catálogo de bancos de Belvo
                 _buildBankCatalog(context, ref, isDark),
@@ -124,19 +127,9 @@ class AccountsListScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildSummaryCard(BuildContext context, List<dynamic> accounts, bool isDark) {
-    // Cálculo de Patrimonio Neto: Activos (Saldo de cuentas) - Pasivos (Deuda acumulada en TC)
-    final totalBalance = accounts.fold<double>(0, (sum, acc) {
-      if (acc.tipo == 'tarjeta_credito') {
-        // En TC: saldoInicial es el límite, saldoActual es el disponible.
-        // Deuda = Límite - Disponible. Esto resta del patrimonio.
-        final debt = acc.saldoInicial - acc.saldoActual;
-        return sum - debt;
-      } else {
-        // En cuentas de activos, sumamos el saldo actual.
-        return sum + acc.saldoActual;
-      }
-    });
+  Widget _buildSummaryCard(BuildContext context, double totalAssets, double totalDebts, bool isDark) {
+    // Patrimonio Neto = Lo que tienes (Activos) - Lo que debes (Pasivos)
+    final netWorth = totalAssets - totalDebts;
     
     final currencyFormatter = NumberFormat.currency(symbol: '\$', decimalDigits: 2);
     final cardColor = isDark ? const Color(0xFF1E1E1E) : Colors.white;
@@ -165,7 +158,7 @@ class AccountsListScreen extends ConsumerWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Patrimonio Total Estimado',
+                    'Patrimonio Neto',
                     style: GoogleFonts.montserrat(
                       fontSize: AppColors.bodySmall,
                       fontWeight: FontWeight.w500,
@@ -174,11 +167,11 @@ class AccountsListScreen extends ConsumerWidget {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    currencyFormatter.format(totalBalance),
+                    currencyFormatter.format(netWorth),
                     style: GoogleFonts.montserrat(
                       fontSize: AppColors.titleLarge,
                       fontWeight: FontWeight.w700,
-                      color: isDark ? Colors.white : AppColors.textPrimary,
+                      color: netWorth < 0 ? Colors.redAccent : (isDark ? Colors.white : AppColors.textPrimary),
                     ),
                   ),
                 ],
@@ -186,16 +179,69 @@ class AccountsListScreen extends ConsumerWidget {
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: AppColors.primary.withOpacity(0.1),
+                  color: (netWorth < 0 ? Colors.redAccent : AppColors.primary).withOpacity(0.1),
                   shape: BoxShape.circle,
                 ),
-                child: const Icon(
-                  Icons.account_balance_wallet_outlined,
-                  color: AppColors.primary,
+                child: Icon(
+                  netWorth < 0 ? Icons.warning_amber_rounded : Icons.account_balance_wallet_outlined,
+                  color: netWorth < 0 ? Colors.redAccent : AppColors.primary,
                   size: 24,
                 ),
               ),
             ],
+          ),
+          const SizedBox(height: 20),
+          Divider(color: isDark ? Colors.white10 : Colors.black.withOpacity(0.05)),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              _buildNetWorthDetail(
+                'Tus Activos',
+                currencyFormatter.format(totalAssets),
+                Colors.green,
+                Icons.add_circle_outline,
+              ),
+              const SizedBox(width: 16),
+              _buildNetWorthDetail(
+                'Tus Deudas',
+                currencyFormatter.format(totalDebts),
+                Colors.redAccent,
+                Icons.remove_circle_outline,
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildNetWorthDetail(String title, String amount, Color color, IconData icon) {
+    return Expanded(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(icon, size: 14, color: color),
+              const SizedBox(width: 4),
+              Text(
+                title,
+                style: GoogleFonts.montserrat(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w500,
+                  color: Colors.grey,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 4),
+          Text(
+            amount,
+            style: GoogleFonts.montserrat(
+              fontSize: 14,
+              fontWeight: FontWeight.w700,
+              color: color.withOpacity(0.9),
+            ),
           ),
         ],
       ),

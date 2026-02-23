@@ -4,7 +4,6 @@ import '../../data/accounts_repository.dart';
 import '../../models/account_model.dart';
 import 'package:finanzas/features/debts/models/debt_model.dart';
 import '../../../debts/presentation/providers/debts_provider.dart';
-import '../../../transactions/presentation/providers/transactions_provider.dart'; 
 import '../../../../core/services/finance_service.dart';
 /// Provider del repositorio de cuentas
 final accountsRepositoryProvider = Provider<AccountsRepository>((ref) {
@@ -49,14 +48,18 @@ final accountsWithBalanceProvider = Provider<AsyncValue<List<AccountModel>>>((re
 /// Provider de la cuenta seleccionada actualmente (para edición)
 final selectedAccountProvider = StateProvider<AccountModel?>((ref) => null);
 
-/// Provider que calcula el saldo total disponible (Patrimonio Líquido Inmediato)
-/// Según LOGICA_APP: "Suma del saldo_actual de todas las cuentas (incluye crédito disponible)"
+/// Provider que calcula el saldo total disponible (Capital Líquido)
+/// Según LOGICA_APP: "Suma del saldo_actual de todas las cuentas (EXCLUYE tarjetas de crédito para no inflar liquidez)"
 final totalBalanceProvider = Provider<double>((ref) {
   final accountsAsync = ref.watch(accountsWithBalanceProvider);
   
   return accountsAsync.maybeWhen(
     data: (accounts) {
-      return accounts.fold<double>(0.0, (sum, acc) => sum + acc.saldoActual);
+      // Sumamos solo cuentas que representan dinero real (efectivo, ahorros, inversiones, etc.)
+      // Las tarjetas de crédito NO se suman al balance principal porque el crédito no es dinero propio.
+      return accounts
+          .where((acc) => acc.tipo != 'tarjeta_credito')
+          .fold<double>(0.0, (sum, acc) => sum + acc.saldoActual);
     },
     orElse: () => 0.0,
   );
@@ -169,6 +172,9 @@ class AccountsNotifier extends StateNotifier<AsyncValue<void>> {
     try {
       await _repository.updateAccountBalance(accountId, newBalance);
       state = const AsyncValue.data(null);
+      
+      // FinanceService: refrescar providers para actualizar Dashboard y listas
+      _ref.read(financeServiceProvider).refreshAll();
     } catch (e) {
       _setError(e.toString());
       state = AsyncValue.error(e, StackTrace.current);

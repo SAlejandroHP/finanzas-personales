@@ -77,7 +77,8 @@
 - Botón central +: integrado (no encimado), tamaño 56-60
 
 ## 3. Convenciones Financieras (Reglas de Negocio)
-- **Saldo Total Disponible**: suma del `saldo_actual` de todas las cuentas (incluye crédito disponible de tarjetas).
+- **Saldo Total (Capital Líquido)**: representa solo el dinero real del usuario. Se calcula como la suma del `saldo_actual` de todas las cuentas que **no** sean tarjetas de crédito (débito, ahorro, efectivo, etc.).
+- **Deuda Total**: representa todos los compromisos financieros pendientes (tarjetas y deudas externas). No se descuenta directamente de la liquidez del dashboard de manera implícita, sino que se muestra como un indicador independiente para mayor claridad financiera.
 - **Ingresos y Gastos**:
   - Solo se cuentan transacciones con estado **'completa'**.
   - **No tiene nada que ver la fecha**: una transacción 'completa' del año pasado o del futuro **sí afecta** los saldos totales y reportes históricos.
@@ -91,8 +92,9 @@
   - Gasto: resta disponible y aumenta deuda restante
   - Pago: suma disponible y reduce deuda restante
   - No se permite pagar más de lo que se debe (ajusta monto + toast)
-  - Saldo disponible = límite - deuda restante
-  - Se muestra en sección separada "Tarjetas de Crédito"
+  - Saldo disponible (en Card) = límite - deuda restante. Si la deuda > límite (sobregiro), el disponible es 0.
+  - El saldo de la tarjeta **no se suma** al saldo total de liquidez de la app.
+  - Se muestra en sección separada "Tarjetas de Crédito" o en el balance de deudas.
 - **Deudas externas** (préstamos familiares, bancarios, servicios):
   - Se crean manualmente desde Configuración → "Mis Deudas"
   - Pagos: tipo 'pago_deuda' → reduce monto_restante

@@ -28,6 +28,7 @@ class DashboardScreen extends ConsumerWidget {
         ? AppColors.backgroundDark
         : AppColors.backgroundColor;
     final totalBalance = ref.watch(totalBalanceProvider);
+    final totalDebts = ref.watch(totalDebtsProvider);
     final monthlyIncome = ref.watch(monthlyIncomeProvider);
     final monthlyExpenses = ref.watch(monthlyExpensesProvider);
     final accounts = ref.watch(accountsWithBalanceProvider);
@@ -62,6 +63,7 @@ class DashboardScreen extends ConsumerWidget {
               _buildBalanceSummaryCard(
                 context,
                 totalBalance,
+                totalDebts,
                 monthlyIncome,
                 monthlyExpenses,
                 mxnFormatter,
@@ -211,96 +213,101 @@ class DashboardScreen extends ConsumerWidget {
     final warnings = ref.watch(recurringWarningsProvider);
     final notificationCount = warnings.length;
 
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Hola, Alejandro',
-              style: GoogleFonts.montserrat(
-                fontSize: AppColors.titleLarge,
-                fontWeight: FontWeight.w700,
-                color: Theme.of(context).brightness == Brightness.dark
-                    ? AppColors.textSecondary
-                    : AppColors.textPrimary,
+    // Obtener saludo según la hora
+    final hour = DateTime.now().hour;
+    String greeting;
+    if (hour < 12) {
+      greeting = 'Buenos días';
+    } else if (hour < 19) {
+      greeting = 'Buenas tardes';
+    } else {
+      greeting = 'Buenas noches';
+    }
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 20),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                greeting,
+                style: GoogleFonts.montserrat(
+                  fontSize: AppColors.bodySmall,
+                  fontWeight: FontWeight.w500,
+                  color: isDark ? Colors.white60 : Colors.black54,
+                ),
               ),
-            ),
-            Text(
-              DateFormat('EEEE, d MMMM').format(DateTime.now()),
-              style: GoogleFonts.montserrat(
-                fontSize: AppColors.bodyMedium,
-                color: Colors.grey,
-                fontWeight: FontWeight.w500,
+              Text(
+                'Tu Resumen',
+                style: GoogleFonts.montserrat(
+                  fontSize: AppColors.titleLarge,
+                  fontWeight: FontWeight.w800,
+                  color: isDark ? Colors.white : AppColors.textPrimary,
+                  letterSpacing: -0.5,
+                ),
               ),
-            ),
-          ],
-        ),
-        GestureDetector(
-          onTap: () => context.push('/notifications'),
-          child: Stack(
+            ],
+          ),
+          Stack(
             clipBehavior: Clip.none,
             children: [
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: isDark
-                      ? Colors.white.withOpacity(0.05)
-                      : AppColors.primary.withOpacity(0.1),
-                  shape: BoxShape.circle,
-                ),
-                child: const Icon(
-                  Icons.notifications_outlined,
-                  size: 20,
-                  color: AppColors.primary,
+              GestureDetector(
+                onTap: () => context.push('/notifications'),
+                child: Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: isDark ? Colors.white.withOpacity(0.05) : Colors.white,
+                    shape: BoxShape.circle,
+                    boxShadow: [
+                      if (!isDark)
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.05),
+                          blurRadius: 10,
+                          offset: const Offset(0, 2),
+                        ),
+                    ],
+                  ),
+                  child: Icon(
+                    Icons.notifications_none_rounded,
+                    size: 24,
+                    color: isDark ? Colors.white70 : AppColors.textPrimary,
+                  ),
                 ),
               ),
               if (notificationCount > 0)
                 Positioned(
-                  top: -4,
-                  right: -4,
+                  top: 0,
+                  right: 0,
                   child: Container(
                     padding: const EdgeInsets.all(4),
                     decoration: BoxDecoration(
-                      color: Colors.red,
+                      color: AppColors.secondary,
                       shape: BoxShape.circle,
                       border: Border.all(
-                        color: isDark
-                            ? AppColors.backgroundDark
-                            : AppColors.backgroundColor,
+                        color: isDark ? AppColors.backgroundDark : AppColors.backgroundColor,
                         width: 2,
                       ),
                     ),
                     constraints: const BoxConstraints(
-                      minWidth: 18,
-                      minHeight: 18,
-                    ),
-                    child: Center(
-                      child: Text(
-                        notificationCount > 9
-                            ? '9+'
-                            : notificationCount.toString(),
-                        style: GoogleFonts.montserrat(
-                          fontSize: AppColors.bodySmall,
-                          fontWeight: FontWeight.w700,
-                          color: AppColors.textSecondary,
-                        ),
-                        textAlign: TextAlign.center,
-                      ),
+                      minWidth: 16,
+                      minHeight: 16,
                     ),
                   ),
                 ),
             ],
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 
   Widget _buildBalanceSummaryCard(
     BuildContext context,
     double balance,
+    double totalDebts,
     double incomes,
     double expenses,
     NumberFormat balanceFormatter,
@@ -309,143 +316,151 @@ class DashboardScreen extends ConsumerWidget {
     bool isDark,
   ) {
     return Container(
-      padding: const EdgeInsets.all(AppColors.cardPadding),
+      width: double.infinity,
+      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: cardColor,
+        color: AppColors.primary,
         borderRadius: BorderRadius.circular(AppColors.radiusXLarge),
         boxShadow: [
-          if (!isDark)
-            BoxShadow(
-              color: Colors.black.withOpacity(0.05),
-              blurRadius: 10,
-              offset: const Offset(0, 4),
-            ),
+          BoxShadow(
+            color: AppColors.primary.withOpacity(0.3),
+            blurRadius: 15,
+            offset: const Offset(0, 8),
+          ),
         ],
       ),
-      child: IntrinsicHeight(
-        child: Row(
-          children: [
-            // Parte del Saldo (8 columnas aproximadas por flex)
-            Expanded(
-              flex: 8,
-              child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Container(
-                    padding: const EdgeInsets.all(AppColors.contentGap),
-                    decoration: BoxDecoration(
-                      color: AppColors.primary.withOpacity(0.1),
-                      shape: BoxShape.circle,
-                    ),
-                    child: const Icon(
-                      Icons.account_balance_wallet_outlined,
-                      color: AppColors.primary,
-                      size: 24,
+                  Text(
+                    'Balance Total Liquido',
+                    style: GoogleFonts.montserrat(
+                      fontSize: AppColors.bodySmall,
+                      color: Colors.white.withOpacity(0.8),
+                      fontWeight: FontWeight.w600,
                     ),
                   ),
-                  const SizedBox(width: AppColors.contentGap),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Text(
-                          'Saldo Disponible',
-                          style: GoogleFonts.montserrat(
-                            fontSize: AppColors.bodySmall,
-                            color: isDark
-                                ? Colors.white70
-                                : AppColors.textPrimary.withOpacity(0.6),
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                        Text(
-                          balanceFormatter.format(balance),
-                          style: GoogleFonts.montserrat(
-                            fontSize: AppColors.bodyLarge,
-                            fontWeight: FontWeight.w700,
-                            color: isDark
-                                ? AppColors.textSecondary
-                                : AppColors.textPrimary,
-                          ),
-                        ),
-                      ],
+                  const SizedBox(height: 4),
+                  Text(
+                    balanceFormatter.format(balance),
+                    style: GoogleFonts.montserrat(
+                      fontSize: AppColors.titleLarge,
+                      fontWeight: FontWeight.w800,
+                      color: Colors.white,
+                      letterSpacing: -0.5,
                     ),
                   ),
                 ],
               ),
-            ),
-
-            // Separador vertical sutil
-            VerticalDivider(
-              width: 32,
-              thickness: 1,
-              color: isDark ? Colors.white10 : Colors.black.withOpacity(0.05),
-            ),
-
-            // Parte de Ingresos/Gastos (4 columnas aproximadas por flex)
-            Expanded(
-              flex: 4,
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                crossAxisAlignment: CrossAxisAlignment.start,
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.2),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(Icons.account_balance_wallet_outlined, color: Colors.white, size: 24),
+              ),
+            ],
+          ),
+          if (totalDebts > 0) ...[
+            const SizedBox(height: 12),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+              decoration: BoxDecoration(
+                color: Colors.black.withOpacity(0.15),
+                borderRadius: BorderRadius.circular(AppColors.radiusSmall),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
                 children: [
-                  _buildFlowRow(
-                    'Ingresos',
-                    incomes,
-                    Colors.green,
-                    Icons.arrow_circle_up,
-                    prefix: '+',
-                  ),
-                  const SizedBox(height: 12),
-                  _buildFlowRow(
-                    'Gastos',
-                    expenses,
-                    Colors.red,
-                    Icons.arrow_circle_down,
-                    prefix: '-',
+                  const Icon(Icons.info_outline, size: 14, color: Colors.white70),
+                  const SizedBox(width: 6),
+                  Text(
+                    'Deuda pendiente: ${flowFormatter.format(totalDebts)}',
+                    style: GoogleFonts.montserrat(
+                      fontSize: 11,
+                      color: Colors.white70,
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
                 ],
               ),
             ),
           ],
-        ),
+          const SizedBox(height: 20),
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(AppColors.radiusLarge),
+            ),
+            child: Row(
+              children: [
+                Expanded(
+                  child: _buildFlowColumn(
+                    'Ingresos',
+                    incomes,
+                    Colors.white,
+                    Icons.arrow_upward_rounded,
+                  ),
+                ),
+                Container(
+                  height: 30,
+                  width: 1,
+                  color: Colors.white.withOpacity(0.2),
+                ),
+                Expanded(
+                  child: _buildFlowColumn(
+                    'Gastos',
+                    expenses,
+                    Colors.white,
+                    Icons.arrow_downward_rounded,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }
 
-  Widget _buildFlowRow(
+  Widget _buildFlowColumn(
     String label,
     double amount,
     Color color,
-    IconData icon, {
-    String prefix = '',
-  }) {
+    IconData icon,
+  ) {
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Row(
-          mainAxisSize: MainAxisSize.min,
+          mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(icon, color: color, size: 14),
+            Icon(icon, color: color.withOpacity(0.7), size: 14),
             const SizedBox(width: 4),
             Text(
               label,
               style: GoogleFonts.montserrat(
-                fontSize: AppColors.bodySmall,
-                color: Colors.grey,
-                fontWeight: FontWeight.w700,
+                fontSize: 11,
+                fontWeight: FontWeight.w600,
+                color: color.withOpacity(0.7),
               ),
             ),
           ],
         ),
-        const SizedBox(height: 2),
+        const SizedBox(height: 4),
         Text(
-          "$prefix\n${NumberFormat.currency(symbol: r'$', decimalDigits: 2).format(amount)}",
+          NumberFormat.currency(symbol: r'$', decimalDigits: 2).format(amount),
           style: GoogleFonts.montserrat(
+            fontSize: 14,
             fontWeight: FontWeight.w800,
             color: color,
-            fontSize: AppColors.bodySmall,
-            height: 1.1,
           ),
         ),
       ],
@@ -468,12 +483,12 @@ class DashboardScreen extends ConsumerWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                'CUENTAS',
+                'MIS CUENTAS',
                 style: GoogleFonts.montserrat(
                   fontSize: AppColors.bodySmall,
-                  fontWeight: FontWeight.w700,
+                  fontWeight: FontWeight.w800,
                   color: AppColors.primary.withOpacity(0.8),
-                  letterSpacing: 1.1,
+                  letterSpacing: 1.2,
                 ),
               ),
               TextButton(
@@ -483,13 +498,18 @@ class DashboardScreen extends ConsumerWidget {
                   minimumSize: const Size(0, 0),
                   tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                 ),
-                child: Text(
-                  'Ver todas',
-                  style: GoogleFonts.montserrat(
-                    fontSize: AppColors.bodySmall,
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.primary,
-                  ),
+                child: Row(
+                  children: [
+                    Text(
+                      'Gestionar',
+                      style: GoogleFonts.montserrat(
+                        fontSize: AppColors.bodySmall,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.primary,
+                      ),
+                    ),
+                    const Icon(Icons.chevron_right, size: 16, color: AppColors.primary),
+                  ],
                 ),
               ),
             ],
@@ -501,228 +521,180 @@ class DashboardScreen extends ConsumerWidget {
             final allAccounts = (list as List).toList();
 
             if (allAccounts.isEmpty) {
-              return Center(
-                child: Text(
-                  'No tienes cuentas registradas',
-                  style: GoogleFonts.montserrat(
-                    fontSize: AppColors.bodySmall,
-                    color: Colors.grey,
-                  ),
+              return Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(24),
+                decoration: BoxDecoration(
+                  color: cardColor,
+                  borderRadius: BorderRadius.circular(AppColors.radiusLarge),
+                ),
+                child: Column(
+                  children: [
+                    Icon(Icons.account_balance_wallet_outlined, 
+                         size: 32, color: Colors.grey.withOpacity(0.5)),
+                    const SizedBox(height: 8),
+                    Text(
+                      'No hay cuentas activas',
+                      style: GoogleFonts.montserrat(
+                        fontSize: AppColors.bodySmall,
+                        color: Colors.grey,
+                      ),
+                    ),
+                  ],
                 ),
               );
             }
-            return GridView.builder(
-              padding: EdgeInsets.zero,
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 2,
-                crossAxisSpacing: 12,
-                mainAxisSpacing: 12,
-                childAspectRatio: 1.3,
-              ),
-              itemCount: allAccounts.length,
-              itemBuilder: (context, index) {
-                final acc = allAccounts[index];
-                final isTC = acc.tipo == 'tarjeta_credito';
 
-                // Obtener tema para el tipo (consistente con AccountCard)
-                Color typeColor;
-                IconData typeIcon;
-                String typeLabel;
+            return SizedBox(
+              height: 140, // Altura fija para el scroll horizontal
+              child: ListView.separated(
+                scrollDirection: Axis.horizontal,
+                padding: const EdgeInsets.symmetric(horizontal: 4),
+                itemCount: allAccounts.length,
+                separatorBuilder: (context, index) => const SizedBox(width: 12),
+                itemBuilder: (context, index) {
+                  final acc = allAccounts[index];
+                  final isTC = acc.tipo == 'tarjeta_credito';
 
-                switch (acc.tipo) {
-                  case 'efectivo':
-                    typeColor = Colors.green;
-                    typeIcon = Icons.payments_outlined;
-                    typeLabel = 'Efectivo';
-                    break;
-                  case 'chequera':
-                    typeColor = Colors.blue;
-                    typeIcon = Icons.account_balance_outlined;
-                    typeLabel = 'Débito';
-                    break;
-                  case 'ahorro':
-                    typeColor = Colors.purple;
-                    typeIcon = Icons.savings_outlined;
-                    typeLabel = 'Ahorros';
-                    break;
-                  case 'tarjeta_credito':
-                    typeColor = Colors.red;
-                    typeIcon = Icons.credit_card_outlined;
-                    typeLabel = 'Crédito';
-                    break;
-                  case 'inversion':
-                    typeColor = Colors.orange;
-                    typeIcon = Icons.trending_up_outlined;
-                    typeLabel = 'Inversión';
-                    break;
-                  default:
-                    typeColor = Colors.blueGrey;
-                    typeIcon = Icons.help_outline;
-                    typeLabel = 'Otro';
-                }
+                  Color typeColor;
+                  IconData typeIcon;
 
-                return Container(
-                  decoration: BoxDecoration(
-                    color: cardColor,
-                    borderRadius: BorderRadius.circular(20),
-                    border: Border.all(
-                      color: isDark
-                          ? Colors.white.withOpacity(0.05)
-                          : Colors.black.withOpacity(0.05),
-                    ),
-                    boxShadow: [
-                      if (!isDark)
-                        BoxShadow(
-                          color: typeColor.withOpacity(0.05),
-                          blurRadius: 8,
-                          offset: const Offset(0, 4),
-                        ),
-                    ],
-                  ),
-                  child: Material(
-                    color: Colors.transparent,
-                    child: InkWell(
-                      onTap: () => context.push('/accounts/detail/${acc.id}'),
-                      borderRadius: BorderRadius.circular(20),
-                      child: Stack(
-                        children: [
-                          Positioned(
-                            bottom: 0,
-                            left: 15,
-                            right: 15,
-                            height: 2,
-                            child: Container(
-                              decoration: BoxDecoration(
-                                color: typeColor.withOpacity(0.3),
-                                borderRadius: const BorderRadius.vertical(
-                                  top: Radius.circular(2),
-                                ),
-                              ),
-                            ),
+                  switch (acc.tipo) {
+                    case 'efectivo':
+                      typeColor = Colors.green;
+                      typeIcon = Icons.payments_outlined;
+                      break;
+                    case 'chequera':
+                      typeColor = Colors.blue;
+                      typeIcon = Icons.account_balance_outlined;
+                      break;
+                    case 'ahorro':
+                      typeColor = Colors.purple;
+                      typeIcon = Icons.savings_outlined;
+                      break;
+                    case 'tarjeta_credito':
+                      typeColor = Colors.redAccent;
+                      typeIcon = Icons.credit_card_outlined;
+                      break;
+                    case 'inversion':
+                      typeColor = Colors.orange;
+                      typeIcon = Icons.trending_up_outlined;
+                      break;
+                    default:
+                      typeColor = Colors.blueGrey;
+                      typeIcon = Icons.help_outline;
+                  }
+
+                  return Container(
+                    width: 165, // Ancho optimizado para mobile
+                    decoration: BoxDecoration(
+                      color: cardColor,
+                      borderRadius: BorderRadius.circular(AppColors.radiusLarge),
+                      boxShadow: [
+                        if (!isDark)
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.04),
+                            blurRadius: 8,
+                            offset: const Offset(0, 4),
                           ),
-                          Padding(
-                            padding: const EdgeInsets.all(12),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Row(
-                                  children: [
-                                    if (acc.bancoLogo != null &&
-                                        acc.bancoLogo!.isNotEmpty)
-                                      BankLogo(
-                                        bankName: acc.bancoNombre ?? acc.nombre,
-                                        primaryColor: typeColor.value
-                                            .toRadixString(16)
-                                            .padLeft(8, '0')
-                                            .substring(2),
-                                        size: 24,
-                                      )
-                                    else
-                                      Container(
-                                        padding: const EdgeInsets.all(6),
-                                        decoration: BoxDecoration(
-                                          color: typeColor.withOpacity(0.1),
-                                          shape: BoxShape.circle,
-                                        ),
-                                        child: Icon(
-                                          typeIcon,
-                                          size: 12,
-                                          color: typeColor,
-                                        ),
-                                      ),
-                                    const SizedBox(width: 8),
-                                    Expanded(
-                                      child: Column(
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.start,
-                                        children: [
-                                          Text(
-                                            acc.nombre,
-                                            style: GoogleFonts.montserrat(
-                                              fontSize: AppColors.bodyMedium,
-                                              fontWeight: FontWeight.w700,
-                                              color: isDark
-                                                  ? Colors.white
-                                                  : AppColors.textPrimary,
-                                            ),
-                                            maxLines: 1,
-                                            overflow: TextOverflow.ellipsis,
-                                          ),
-                                          Text(
-                                            typeLabel,
-                                            style: GoogleFonts.montserrat(
-                                              fontSize: AppColors.bodySmall,
-                                              fontWeight: FontWeight.w500,
-                                              color: Colors.grey,
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                                const Spacer(),
-                                Text(
-                                  isTC ? 'Disponible' : 'Saldo',
-                                  style: GoogleFonts.montserrat(
-                                    fontSize: AppColors.bodyMedium,
-                                    color: Colors.grey,
-                                    fontWeight: FontWeight.w500,
-                                  ),
-                                ),
-                                Row(
-                                  mainAxisAlignment:
-                                      MainAxisAlignment.spaceBetween,
-                                  crossAxisAlignment: CrossAxisAlignment.end,
-                                  children: [
-                                    Text(
-                                      currencyFormatter.format(acc.saldoActual),
-                                      style: GoogleFonts.montserrat(
-                                        fontSize: AppColors.bodyLarge,
-                                        fontWeight: FontWeight.w800,
-                                        color: isDark
-                                            ? Colors.white
-                                            : AppColors.textPrimary,
-                                        letterSpacing: -0.5,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                                if (isTC) ...[
-                                  const SizedBox(height: 4),
-                                  ClipRRect(
-                                    borderRadius: BorderRadius.circular(2),
-                                    child: LinearProgressIndicator(
-                                      value: acc.saldoInicial > 0
-                                          ? ((acc.saldoInicial -
-                                                    acc.saldoActual) /
-                                                acc.saldoInicial)
-                                          : 0,
-                                      minHeight: 2,
-                                      backgroundColor: isDark
-                                          ? Colors.white10
-                                          : Colors.grey[200],
-                                      valueColor: AlwaysStoppedAnimation<Color>(
-                                        ((acc.saldoInicial - acc.saldoActual) /
-                                                    acc.saldoInicial) >
-                                                0.8
-                                            ? Colors.red
-                                            : typeColor,
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ],
-                            ),
-                          ),
-                        ],
+                      ],
+                      border: Border.all(
+                        color: isDark ? Colors.white.withOpacity(0.05) : Colors.black.withOpacity(0.05),
                       ),
                     ),
-                  ),
-                );
-              },
+                    child: Material(
+                      color: Colors.transparent,
+                      child: InkWell(
+                        onTap: () => context.push('/accounts/detail/${acc.id}'),
+                        borderRadius: BorderRadius.circular(AppColors.radiusLarge),
+                        child: Padding(
+                          padding: const EdgeInsets.all(AppColors.cardPadding),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                children: [
+                                  if (acc.bancoLogo != null && acc.bancoLogo!.isNotEmpty)
+                                    BankLogo(
+                                      bankName: acc.bancoNombre ?? acc.nombre,
+                                      primaryColor: typeColor.value.toRadixString(16).padLeft(8, '0').substring(2),
+                                      size: 24,
+                                    )
+                                  else
+                                    Container(
+                                      padding: const EdgeInsets.all(6),
+                                      decoration: BoxDecoration(
+                                        color: typeColor.withOpacity(0.1),
+                                        shape: BoxShape.circle,
+                                      ),
+                                      child: Icon(typeIcon, size: 14, color: typeColor),
+                                    ),
+                                  const Spacer(),
+                                  if (isTC)
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                      decoration: BoxDecoration(
+                                        color: Colors.red.withOpacity(0.1),
+                                        borderRadius: BorderRadius.circular(4),
+                                      ),
+                                      child: Text(
+                                        'TC',
+                                        style: GoogleFonts.montserrat(
+                                          fontSize: 9,
+                                          fontWeight: FontWeight.w800,
+                                          color: Colors.red,
+                                        ),
+                                      ),
+                                    ),
+                                ],
+                              ),
+                              const Spacer(),
+                              Text(
+                                acc.nombre,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: GoogleFonts.montserrat(
+                                  fontSize: AppColors.bodyMedium,
+                                  fontWeight: FontWeight.w700,
+                                  color: isDark ? Colors.white : AppColors.textPrimary,
+                                ),
+                              ),
+                              const SizedBox(height: 2),
+                              Text(
+                                currencyFormatter.format(acc.saldoActual),
+                                style: GoogleFonts.montserrat(
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.w800,
+                                  color: isDark ? Colors.white : AppColors.textPrimary,
+                                  letterSpacing: -0.5,
+                                ),
+                              ),
+                              if (isTC) ...[
+                                const SizedBox(height: 6),
+                                ClipRRect(
+                                  borderRadius: BorderRadius.circular(2),
+                                  child: LinearProgressIndicator(
+                                    value: acc.saldoInicial > 0
+                                        ? ((acc.saldoInicial - acc.saldoActual) / acc.saldoInicial)
+                                        : 0,
+                                    minHeight: 3,
+                                    backgroundColor: isDark ? Colors.white10 : Colors.grey[200],
+                                    valueColor: AlwaysStoppedAnimation<Color>(
+                                      ((acc.saldoInicial - acc.saldoActual) / acc.saldoInicial) > 0.8
+                                          ? Colors.red
+                                          : typeColor,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  );
+                },
+              ),
             );
           },
           loading: () => const Center(child: CircularProgressIndicator()),

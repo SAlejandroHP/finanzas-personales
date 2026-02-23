@@ -74,3 +74,12 @@ final debtsNotifierProvider = StateNotifierProvider<DebtsNotifier, AsyncValue<vo
   final repository = ref.watch(debtsRepositoryProvider);
   return DebtsNotifier(repository, ref);
 });
+
+/// Provider que calcula el monto total de deuda (lo que debemos liquidar algún día)
+final totalDebtsProvider = Provider<double>((ref) {
+  final debtsAsync = ref.watch(debtsListProvider);
+  return debtsAsync.maybeWhen(
+    data: (debts) => debts.fold<double>(0.0, (sum, debt) => sum + debt.montoRestante),
+    orElse: () => 0.0,
+  );
+});

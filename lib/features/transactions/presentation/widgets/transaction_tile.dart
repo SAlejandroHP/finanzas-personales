@@ -9,7 +9,6 @@ import '../../../accounts/presentation/providers/accounts_provider.dart';
 import '../../../categories/presentation/providers/categories_provider.dart';
 import '../../../accounts/presentation/providers/currencies_provider.dart';
 import '../../../accounts/models/account_model.dart';
-import '../../../../core/services/finance_service.dart';
 
 /// Widget reutilizable para mostrar una transacción de forma compacta.
 /// Muestra ícono por tipo, descripción + fecha, monto coloreado, y botones de edición/eliminación.
@@ -111,6 +110,24 @@ class TransactionTile extends ConsumerWidget { // Corrección v4: Cambiado a Con
         : dayLabel;
     
     return '$capitalizedDay · $restOfDate';
+  }
+
+  /// Retorna el nombre legible del tipo de transacción
+  String _getTipoFormatted(String tipo) {
+    switch (tipo) {
+      case 'pago_deuda':
+        return 'Pago de deuda';
+      case 'meta_aporte':
+        return 'Aporte a meta';
+      case 'gasto':
+        return 'Gasto';
+      case 'ingreso':
+        return 'Ingreso';
+      case 'transferencia':
+        return 'Transferencia';
+      default:
+        return tipo.toUpperCase();
+    }
   }
 
   /// Obtiene el ícono de Material desde string
@@ -335,9 +352,9 @@ class TransactionTile extends ConsumerWidget { // Corrección v4: Cambiado a Con
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          // 2. Nombre de la categoría
+                          // 2. Nombre de la categoría o tipo
                           Text(
-                            displayCategoryName ?? transaction.tipo.toUpperCase(),
+                            displayCategoryName ?? _getTipoFormatted(transaction.tipo),
                             style: GoogleFonts.montserrat(
                               fontWeight: FontWeight.w700,
                               fontSize: 15,
@@ -469,15 +486,11 @@ class TransactionTile extends ConsumerWidget { // Corrección v4: Cambiado a Con
                               inactiveThumbColor: Colors.grey[400],
                               inactiveTrackColor: Colors.grey[200],
                               onChanged: (value) async {
-                                final updatedTx = transaction.copyWith(
-                                  estado: value ? 'completa' : 'pendiente',
-                                );
                                 if (value) {
                                   await ref.read(transactionsNotifierProvider.notifier).markAsComplete(transaction);
                                 } else {
                                   await ref.read(transactionsNotifierProvider.notifier).markAsPending(transaction);
                                 }
-                                ref.read(financeServiceProvider).updateAfterTransaction(updatedTx);
                               },
                             ),
                           ),

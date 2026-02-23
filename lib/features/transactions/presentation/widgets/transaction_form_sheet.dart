@@ -1240,6 +1240,8 @@ class _TransactionFormSheetState extends ConsumerState<TransactionFormSheet> {
         return 'recibir';
       case 'transferencia':
         return 'transferir';
+      case 'pago_deuda':
+        return 'pagar';
       default:
         return 'registrar';
     }
@@ -1249,12 +1251,12 @@ class _TransactionFormSheetState extends ConsumerState<TransactionFormSheet> {
     switch (tipo) {
       case 'gasto':
         return Colors.red;
+      case 'pago_deuda':
+        return Colors.orange;
       case 'ingreso':
         return AppColors.success;
       case 'transferencia':
         return AppColors.primary;
-      case 'pago_deuda':
-        return Colors.orange;
       default:
         return AppColors.primary;
     }

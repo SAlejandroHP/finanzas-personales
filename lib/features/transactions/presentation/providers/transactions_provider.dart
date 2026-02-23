@@ -1,9 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:collection/collection.dart';
 import '../../data/transactions_repository.dart';
 import '../../models/transaction_model.dart';
 import '../../../accounts/presentation/providers/accounts_provider.dart'; // Corrección v4
-import '../../../debts/presentation/providers/debts_provider.dart';
 import '../../../../core/services/finance_service.dart';
 import './transaction_filters_provider.dart';
 
@@ -248,7 +246,7 @@ class TransactionsNotifier extends StateNotifier<AsyncValue<void>> {
   TransactionsNotifier(this._repository, this._ref)
       : super(const AsyncValue.data(null));
 
-  /// Crea una nueva transacción
+  /// Crea una nueva transacción (Corrección v5)
   Future<void> createTransaction(TransactionModel transaction) async {
     _setLoading(true);
     _clearError();
@@ -258,8 +256,8 @@ class TransactionsNotifier extends StateNotifier<AsyncValue<void>> {
       
       state = const AsyncValue.data(null);
 
-      // FinanceService: coordina la actualización en cascada (saldos, TC, deudas) y refresco
-      await _ref.read(financeServiceProvider).updateAfterTransaction(transaction);
+      // FinanceService: coordina el refresco después de que el repo sincronizó saldos
+      _ref.read(financeServiceProvider).refreshAll();
     } catch (e) {
       _setError(e.toString());
       state = AsyncValue.error(e, StackTrace.current);
@@ -269,25 +267,19 @@ class TransactionsNotifier extends StateNotifier<AsyncValue<void>> {
     }
   }
 
-  /// Actualiza una transacción existente
+  /// Actualiza una transacción existente (Corrección v5)
   Future<void> updateTransaction(TransactionModel transaction) async {
     _setLoading(true);
     _clearError();
 
     try {
-      // 1. Revertir efectos de la versión anterior si estaba completa
-      final oldTx = (_ref.read(transactionsListProvider).value ?? []).firstWhereOrNull((t) => t.id == transaction.id);
-      if (oldTx != null && oldTx.estado == 'completa') {
-        await _ref.read(financeServiceProvider).updateAfterTransaction(oldTx, isUndo: true);
-      }
-
-      // 2. Aplicar cambio en DB
+      // Aplicar cambio en DB (el repositorio maneja el revertir vieja y aplicar nueva)
       await _repository.updateTransaction(transaction);
       
       state = const AsyncValue.data(null);
 
-      // 3. Aplicar efectos de la nueva versión (si está completa)
-      await _ref.read(financeServiceProvider).updateAfterTransaction(transaction);
+      // Refrescar providers
+      _ref.read(financeServiceProvider).refreshAll();
     } catch (e) {
       _setError(e.toString());
       state = AsyncValue.error(e, StackTrace.current);
@@ -297,28 +289,18 @@ class TransactionsNotifier extends StateNotifier<AsyncValue<void>> {
     }
   }
 
-  /// Elimina una transacción
+  /// Elimina una transacción (Corrección v5)
   Future<void> deleteTransaction(String id) async {
     _setLoading(true);
     _clearError();
 
     try {
-      // 1. Obtener la transacción antes de borrarla para revertir efectos en cascada
-      final transactions = _ref.read(transactionsListProvider).value ?? [];
-      final tx = transactions.firstWhereOrNull((t) => t.id == id);
-      
-      if (tx != null && tx.estado == 'completa') {
-        await _ref.read(financeServiceProvider).updateAfterTransaction(tx, isUndo: true);
-      }
-
-      // 2. Eliminar en Repositorio
+      // Eliminar en Repositorio (el repositorio revierte efectos si era completa)
       await _repository.deleteTransaction(id);
       state = const AsyncValue.data(null);
 
-      // 3. FinanceService: refrescar si no lo hizo ya updateAfterTransaction
-      if (tx == null || tx.estado != 'completa') {
-        _ref.read(financeServiceProvider).refreshAll();
-      }
+      // Refresh
+      _ref.read(financeServiceProvider).refreshAll();
     } catch (e) {
       _setError(e.toString());
       state = AsyncValue.error(e, StackTrace.current);
@@ -328,19 +310,18 @@ class TransactionsNotifier extends StateNotifier<AsyncValue<void>> {
     }
   }
 
-  /// Marca una transacción como completada (Corrección v2)
+  /// Marca una transacción como completada (Corrección v5)
   Future<void> markAsComplete(TransactionModel transaction) async {
     _setLoading(true);
     _clearError();
 
     try {
-      final updatedTx = transaction.copyWith(estado: 'completa');
       await _repository.markAsComplete(transaction);
       
       state = const AsyncValue.data(null);
 
-      // FinanceService: coordina la actualización en cascada y refresco
-      await _ref.read(financeServiceProvider).updateAfterTransaction(updatedTx);
+      // FinanceService: coordina el refresco de los providers
+      _ref.read(financeServiceProvider).refreshAll();
     } catch (e) {
       _setError(e.toString());
       state = AsyncValue.error(e, StackTrace.current);
@@ -350,24 +331,18 @@ class TransactionsNotifier extends StateNotifier<AsyncValue<void>> {
     }
   }
 
-  /// Marca una transacción como pendiente
+  /// Marca una transacción como pendiente (Corrección v5)
   Future<void> markAsPending(TransactionModel transaction) async {
     _setLoading(true);
     _clearError();
 
     try {
-      // Si estaba completa, debemos revertir el efecto en cascada (saldos, TC)
-      if (transaction.estado == 'completa') {
-        await _ref.read(financeServiceProvider).updateAfterTransaction(transaction, isUndo: true);
-      }
-
       await _repository.markAsPending(transaction);
+      
       state = const AsyncValue.data(null);
 
-      // Si no era completa, refrescamos de todas formas
-      if (transaction.estado != 'completa') {
-        _ref.read(financeServiceProvider).refreshAll();
-      }
+      // FinanceService: refrescar todos los datos relacionados
+      _ref.read(financeServiceProvider).refreshAll();
     } catch (e) {
       _setError(e.toString());
       state = AsyncValue.error(e, StackTrace.current);
@@ -437,6 +412,9 @@ final filteredTransactionsSummaryProvider = Provider<TransactionSummary>((ref) {
       double expenses = 0;
       
       for (final tx in transactions) {
+        // [MODIFICACION] Solo sumamos para el resumen si la transacción está completa
+        if (tx.estado != 'completa') continue;
+
         if (accountId != null) {
           // VISTA POR CUENTA: Flujo de caja real
           if (tx.cuentaOrigenId == accountId) {

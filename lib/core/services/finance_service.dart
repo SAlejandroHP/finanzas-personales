@@ -1,12 +1,9 @@
-import 'package:collection/collection.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uuid/uuid.dart';
 import '../../features/transactions/models/transaction_model.dart';
 import '../../features/accounts/presentation/providers/accounts_provider.dart';
 import '../../features/transactions/presentation/providers/transactions_provider.dart';
 import '../../features/debts/presentation/providers/debts_provider.dart';
-import '../../features/accounts/models/account_model.dart';
-import '../../features/debts/models/debt_model.dart';
 
 // FinanceService: centraliza la lógica de negocio y la coordinación entre repositories.
 // Su función principal es realizar las actualizaciones en cascada (saldos, deudas) 
@@ -45,110 +42,9 @@ class FinanceService {
     await updateAfterTransaction(transaction);
   }
 
-  /// Coordina el refresco y las actualizaciones en cascada después de una transacción genérica
-  /// [isUndo] permite revertir el efecto de una transacción
+  /// Coordina el refresco de los providers después de una operación financiera
+  /// [isUndo] se mantiene por compatibilidad, pero la lógica ahora reside en Repositorios
   Future<void> updateAfterTransaction(TransactionModel tx, {bool isUndo = false}) async {
-    // Solo procesamos transacciones completas para efectos de saldo.
-    if (tx.estado != 'completa' && !isUndo) {
-      refreshAll();
-      return;
-    }
-
-    try {
-      final accRepo = _ref.read(accountsRepositoryProvider);
-      final debtRepo = _ref.read(debtsRepositoryProvider);
-
-      // --- 1. Sincronizar Cuenta Origen ---
-      final sourceAcc = await accRepo.getAccountById(tx.cuentaOrigenId);
-      if (sourceAcc != null) {
-        bool isSubtraction = (tx.tipo == 'gasto' || tx.tipo == 'transferencia' || tx.tipo == 'pago_deuda');
-        if (isUndo) isSubtraction = !isSubtraction;
-
-        double nuevoSaldo = isSubtraction 
-            ? sourceAcc.saldoActual - tx.monto 
-            : sourceAcc.saldoActual + tx.monto;
-            
-        await accRepo.updateAccountBalance(sourceAcc.id, nuevoSaldo);
-
-        if (sourceAcc.tipo == 'tarjeta_credito') {
-          final debts = await debtRepo.getUserDebts();
-          // Usamos una búsqueda manual para mayor seguridad en Web (JSArray error)
-          DebtModel? associatedDebt;
-          for (final d in debts) {
-            if (d.cuentaAsociadaId == sourceAcc.id) {
-              associatedDebt = d;
-              break;
-            }
-          }
-          
-          if (associatedDebt != null) {
-            bool isPayment = tx.tipo == 'ingreso';
-            if (isUndo) isPayment = !isPayment;
-            await debtRepo.updateDebtAmount(associatedDebt.id, tx.monto, isPayment: isPayment);
-          }
-        }
-      }
-
-      // --- 2. Sincronizar Cuenta Destino ---
-      if (tx.cuentaDestinoId != null) {
-        final destAcc = await accRepo.getAccountById(tx.cuentaDestinoId!);
-        if (destAcc != null) {
-          bool isAddition = true;
-          if (isUndo) isAddition = false;
-
-          double nuevoSaldo = isAddition 
-              ? destAcc.saldoActual + tx.monto 
-              : destAcc.saldoActual - tx.monto;
-              
-          await accRepo.updateAccountBalance(destAcc.id, nuevoSaldo);
-
-          if (destAcc.tipo == 'tarjeta_credito') {
-            final debts = await debtRepo.getUserDebts();
-            DebtModel? associatedDebt;
-            for (final d in debts) {
-              if (d.cuentaAsociadaId == destAcc.id) {
-                associatedDebt = d;
-                break;
-              }
-            }
-            if (associatedDebt != null) {
-              bool isPayment = true; 
-              if (isUndo) isPayment = false;
-              await debtRepo.updateDebtAmount(associatedDebt.id, tx.monto, isPayment: isPayment);
-            }
-          }
-        }
-      }
-
-      // --- 3. Sincronizar Deuda Directa ---
-      if (tx.tipo == 'pago_deuda' && tx.deudaId != null) {
-        final debt = await debtRepo.getDebtById(tx.deudaId!);
-        if (debt != null) {
-          // Si el pago no fue a través de una cuenta destino (que ya se habría sincronizado en el paso 2)
-          if (tx.cuentaDestinoId == null) {
-            bool isPayment = true;
-            if (isUndo) isPayment = false;
-            
-            // A. Actualizar el monto restante de la deuda
-            await debtRepo.updateDebtAmount(debt.id, tx.monto, isPayment: isPayment);
-
-            // B. Si la deuda está asociada a una cuenta (ej. Tarjeta de Crédito), actualizar su saldo disponible
-            if (debt.cuentaAsociadaId != null) {
-              final associatedAcc = await accRepo.getAccountById(debt.cuentaAsociadaId!);
-              if (associatedAcc != null && associatedAcc.tipo == 'tarjeta_credito') {
-                // Pago a deuda de TC -> Aumenta saldo disponible
-                double diff = isPayment ? tx.monto : -tx.monto;
-                await accRepo.updateAccountBalance(associatedAcc.id, associatedAcc.saldoActual + diff);
-              }
-            }
-          }
-        }
-      }
-
-    } catch (e) {
-      print('FinanceService: Error en actualización en cascada: $e');
-    }
-
     refreshAll();
   }
 
@@ -163,8 +59,10 @@ class FinanceService {
     _ref.invalidate(transactionsListProvider);
     _ref.invalidate(accountsWithBalanceProvider);
     
+    // Invalida providers de deudas para mantener consistencia
     try {
       _ref.invalidate(debtsListProvider);
+      _ref.invalidate(totalDebtsProvider);
     } catch (_) {}
   }
 }
