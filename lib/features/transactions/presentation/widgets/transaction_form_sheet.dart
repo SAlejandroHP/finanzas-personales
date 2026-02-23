@@ -1950,6 +1950,7 @@ class _CategorySelectorModalState extends State<_CategorySelectorModal> {
           const SizedBox(height: 16),
           TextField(
             controller: _searchController,
+            autofocus: true, // Mejora UX: abre el teclado automáticamente al elegir categoría
             style: GoogleFonts.montserrat(
               fontSize: AppColors.bodyMedium,
               color: isDark ? Colors.white : AppColors.textPrimary,
