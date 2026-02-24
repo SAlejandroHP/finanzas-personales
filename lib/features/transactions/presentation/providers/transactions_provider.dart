@@ -406,11 +406,18 @@ class TransactionSummary {
   final double total;
   final double income;
   final double expenses;
+  // Nuevos campos para transacciones pendientes
+  final double pendingTotal;
+  final double pendingIncome;
+  final double pendingExpenses;
 
   TransactionSummary({
     required this.total,
     required this.income,
     required this.expenses,
+    this.pendingTotal = 0,
+    this.pendingIncome = 0,
+    this.pendingExpenses = 0,
   });
 }
 
@@ -424,26 +431,33 @@ final filteredTransactionsSummaryProvider = Provider<TransactionSummary>((ref) {
     data: (transactions) {
       double income = 0;
       double expenses = 0;
+      double pendingIncome = 0;
+      double pendingExpenses = 0;
       
       for (final tx in transactions) {
-        // [MODIFICACION] Solo sumamos para el resumen si la transacción está completa
-        if (tx.estado != 'completa') continue;
-
-        if (accountId != null) {
-          // VISTA POR CUENTA: Flujo de caja real
-          if (tx.cuentaOrigenId == accountId) {
-            if (tx.tipo == 'ingreso') income += tx.monto;
-            else expenses += tx.monto;
-          } else if (tx.cuentaDestinoId == accountId) {
-            income += tx.monto;
+        if (tx.estado == 'completa') {
+          if (accountId != null) {
+            // VISTA POR CUENTA: Flujo de caja real
+            if (tx.cuentaOrigenId == accountId) {
+              if (tx.tipo == 'ingreso') income += tx.monto;
+              else expenses += tx.monto;
+            } else if (tx.cuentaDestinoId == accountId) {
+              income += tx.monto;
+            }
+          } else {
+            // VISTA GLOBAL: Para el resumen de la lista de movimientos
+            if (tx.tipo == 'ingreso') {
+              income += tx.monto;
+            } else if (tx.tipo == 'gasto' || (tx.tipo == 'pago_deuda' && tx.cuentaDestinoId == null) || (tx.tipo == 'meta_aporte')) {
+              expenses += tx.monto;
+            }
           }
-        } else {
-          // VISTA GLOBAL: Para el resumen de la lista de movimientos
-          // Consideramos Ingresos y Gastos igual que los providers del Dashboard
+        } else if (tx.estado == 'pendiente') {
+          // Cálculo de pendientes para la nueva sección de compromiso del periodo
           if (tx.tipo == 'ingreso') {
-            income += tx.monto;
-          } else if (tx.tipo == 'gasto' || (tx.tipo == 'transferencia' && tx.deudaId != null && tx.cuentaDestinoId == null)) {
-            expenses += tx.monto;
+            pendingIncome += tx.monto;
+          } else {
+            pendingExpenses += tx.monto;
           }
         }
       }
@@ -460,6 +474,9 @@ final filteredTransactionsSummaryProvider = Provider<TransactionSummary>((ref) {
         total: totalDisplay,
         income: income,
         expenses: expenses,
+        pendingTotal: pendingIncome - pendingExpenses,
+        pendingIncome: pendingIncome,
+        pendingExpenses: pendingExpenses,
       );
     },
     orElse: () => TransactionSummary(total: 0, income: 0, expenses: 0),

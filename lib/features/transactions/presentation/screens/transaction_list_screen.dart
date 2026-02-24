@@ -28,12 +28,25 @@ String _formatDateHeader(DateTime date) {
   }
 }
 
-/// Pantalla que muestra la lista de todas las transacciones del usuario
-class TransactionListScreen extends ConsumerWidget {
+class TransactionListScreen extends ConsumerStatefulWidget {
   const TransactionListScreen({Key? key}) : super(key: key);
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<TransactionListScreen> createState() => _TransactionListScreenState();
+}
+
+class _TransactionListScreenState extends ConsumerState<TransactionListScreen> {
+  final PageController _pageController = PageController();
+  int _currentPage = 0;
+
+  @override
+  void dispose() {
+    _pageController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final backgroundColor = isDark ? const Color(0xFF121212) : AppColors.backgroundColor;
     final transactionsAsync = ref.watch(filteredTransactionsProvider);
@@ -93,13 +106,18 @@ class TransactionListScreen extends ConsumerWidget {
           
           Expanded(
             child: transactionsAsync.when(
-              data: (transactions) {
+              data: (allTransactions) {
+          // Filtrado dinámico según la pestaña del carrusel (UX: Enfoque en compromisos)
+          final transactions = _currentPage == 0 
+              ? allTransactions 
+              : allTransactions.where((t) => t.estado == 'pendiente').toList();
+
           if (transactions.isEmpty) {
             final hasFilters = _hasAnyFilter(ref.watch(transactionFiltersProvider));
             return Column(
               children: [
                 const TransactionFiltersBar(),
-                _buildSummaryCard(context, ref, isDark),
+                _buildSummaryCarousel(context, ref, isDark),
                 Expanded(
                   child: Center(
                     child: Column(
@@ -119,7 +137,9 @@ class TransactionListScreen extends ConsumerWidget {
                         ),
                         const SizedBox(height: AppColors.lg),
                         Text(
-                          hasFilters ? 'Sin resultados' : 'Sin transacciones',
+                          hasFilters 
+                              ? 'Sin resultados' 
+                              : (_currentPage == 1 ? 'Sin compromisos' : 'Sin transacciones'),
                           style: GoogleFonts.montserrat(
                             fontWeight: FontWeight.w700,
                             fontSize: AppColors.titleSmall,
@@ -130,7 +150,9 @@ class TransactionListScreen extends ConsumerWidget {
                         Text(
                           hasFilters 
                               ? 'Prueba ajustando los filtros' 
-                              : 'Comienza a registrar tus movimientos',
+                              : (_currentPage == 1 
+                                  ? 'No tienes pagos pendientes en este periodo' 
+                                  : 'Comienza a registrar tus movimientos'),
                           style: GoogleFonts.montserrat(
                             color: isDark ? Colors.white70 : AppColors.textPrimary.withOpacity(0.6),
                             fontSize: AppColors.bodyMedium,
@@ -157,23 +179,19 @@ class TransactionListScreen extends ConsumerWidget {
 
           return Column(
             children: [
-              const TransactionFiltersBar(), // Fixed at top
+              const TransactionFiltersBar(), // Fijo arriba
+              _buildSummaryCarousel(context, ref, isDark), // Ahora FIJO para evitar resets y mejorar UX
               Expanded(
                 child: ListView.builder(
                   padding: const EdgeInsets.only(top: 8, bottom: 120),
                   physics: const BouncingScrollPhysics(),
-                  itemCount: transactions.length + 1, // +1 para el SummaryCard
+                  itemCount: transactions.length,
                   itemBuilder: (context, index) {
-                    if (index == 0) {
-                      return _buildSummaryCard(context, ref, isDark);
-                    }
-                    
-                    final txIndex = index - 1;
-                    final transaction = transactions[txIndex];
-                    final showHeader = txIndex == 0 ||
-                        transactions[txIndex - 1].fecha.day != transaction.fecha.day ||
-                        transactions[txIndex - 1].fecha.month != transaction.fecha.month ||
-                        transactions[txIndex - 1].fecha.year != transaction.fecha.year;
+                    final transaction = transactions[index];
+                    final showHeader = index == 0 ||
+                        transactions[index - 1].fecha.day != transaction.fecha.day ||
+                        transactions[index - 1].fecha.month != transaction.fecha.month ||
+                        transactions[index - 1].fecha.year != transaction.fecha.year;
 
                     if (showHeader) {
                       return Column(
@@ -294,27 +312,88 @@ class TransactionListScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildSummaryCard(BuildContext context, WidgetRef ref, bool isDark) {
+  Widget _buildSummaryCarousel(BuildContext context, WidgetRef ref, bool isDark) {
     final summary = ref.watch(filteredTransactionsSummaryProvider);
+    final hasPending = summary.pendingIncome != 0 || summary.pendingExpenses != 0;
+    
+    return Column(
+      children: [
+        SizedBox(
+          height: 110,
+          child: PageView(
+            controller: _pageController,
+            onPageChanged: (index) => setState(() => _currentPage = index),
+            children: [
+              // PESTAÑA 1: Balance del Periodo (Diseño Original Gradiente)
+              _buildModernSummaryCard(
+                title: 'Balance del Periodo',
+                total: summary.total,
+                income: summary.income,
+                expenses: summary.expenses,
+                isDark: isDark,
+                gradient: [
+                  AppColors.primary,
+                  AppColors.primary.withRed(30).withGreen(100),
+                ],
+              ),
+              // PESTAÑA 2: Compromisos (Diseño Minimalista Columnar)
+              if (hasPending)
+                _buildCommitmentSummaryCard(
+                  title: 'Compromisos (Pendiente)',
+                  total: summary.pendingTotal,
+                  income: summary.pendingIncome,
+                  expenses: summary.pendingExpenses,
+                  isDark: isDark,
+                ),
+            ],
+          ),
+        ),
+        if (hasPending) ...[
+          const SizedBox(height: 4),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: List.generate(2, (index) => Container(
+              width: 6,
+              height: 6,
+              margin: const EdgeInsets.symmetric(horizontal: 3),
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: _currentPage == index 
+                    ? AppColors.primary 
+                    : (isDark ? Colors.white24 : Colors.grey.withOpacity(0.3)),
+              ),
+            )),
+          ),
+        ],
+        const SizedBox(height: 8),
+      ],
+    );
+  }
+
+  // Card con gradiente para el balance principal
+  Widget _buildModernSummaryCard({
+    required String title,
+    required double total,
+    required double income,
+    required double expenses,
+    required bool isDark,
+    required List<Color> gradient,
+  }) {
     final currencyFormatter = NumberFormat.currency(symbol: '\$', decimalDigits: 2);
     
-    // Homologación con la card de balance del dashboard
     return Container(
-      margin: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+      margin: const EdgeInsets.symmetric(horizontal: 16),
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(AppColors.radiusXLarge),
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [
-            AppColors.primary,
-            AppColors.primary.withRed(30).withGreen(100),
-          ],
+          colors: gradient,
         ),
         boxShadow: [
           BoxShadow(
-            color: AppColors.primary.withOpacity(0.35),
+            color: gradient[0].withOpacity(0.35),
             blurRadius: 15,
             offset: const Offset(0, 5),
           ),
@@ -322,14 +401,14 @@ class TransactionListScreen extends ConsumerWidget {
       ),
       child: Row(
         children: [
-          // Balance Total del Periodo (Mejora visual para fondo primario)
           Expanded(
             flex: 5,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Text(
-                  'Balance del Periodo',
+                  title,
                   style: GoogleFonts.montserrat(
                     fontSize: 10,
                     fontWeight: FontWeight.w700,
@@ -341,9 +420,9 @@ class TransactionListScreen extends ConsumerWidget {
                 FittedBox(
                   fit: BoxFit.scaleDown,
                   child: Text(
-                    currencyFormatter.format(summary.total),
+                    currencyFormatter.format(total),
                     style: GoogleFonts.montserrat(
-                      fontSize: 22, // Aumentado para mayor énfasis visual
+                      fontSize: 22,
                       fontWeight: FontWeight.w800,
                       color: Colors.white,
                       letterSpacing: -0.5,
@@ -353,34 +432,121 @@ class TransactionListScreen extends ConsumerWidget {
               ],
             ),
           ),
-          
-          // Separador Vertical sutil
           Container(
-            height: 35, // Ligeramente más alto para acompañar el nuevo tamaño
+            height: 40, // Unificado a 40
             width: 1,
-            margin: const EdgeInsets.symmetric(horizontal: 12),
+            margin: const EdgeInsets.symmetric(horizontal: 16),
             color: Colors.white.withOpacity(0.2),
           ),
-          
-          // Ingresos y Gastos Compactos (Adaptados al fondo primario)
           Expanded(
-            flex: 6,
-            child: Row(
+            flex: 4, // Unificado a 4 para que sea una columna delgada
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Expanded(
-                  child: _buildCompactSummaryItem(
-                    amount: summary.income,
-                    color: Colors.greenAccent,
-                    icon: Icons.add_circle_outline,
+                _buildCompactSummaryItem(
+                  amount: income,
+                  color: Colors.greenAccent,
+                  icon: Icons.add_circle_outline,
+                ),
+                const SizedBox(height: 8), // Gap para la pila
+                _buildCompactSummaryItem(
+                  amount: expenses,
+                  color: Colors.white.withOpacity(0.9),
+                  icon: Icons.remove_circle_outline,
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Card minimalista con columna vertical para compromisos
+  Widget _buildCommitmentSummaryCard({
+    required String title,
+    required double total,
+    required double income,
+    required double expenses,
+    required bool isDark,
+  }) {
+    final currencyFormatter = NumberFormat.currency(symbol: '\$', decimalDigits: 2);
+    final cardBgColor = isDark ? const Color(0xFF1E1E1E) : Colors.white;
+    
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      decoration: BoxDecoration(
+        color: cardBgColor,
+        borderRadius: BorderRadius.circular(AppColors.radiusXLarge),
+        border: Border.all(
+          color: AppColors.secondary.withOpacity(isDark ? 0.3 : 0.1),
+          width: 1.5,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(isDark ? 0.2 : 0.05),
+            blurRadius: 15,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            flex: 5,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(
+                  title.toUpperCase(),
+                  style: GoogleFonts.montserrat(
+                    fontSize: 10,
+                    fontWeight: FontWeight.w700,
+                    color: isDark ? Colors.white60 : Colors.grey.shade600,
+                    letterSpacing: 0.8,
                   ),
                 ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: _buildCompactSummaryItem(
-                    amount: summary.expenses,
-                    color: Colors.white.withOpacity(0.9),
-                    icon: Icons.remove_circle_outline,
+                const SizedBox(height: 4),
+                FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Text(
+                    currencyFormatter.format(total),
+                    style: GoogleFonts.montserrat(
+                      fontSize: 22,
+                      fontWeight: FontWeight.w800,
+                      color: isDark ? Colors.white : AppColors.textPrimary,
+                      letterSpacing: -0.5,
+                    ),
                   ),
+                ),
+              ],
+            ),
+          ),
+          Container(
+            height: 40,
+            width: 1,
+            margin: const EdgeInsets.symmetric(horizontal: 16),
+            color: isDark ? Colors.white10 : Colors.grey.withOpacity(0.1),
+          ),
+          Expanded(
+            flex: 4,
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _buildCompactSummaryItem(
+                  amount: income,
+                  color: isDark ? const Color(0xFF81C784) : const Color(0xFF2E7D32),
+                  icon: Icons.add_circle_outline,
+                ),
+                const SizedBox(height: 8),
+                _buildCompactSummaryItem(
+                  amount: expenses,
+                  color: AppColors.secondary,
+                  icon: Icons.remove_circle_outline,
                 ),
               ],
             ),
@@ -395,25 +561,37 @@ class TransactionListScreen extends ConsumerWidget {
     required Color color,
     required IconData icon,
   }) {
-    final compactFormatter = NumberFormat.compactCurrency(symbol: '\$');
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+    final absAmount = amount.abs();
+    final String formattedText;
+
+    // Si el monto es menor a 1 millón, lo mostramos completo (ej: $17,500) para mayor precisión.
+    if (absAmount < 1000000) {
+      formattedText = NumberFormat.currency(
+        symbol: '\$',
+        decimalDigits: 0,
+        locale: 'en_US', // Asegura separadores de miles con coma
+      ).format(absAmount);
+    } else {
+      // Para montos muy grandes usamos el formato compacto (K, M) para no romper el layout.
+      formattedText = NumberFormat.compactCurrency(
+        symbol: '\$',
+        locale: 'en_US',
+      ).format(absAmount);
+    }
+
+    return Row(
+      mainAxisSize: MainAxisSize.min,
       children: [
-        Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(icon, size: 14, color: color), // Icono más visible
-            const SizedBox(width: 4),
-            Text(
-              amount >= 0 ? compactFormatter.format(amount) : compactFormatter.format(amount.abs()),
-              style: GoogleFonts.montserrat(
-                fontSize: 16, // Aumentado significativamente para jerarquía visual
-                fontWeight: FontWeight.w700,
-                color: color,
-                letterSpacing: -0.2, // Menor espaciado para mejor aspecto
-              ),
-            ),
-          ],
+        Icon(icon, size: 14, color: color),
+        const SizedBox(width: 4),
+        Text(
+          formattedText,
+          style: GoogleFonts.montserrat(
+            fontSize: 16,
+            fontWeight: FontWeight.w700,
+            color: color,
+            letterSpacing: -0.2,
+          ),
         ),
       ],
     );
