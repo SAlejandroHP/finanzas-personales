@@ -22,7 +22,6 @@ class AccountsListScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final backgroundColor = isDark ? AppColors.backgroundDark : AppColors.backgroundColor;
-    final appBarColor = isDark ? AppColors.backgroundDark : AppColors.backgroundColor;
     final accountsAsync = ref.watch(accountsWithBalanceProvider);
     final totalBalance = ref.watch(totalBalanceProvider);
     final totalDebts = ref.watch(totalDebtsProvider);
@@ -31,23 +30,33 @@ class AccountsListScreen extends ConsumerWidget {
       backgroundColor: backgroundColor,
       appBar: AppBar(
         title: Text(
-          'Cuentas',
+          'Mis Cuentas',
           style: GoogleFonts.montserrat(
-            fontWeight: FontWeight.w700,
-            fontSize: AppColors.titleMedium,
-            color: isDark ? AppColors.textSecondary : AppColors.textPrimary,
+            fontWeight: FontWeight.w800,
+            fontSize: 18,
+            color: isDark ? Colors.white : AppColors.textPrimary,
+            letterSpacing: -0.5,
           ),
         ),
         centerTitle: false,
         elevation: 0,
-        scrolledUnderElevation: AppColors.cardElevation,
-        backgroundColor: appBarColor,
-        foregroundColor: isDark ? AppColors.textSecondary : AppColors.textPrimary,
+        scrolledUnderElevation: 0,
+        surfaceTintColor: Colors.transparent,
+        backgroundColor: Colors.transparent,
         actions: [
-          IconButton(
-            icon: const Icon(Icons.add_rounded),
-            onPressed: () => _showAccountForm(context, ref),
-            tooltip: 'Agregar cuenta',
+          Padding(
+            padding: const EdgeInsets.only(right: 8),
+            child: IconButton(
+              icon: Container(
+                padding: const EdgeInsets.all(6),
+                decoration: BoxDecoration(
+                  color: AppColors.primary.withOpacity(0.15),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(Icons.add_rounded, size: 20, color: AppColors.primary),
+              ),
+              onPressed: () => _showAccountForm(context, ref),
+            ),
           ),
         ],
       ),
@@ -67,18 +76,7 @@ class AccountsListScreen extends ConsumerWidget {
                 // Catálogo de bancos de Belvo
                 _buildBankCatalog(context, ref, isDark),
 
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: AppColors.pagePadding, vertical: 8),
-                  child: Text(
-                    'Tus activos',
-                    style: GoogleFonts.montserrat(
-                      fontSize: AppColors.bodyMedium,
-                      fontWeight: FontWeight.w600,
-                      color: isDark ? Colors.white54 : Colors.grey[600],
-                      letterSpacing: 0.5,
-                    ),
-                  ),
-                ),
+                _buildSectionHeader(context, 'Tus activos'),
 
                 GridView.builder(
                   shrinkWrap: true,
@@ -128,123 +126,141 @@ class AccountsListScreen extends ConsumerWidget {
   }
 
   Widget _buildSummaryCard(BuildContext context, double totalAssets, double totalDebts, bool isDark) {
-    // Patrimonio Neto = Lo que tienes (Activos) - Lo que debes (Pasivos)
+    // Patrimonio Neto = Activos - Deudas
     final netWorth = totalAssets - totalDebts;
-    
     final currencyFormatter = NumberFormat.currency(symbol: '\$', decimalDigits: 2);
-    final cardColor = isDark ? const Color(0xFF1E1E1E) : Colors.white;
 
     return Container(
-      margin: const EdgeInsets.fromLTRB(16, 8, 16, 24),
-      padding: const EdgeInsets.all(20),
+      margin: const EdgeInsets.symmetric(horizontal: AppColors.pagePadding, vertical: 12),
+      width: double.infinity,
       decoration: BoxDecoration(
-        color: cardColor,
         borderRadius: BorderRadius.circular(24),
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            AppColors.primary,
+            AppColors.primary.withRed(30).withGreen(100), // Teal vibrante
+          ],
+        ),
         boxShadow: [
-          if (!isDark)
-            BoxShadow(
-              color: Colors.black.withOpacity(0.04),
-              blurRadius: 12,
-              offset: const Offset(0, 4),
-            ),
+          BoxShadow(
+            color: AppColors.primary.withOpacity(0.3),
+            blurRadius: 20,
+            offset: const Offset(0, 8),
+          ),
         ],
       ),
-      child: Column(
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Column(
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(24),
+        child: Stack(
+          children: [
+            // Decoración Glassmorphism
+            Positioned(
+              top: -20,
+              right: -20,
+              child: Container(
+                width: 100,
+                height: 100,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: Colors.white.withOpacity(0.1),
+                ),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.all(20),
+              child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    'Patrimonio Neto',
+                   Text(
+                    'PATRIMONIO NETO',
                     style: GoogleFonts.montserrat(
-                      fontSize: AppColors.bodySmall,
-                      fontWeight: FontWeight.w500,
-                      color: Colors.grey,
+                      fontSize: 10,
+                      fontWeight: FontWeight.w800,
+                      color: Colors.white.withOpacity(0.8),
+                      letterSpacing: 1.2,
                     ),
                   ),
                   const SizedBox(height: 4),
                   Text(
                     currencyFormatter.format(netWorth),
                     style: GoogleFonts.montserrat(
-                      fontSize: AppColors.titleLarge,
-                      fontWeight: FontWeight.w700,
-                      color: netWorth < 0 ? Colors.redAccent : (isDark ? Colors.white : AppColors.textPrimary),
+                      fontSize: 24,
+                      fontWeight: FontWeight.w800,
+                      color: Colors.white,
+                      letterSpacing: -0.5,
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  // Barra inferior con Activos y Deudas (Estilo Dashboard)
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Colors.black.withOpacity(0.12),
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: _buildCompactIndicator(
+                            'Activos',
+                            currencyFormatter.format(totalAssets),
+                            Colors.white,
+                            Icons.arrow_upward_rounded,
+                          ),
+                        ),
+                        Container(height: 20, width: 1, color: Colors.white.withOpacity(0.15)),
+                        Expanded(
+                          child: _buildCompactIndicator(
+                            'Deudas',
+                            currencyFormatter.format(totalDebts),
+                            Colors.white.withOpacity(0.8),
+                            Icons.arrow_downward_rounded,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 ],
               ),
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: (netWorth < 0 ? Colors.redAccent : AppColors.primary).withOpacity(0.1),
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(
-                  netWorth < 0 ? Icons.warning_amber_rounded : Icons.account_balance_wallet_outlined,
-                  color: netWorth < 0 ? Colors.redAccent : AppColors.primary,
-                  size: 24,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 20),
-          Divider(color: isDark ? Colors.white10 : Colors.black.withOpacity(0.05)),
-          const SizedBox(height: 12),
-          Row(
-            children: [
-              _buildNetWorthDetail(
-                'Tus Activos',
-                currencyFormatter.format(totalAssets),
-                Colors.green,
-                Icons.add_circle_outline,
-              ),
-              const SizedBox(width: 16),
-              _buildNetWorthDetail(
-                'Tus Deudas',
-                currencyFormatter.format(totalDebts),
-                Colors.redAccent,
-                Icons.remove_circle_outline,
-              ),
-            ],
-          ),
-        ],
+            ),
+          ],
+        ),
       ),
     );
   }
 
-  Widget _buildNetWorthDetail(String title, String amount, Color color, IconData icon) {
-    return Expanded(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Icon(icon, size: 14, color: color),
-              const SizedBox(width: 4),
-              Text(
-                title,
-                style: GoogleFonts.montserrat(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w500,
-                  color: Colors.grey,
-                ),
-              ),
-            ],
+  Widget _buildCompactIndicator(String label, String amount, Color color, IconData icon) {
+    return Column(
+      children: [
+        Row(
+           mainAxisAlignment: MainAxisAlignment.center,
+           children: [
+             Icon(icon, size: 10, color: color.withOpacity(0.8)),
+             const SizedBox(width: 4),
+             Text(
+               label.toUpperCase(),
+               style: GoogleFonts.montserrat(
+                 fontSize: 8,
+                 fontWeight: FontWeight.w800,
+                 color: color.withOpacity(0.7),
+                 letterSpacing: 0.5,
+               ),
+             ),
+           ],
+        ),
+        const SizedBox(height: 2),
+        Text(
+          amount,
+          style: GoogleFonts.montserrat(
+            fontSize: 14,
+            fontWeight: FontWeight.w700,
+            color: color,
+            letterSpacing: -0.2,
           ),
-          const SizedBox(height: 4),
-          Text(
-            amount,
-            style: GoogleFonts.montserrat(
-              fontSize: 14,
-              fontWeight: FontWeight.w700,
-              color: color.withOpacity(0.9),
-            ),
-          ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 
@@ -256,30 +272,32 @@ class AccountsListScreen extends ConsumerWidget {
           Container(
             padding: const EdgeInsets.all(24),
             decoration: BoxDecoration(
-              color: isDark ? Colors.white.withOpacity(0.05) : AppColors.primary.withOpacity(0.05),
-              shape: BoxShape.circle,
+              color: AppColors.primary.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(20), // Squircle
             ),
             child: Icon(
               Icons.account_balance_wallet_rounded,
-              size: 64,
-              color: AppColors.primary.withOpacity(0.5),
+              size: 48,
+              color: AppColors.primary,
             ),
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 24),
           Text(
-            'Sin cuentas',
+            'Sin cuentas aún',
             style: GoogleFonts.montserrat(
-              fontWeight: FontWeight.w700,
-              fontSize: AppColors.titleSmall,
+              fontWeight: FontWeight.w800,
+              fontSize: 18,
               color: isDark ? Colors.white : AppColors.textPrimary,
+              letterSpacing: -0.5,
             ),
           ),
           const SizedBox(height: 8),
           Text(
-            'Comienza a registrar tus cuentas',
+            'Tus activos aparecerán aquí',
             style: GoogleFonts.montserrat(
-              color: isDark ? Colors.white70 : AppColors.textPrimary.withOpacity(0.6),
-              fontSize: AppColors.bodyMedium,
+              color: Colors.grey,
+              fontSize: 14,
+              fontWeight: FontWeight.w500,
             ),
           ),
         ],
@@ -362,44 +380,35 @@ class AccountsListScreen extends ConsumerWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                'Instituciones Disponibles',
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            _buildSectionHeader(context, 'Instituciones Aliadas'),
+            Padding(
+              padding: const EdgeInsets.only(right: 20, top: 20),
+              child: Text(
+                'BELVO',
                 style: GoogleFonts.montserrat(
-                  fontSize: AppColors.bodyMedium,
-                  fontWeight: FontWeight.w600,
-                  color: isDark ? Colors.white54 : Colors.grey[600],
-                  letterSpacing: 0.5,
+                  fontSize: 9,
+                  fontWeight: FontWeight.w900,
+                  color: AppColors.primary.withOpacity(0.3),
+                  letterSpacing: 2,
                 ),
               ),
-              Text(
-                'Belvo',
-                style: GoogleFonts.montserrat(
-                  fontSize: AppColors.bodySmall,
-                  fontWeight: FontWeight.w700,
-                  color: AppColors.primary.withOpacity(0.5),
-                ),
-              ),
-            ],
-          ),
+            ),
+          ],
         ),
         SizedBox(
-          height: 90,
+          height: 95,
           child: banksAsync.when(
             data: (banks) {
               if (banks.isEmpty) return const SizedBox.shrink();
-              
-              // Mostrar solo los primeros 10 bancos como "populares"
-              // Mostrar más instituciones para incluir Fintechs populares
               final popularBanks = banks.take(25).toList();
               
               return ListView.builder(
-                padding: const EdgeInsets.symmetric(horizontal: 12),
+                padding: const EdgeInsets.symmetric(horizontal: 16),
                 scrollDirection: Axis.horizontal,
+                physics: const BouncingScrollPhysics(),
                 itemCount: popularBanks.length,
                 itemBuilder: (context, index) {
                   final bank = popularBanks[index];
@@ -408,7 +417,7 @@ class AccountsListScreen extends ConsumerWidget {
               );
             },
             loading: () => ListView.builder(
-              padding: const EdgeInsets.symmetric(horizontal: 12),
+              padding: const EdgeInsets.symmetric(horizontal: 16),
               scrollDirection: Axis.horizontal,
               itemCount: 5,
               itemBuilder: (context, index) => _buildBankSkeleton(isDark),
@@ -416,61 +425,73 @@ class AccountsListScreen extends ConsumerWidget {
             error: (_, __) => const SizedBox.shrink(),
           ),
         ),
-        const SizedBox(height: 16),
+        const SizedBox(height: 24),
       ],
     );
   }
 
   Widget _buildBankItem(BuildContext context, WidgetRef ref, BankModel bank, bool isDark) {
     return Container(
-      width: 80,
-      margin: const EdgeInsets.symmetric(horizontal: 4),
+      width: 70,
+      margin: const EdgeInsets.only(right: 14),
       child: Column(
         children: [
           InkWell(
             onTap: () {
-              // Preseleccionar el banco para el formulario
               ref.read(selectedBankProvider.notifier).state = bank;
               _showAccountForm(context, ref);
             },
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(15),
             child: Container(
-              padding: const EdgeInsets.all(12),
+              padding: const EdgeInsets.all(10),
               decoration: BoxDecoration(
                 color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(
-                  color: isDark ? Colors.white.withOpacity(0.05) : Colors.black.withOpacity(0.05),
-                ),
+                borderRadius: BorderRadius.circular(10), // Squircle homologado R:10
                 boxShadow: [
                   if (!isDark)
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.02),
-                      blurRadius: 8,
-                      offset: const Offset(0, 2),
+                      color: Colors.black.withOpacity(0.03),
+                      blurRadius: 10,
+                      offset: const Offset(0, 4),
                     ),
                 ],
               ),
               child: BankLogo(
-                  bankName: bank.displayName,
-                  primaryColor: bank.primaryColor,
-                  size: 32,
-                ),
+                bankName: bank.displayName,
+                primaryColor: bank.primaryColor,
+                size: 28,
+              ),
             ),
           ),
-          const SizedBox(height: 6),
+          const SizedBox(height: 8),
           Text(
-            bank.displayName.split(' ')[0], // Solo la primera palabra para que quepa
+            bank.displayName.split(' ')[0],
             style: GoogleFonts.montserrat(
-              fontSize: AppColors.bodySmall,
-              fontWeight: FontWeight.w500,
-              color: isDark ? Colors.white70 : Colors.black87,
+              fontSize: 10,
+              fontWeight: FontWeight.w600,
+              color: isDark ? Colors.white60 : Colors.grey[600],
             ),
             textAlign: TextAlign.center,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
           ),
         ],
+      ),
+    );
+  }
+
+  /// Construye el encabezado de una sección
+  Widget _buildSectionHeader(BuildContext context, String title) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 32, 20, 12),
+      child: Text(
+        title.toUpperCase(),
+        style: GoogleFonts.montserrat(
+          fontSize: 11,
+          fontWeight: FontWeight.w800,
+          color: AppColors.primary.withOpacity(0.6),
+          letterSpacing: 1.5,
+        ),
       ),
     );
   }
