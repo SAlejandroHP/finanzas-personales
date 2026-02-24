@@ -27,34 +27,45 @@ class CategoriesListScreen extends ConsumerWidget {
       backgroundColor: backgroundColor,
       appBar: AppBar(
         title: Text(
-          'Categorías',
+          'Mis Categorías',
           style: GoogleFonts.montserrat(
-            fontWeight: FontWeight.w700,
-            fontSize: AppColors.titleMedium,
-            color: isDark ? AppColors.textSecondary : AppColors.textPrimary,
+            fontWeight: FontWeight.w800,
+            fontSize: 18,
+            color: isDark ? Colors.white : AppColors.textPrimary,
+            letterSpacing: -0.5,
           ),
         ),
         centerTitle: false,
         elevation: 0,
-        backgroundColor: backgroundColor,
+        scrolledUnderElevation: 0,
+        surfaceTintColor: Colors.transparent,
+        backgroundColor: Colors.transparent,
         actions: [
-          IconButton(
-            icon: const Icon(Icons.add_rounded),
-            onPressed: () => _showCategoryForm(context, ref: ref),
-            tooltip: 'Crear categoría',
+          Padding(
+            padding: const EdgeInsets.only(right: 8),
+            child: IconButton(
+              icon: Container(
+                padding: const EdgeInsets.all(6),
+                decoration: BoxDecoration(
+                  color: AppColors.primary.withOpacity(0.15),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(Icons.add_rounded, size: 20, color: AppColors.primary),
+              ),
+              onPressed: () => _showCategoryForm(context, ref: ref),
+            ),
           ),
-          const SizedBox(width: 8),
         ],
       ),
       body: Column(
         children: [
-          // Selector de Tipo Estilizado (Tab Alternativo)
+          // Selector de Tipo Premium (Tab Alternativo)
           Container(
-            margin: const EdgeInsets.symmetric(horizontal: AppColors.pagePadding, vertical: 8),
-            padding: const EdgeInsets.all(4),
+            margin: const EdgeInsets.fromLTRB(AppColors.pagePadding, 8, AppColors.pagePadding, 16),
+            padding: const EdgeInsets.all(5),
             decoration: BoxDecoration(
-              color: isDark ? Colors.white.withOpacity(0.05) : Colors.black.withOpacity(0.05),
-              borderRadius: BorderRadius.circular(AppColors.radiusMedium),
+              color: isDark ? Colors.white.withOpacity(0.05) : Colors.black.withOpacity(0.04),
+              borderRadius: BorderRadius.circular(14),
             ),
             child: Row(
               children: [
@@ -64,17 +75,14 @@ class CategoriesListScreen extends ConsumerWidget {
             ),
           ),
 
-          // Buscador Rápido
+          // Buscador Rápido (Estilo Premium)
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+            padding: const EdgeInsets.symmetric(horizontal: AppColors.pagePadding, vertical: 0),
             child: Container(
-              height: 42,
+              height: 46,
               decoration: BoxDecoration(
                 color: isDark ? Colors.white.withOpacity(0.05) : Colors.white,
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(
-                  color: isDark ? Colors.white10 : Colors.black.withOpacity(0.05),
-                ),
                 boxShadow: [
                   if (!isDark)
                     BoxShadow(
@@ -87,25 +95,26 @@ class CategoriesListScreen extends ConsumerWidget {
               child: TextField(
                 onChanged: (value) => ref.read(categorySearchQueryProvider.notifier).state = value,
                 style: GoogleFonts.montserrat(
-                  fontSize: AppColors.bodySmall,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
                   color: isDark ? Colors.white : AppColors.textPrimary,
                 ),
                 decoration: InputDecoration(
-                  hintText: 'Buscar categoría...',
+                  hintText: 'Buscar por nombre...',
                   hintStyle: GoogleFonts.montserrat(
-                    fontSize: AppColors.bodySmall,
-                    color: isDark ? Colors.white38 : Colors.grey[400],
+                    fontSize: 14,
+                    color: Colors.grey[400],
                   ),
                   prefixIcon: Icon(
                     Icons.search_rounded,
-                    size: 18,
+                    size: 20,
                     color: isDark ? Colors.white38 : Colors.grey[400],
                   ),
                   border: InputBorder.none,
-                  contentPadding: const EdgeInsets.symmetric(vertical: 10),
+                  contentPadding: const EdgeInsets.symmetric(vertical: 12),
                   suffixIcon: ref.watch(categorySearchQueryProvider).isNotEmpty
                       ? IconButton(
-                          icon: const Icon(Icons.close_rounded, size: 16),
+                          icon: const Icon(Icons.close_rounded, size: 18),
                           onPressed: () => ref.read(categorySearchQueryProvider.notifier).state = '',
                         )
                       : null,
@@ -113,6 +122,8 @@ class CategoriesListScreen extends ConsumerWidget {
               ),
             ),
           ),
+          
+          const SizedBox(height: 12),
           
           Expanded(
             child: categoriesAsync.when(
@@ -129,13 +140,13 @@ class CategoriesListScreen extends ConsumerWidget {
                 }
 
                 return GridView.builder(
-                  padding: const EdgeInsets.fromLTRB(12, 8, 12, 120),
+                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 120),
                   physics: const BouncingScrollPhysics(),
                   gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                     crossAxisCount: 3,
-                    crossAxisSpacing: 10,
-                    mainAxisSpacing: 10,
-                    childAspectRatio: 0.9,
+                    crossAxisSpacing: 12,
+                    mainAxisSpacing: 12,
+                    childAspectRatio: 0.95,
                   ),
                   itemCount: filteredCategories.length,
                   itemBuilder: (context, index) {
@@ -160,11 +171,6 @@ class CategoriesListScreen extends ConsumerWidget {
           ),
         ],
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () => _showCategoryForm(context, ref: ref),
-        backgroundColor: AppColors.primary,
-        child: const Icon(Icons.add_rounded, color: Colors.white),
-      ),
     );
   }
 
@@ -175,17 +181,17 @@ class CategoriesListScreen extends ConsumerWidget {
       child: GestureDetector(
         onTap: () => ref.read(categoryTypeFilterProvider.notifier).state = type,
         child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 10),
+          padding: const EdgeInsets.symmetric(vertical: 11),
           decoration: BoxDecoration(
             color: isSelected 
-                ? (isDark ? AppColors.primary : Colors.white) 
+                ? (isDark ? AppColors.primary.withOpacity(0.9) : Colors.white) 
                 : Colors.transparent,
             borderRadius: BorderRadius.circular(10),
             boxShadow: [
               if (isSelected && !isDark)
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.05),
-                  blurRadius: 4,
+                  color: Colors.black.withOpacity(0.04),
+                  blurRadius: 8,
                   offset: const Offset(0, 2),
                 ),
             ],
@@ -194,11 +200,12 @@ class CategoriesListScreen extends ConsumerWidget {
             label,
             textAlign: TextAlign.center,
             style: GoogleFonts.montserrat(
-              fontSize: AppColors.bodySmall,
-              fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+              fontSize: 13,
+              fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
               color: isSelected 
                   ? (isDark ? Colors.white : AppColors.primary)
-                  : (isDark ? Colors.white54 : Colors.grey[600]),
+                  : (isDark ? Colors.white38 : Colors.grey[500]),
+              letterSpacing: -0.2,
             ),
           ),
         ),
@@ -214,32 +221,34 @@ class CategoriesListScreen extends ConsumerWidget {
           Container(
             padding: const EdgeInsets.all(24),
             decoration: BoxDecoration(
-              color: isDark ? Colors.white.withOpacity(0.05) : AppColors.primary.withOpacity(0.05),
-              shape: BoxShape.circle,
+              color: AppColors.primary.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(20), // Squircle
             ),
             child: Icon(
-              isSearch ? Icons.search_off_rounded : Icons.folder_open_rounded,
-              size: 64,
-              color: AppColors.primary.withOpacity(0.5),
+              isSearch ? Icons.search_off_rounded : Icons.label_important_rounded,
+              size: 48,
+              color: AppColors.primary,
             ),
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 24),
           Text(
-            isSearch ? 'Sin coincidencias' : 'Sin categorías',
+            isSearch ? 'Sin coincidencias' : 'Aún no hay categorías',
             style: GoogleFonts.montserrat(
-              fontWeight: FontWeight.w700,
-              fontSize: AppColors.titleSmall,
+              fontWeight: FontWeight.w800,
+              fontSize: 18,
               color: isDark ? Colors.white : AppColors.textPrimary,
+              letterSpacing: -0.5,
             ),
           ),
           const SizedBox(height: 8),
           Text(
             isSearch 
-              ? 'No encontramos categorías que coincidan'
-              : 'Crea tu primera categoría de ${type == 'ingreso' ? 'ingreso' : 'gasto'}',
+              ? 'Prueba con otros términos de búsqueda'
+              : 'Organiza tus ${type == 'ingreso' ? 'ingresos' : 'gastos'} hoy',
             style: GoogleFonts.montserrat(
-              color: isDark ? Colors.white70 : AppColors.textPrimary.withOpacity(0.6),
-              fontSize: AppColors.bodyMedium,
+              color: Colors.grey,
+              fontSize: 14,
+              fontWeight: FontWeight.w500,
             ),
             textAlign: TextAlign.center,
           ),

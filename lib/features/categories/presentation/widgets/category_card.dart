@@ -145,36 +145,25 @@ class CategoryCard extends StatelessWidget {
     return Container(
       decoration: BoxDecoration(
         color: cardColor,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(18),
         boxShadow: [
           if (!isDark)
             BoxShadow(
-              color: categoryColor.withOpacity(0.05),
+              color: Colors.black.withOpacity(0.04),
               blurRadius: 10,
               offset: const Offset(0, 4),
             ),
         ],
       ),
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(18),
         child: Material(
           color: Colors.transparent,
           child: InkWell(
             onTap: onTap ?? onEdit,
             child: Stack(
               children: [
-                // Icono decorativo de fondo
-                Positioned(
-                  right: -10,
-                  top: -10,
-                  child: Icon(
-                    _getIcon(category.icono),
-                    size: 80,
-                    color: categoryColor.withOpacity(0.03),
-                  ),
-                ),
-
-                // Menu ultra discreto posicionado absolutamente para no ocupar espacio en el layout
+                // Menu de acciones alineado
                 Positioned(
                   top: 0,
                   right: 0,
@@ -182,12 +171,8 @@ class CategoryCard extends StatelessWidget {
                     padding: EdgeInsets.zero,
                     icon: Icon(
                       Icons.more_horiz_rounded,
-                      size: 14,
+                      size: 20,
                       color: isDark ? Colors.white24 : Colors.grey[300],
-                    ),
-                    constraints: const BoxConstraints(
-                      minWidth: 32,
-                      minHeight: 32,
                     ),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                     onSelected: (value) {
@@ -195,53 +180,48 @@ class CategoryCard extends StatelessWidget {
                       if (value == 'delete') onDelete?.call();
                     },
                     itemBuilder: (context) => [
-                      _buildPopupMenuItem('edit', Icons.edit_outlined, 'Editar'),
+                      _buildPopupMenuItem('edit', Icons.edit_rounded, 'Editar'),
                       _buildPopupMenuItem('delete', Icons.delete_outline, 'Eliminar', isDestructive: true),
                     ],
                   ),
                 ),
                 
                 Padding(
-                  padding: const EdgeInsets.fromLTRB(6, 14, 6, 6),
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      // Icono agrandado
-                      Icon(
-                        _getIcon(category.icono),
-                        color: categoryColor,
-                        size: 38,
+                      // Icono en Squircle Premium
+                      Container(
+                        width: 44,
+                        height: 44,
+                        decoration: BoxDecoration(
+                          color: categoryColor.withOpacity(0.12),
+                          borderRadius: BorderRadius.circular(10), // Squircle homologado
+                        ),
+                        child: Icon(
+                          _getIcon(category.icono),
+                          color: categoryColor,
+                          size: 22,
+                        ),
                       ),
                       
-                      const SizedBox(height: 8),
+                      const SizedBox(height: 12),
                       
-                      // Nombre compacto
+                      // Nombre
                       Text(
                         category.nombre,
                         textAlign: TextAlign.center,
                         style: GoogleFonts.montserrat(
-                          fontSize: AppColors.bodySmall,
+                          fontSize: 12,
                           fontWeight: FontWeight.w700,
                           color: isDark ? Colors.white : AppColors.textPrimary,
+                          letterSpacing: -0.3,
                         ),
-                        maxLines: 1,
+                        maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                       ),
                     ],
-                  ),
-                ),
-                
-                // Línea de acento inferior ultra fina
-                Positioned(
-                  bottom: 0,
-                  left: 20,
-                  right: 20,
-                  height: 1.5,
-                  child: Container(
-                    decoration: BoxDecoration(
-                      color: categoryColor.withOpacity(0.3),
-                      borderRadius: const BorderRadius.vertical(top: Radius.circular(3)),
-                    ),
                   ),
                 ),
               ],
