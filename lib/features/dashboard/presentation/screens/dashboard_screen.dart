@@ -1495,108 +1495,101 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
 
               return Column(
                 children: activeDebts.take(3).map((debt) {
-                  return Padding(
-                    padding: const EdgeInsets.only(bottom: 16),
+                  return Container(
+                    margin: const EdgeInsets.only(bottom: 8),
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: isDark ? Colors.white.withOpacity(0.02) : Colors.black.withOpacity(0.01),
+                      borderRadius: BorderRadius.circular(16),
+                    ),
                     child: Row(
                       children: [
                         Container(
-                          padding: const EdgeInsets.all(10),
+                          width: 32,
+                          height: 32,
                           decoration: BoxDecoration(
-                            color: Colors.orange.withOpacity(0.1),
-                            shape: BoxShape.circle,
+                            color: Colors.orange.withOpacity(0.15),
+                            borderRadius: BorderRadius.circular(10), // Squircle homologado
                           ),
                           child: const Icon(
                             Icons.money_off_rounded,
                             color: Colors.orange,
-                            size: 20,
+                            size: 16,
                           ),
                         ),
                         const SizedBox(width: 12),
                         Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                debt.nombre,
-                                style: GoogleFonts.montserrat(
-                                  fontSize: AppColors.bodySmall,
-                                  fontWeight: FontWeight.w600,
-                                  color: isDark
-                                      ? Colors.white
-                                      : AppColors.textPrimary,
-                                ),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                              if (debt.fechaVencimiento != null)
-                                Text(
-                                  'Vence: ${DateFormat('dd MMM').format(debt.fechaVencimiento!)}',
-                                  style: GoogleFonts.montserrat(
-                                    fontSize: AppColors.bodySmall,
-                                    color: Colors.grey,
-                                  ),
-                                )
-                              else
-                                Text(
-                                  _formatDebtType(debt.tipo),
-                                  style: GoogleFonts.montserrat(
-                                    fontSize: AppColors.bodySmall,
-                                    color: Colors.grey,
-                                  ),
-                                ),
-                            ],
+                          child: Text(
+                            debt.nombre,
+                            style: GoogleFonts.montserrat(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                              color: isDark ? Colors.white : AppColors.textPrimary,
+                              height: 1.2,
+                            ),
                           ),
                         ),
+                        const SizedBox(width: 12),
                         Column(
                           crossAxisAlignment: CrossAxisAlignment.end,
                           children: [
                             Text(
                               formatter.format(debt.montoRestante),
                               style: GoogleFonts.montserrat(
-                                fontSize: AppColors.bodySmall,
-                                fontWeight: FontWeight.w700,
-                                color: Colors.orange[400],
+                                fontSize: 12,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.orange[700],
                               ),
                             ),
-                            const SizedBox(height: 4),
-                            InkWell(
-                              onTap: () => showTransactionFormSheet(
-                                context,
-                                transaction: TransactionModel(
-                                  id: '', // Nueva
-                                  userId: '',
-                                  tipo: 'pago_deuda',
-                                  monto: 0,
-                                  fecha: DateTime.now(),
-                                  estado: 'completa',
-                                  cuentaOrigenId: '', // Requerido
-                                  deudaId: debt.id,
-                                  createdAt: DateTime.now(),
-                                  isRecurring: false,
-                                  autoComplete: false,
-                                  weekendAdjustment: false,
-                                ),
-                              ),
-                              child: Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 8,
-                                  vertical: 4,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: AppColors.primary.withOpacity(0.1),
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                                child: Text(
-                                  'Pagar ahora',
-                                  style: GoogleFonts.montserrat(
-                                    fontSize: AppColors.bodySmall,
-                                    fontWeight: FontWeight.w700,
-                                    color: AppColors.primary,
-                                  ),
-                                ),
+                            const SizedBox(height: 2),
+                            Text(
+                              debt.fechaVencimiento != null 
+                                  ? 'Vence: ${DateFormat('dd MMM').format(debt.fechaVencimiento!)}'
+                                  : _formatDebtType(debt.tipo),
+                              style: GoogleFonts.montserrat(
+                                fontSize: 10,
+                                color: Colors.grey,
+                                fontWeight: FontWeight.w600,
                               ),
                             ),
                           ],
+                        ),
+                        const SizedBox(width: 14),
+                        // Botón de pago compacto SM
+                        Material(
+                          color: Colors.transparent,
+                          child: InkWell(
+                            onTap: () => showTransactionFormSheet(
+                              context,
+                              transaction: TransactionModel(
+                                id: '', // Nueva
+                                userId: '',
+                                tipo: 'pago_deuda',
+                                monto: 0,
+                                fecha: DateTime.now(),
+                                estado: 'completa',
+                                cuentaOrigenId: '', // Requerido en el form
+                                deudaId: debt.id,
+                                createdAt: DateTime.now(),
+                                isRecurring: false,
+                                autoComplete: false,
+                                weekendAdjustment: false,
+                              ),
+                            ),
+                            borderRadius: BorderRadius.circular(20),
+                            child: Container(
+                              padding: const EdgeInsets.all(6),
+                              decoration: BoxDecoration(
+                                color: Colors.orange.withOpacity(0.12),
+                                shape: BoxShape.circle,
+                              ),
+                              child: const Icon(
+                                Icons.payments_rounded,
+                                size: 14,
+                                color: Colors.orange,
+                              ),
+                            ),
+                          ),
                         ),
                       ],
                     ),
