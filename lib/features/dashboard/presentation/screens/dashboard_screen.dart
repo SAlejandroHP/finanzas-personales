@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/constants/app_colors.dart';
+import '../../../accounts/models/account_model.dart';
 import '../../../accounts/presentation/providers/accounts_provider.dart';
 import '../../../categories/models/category_model.dart';
 import '../../../categories/presentation/providers/categories_provider.dart';
@@ -765,6 +766,10 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     bool isDark,
     Color cardColor,
   ) {
+    // Obtener cuentas para identificar el banco
+    final accountsAsync = ref.watch(accountsWithBalanceProvider);
+    final accounts = accountsAsync.value ?? [];
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -839,8 +844,17 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
               }
 
               return Column(
-                children: list.take(3).map((tx) {
+                children: list.take(3).map((dynamic txData) {
+                  final tx = txData as TransactionModel;
                   final isExpense = tx.tipo == 'gasto' || tx.tipo == 'pago_deuda' || tx.tipo == 'meta_aporte';
+                  
+                  // Identifica la cuenta/banco para reducir la carga cognitiva al visualizar pagos
+                  final accountForTx = accounts.cast<AccountModel?>().firstWhere(
+                    (a) => a?.id == (tx.tipo == 'ingreso' ? tx.cuentaDestinoId : tx.cuentaOrigenId), 
+                    orElse: () => null
+                  );
+                  final accountName = accountForTx?.bancoNombre ?? accountForTx?.nombre ?? 'Sin cuenta';
+
                   return Container(
                     margin: const EdgeInsets.only(bottom: 8),
                     padding: const EdgeInsets.all(8),
@@ -852,16 +866,33 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                       children: [
                         _buildCompactCategoryIcon(ref, tx),
                         const SizedBox(width: 12),
-                        // Columna independiente para descripción con ajuste vertical
+                        // Columna para descripción y banco (Mejora de jerarquía visual)
                         Expanded(
-                          child: Text(
-                            tx.descripcion ?? 'Transacción',
-                            style: GoogleFonts.montserrat(
-                              fontSize: 12,
-                              fontWeight: FontWeight.w600,
-                              color: isDark ? Colors.white : AppColors.textPrimary,
-                              height: 1.2,
-                            ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                tx.descripcion ?? 'Transacción',
+                                style: GoogleFonts.montserrat(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w600,
+                                  color: isDark ? Colors.white : AppColors.textPrimary,
+                                  height: 1.2,
+                                ),
+                              ),
+                              const SizedBox(height: 2),
+                              // Subtítulo con el nombre del banco/cuenta
+                              Text(
+                                accountName,
+                                style: GoogleFonts.montserrat(
+                                  fontSize: 10,
+                                  color: isDark ? Colors.white38 : Colors.grey.shade500,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ],
                           ),
                         ),
                         const SizedBox(width: 12),
@@ -889,7 +920,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                           ],
                         ),
                         const SizedBox(width: 14),
-                        // Acción rápida: Botón de pago Small (SM) minimalista
+                        // Acción rápida: Botón de pago equilibrado (Circle Standard)
                         Material(
                           color: Colors.transparent,
                           child: InkWell(
@@ -913,16 +944,16 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                                 ),
                               );
                             },
-                            borderRadius: BorderRadius.circular(16),
+                            borderRadius: BorderRadius.circular(12),
                             child: Container(
-                              padding: const EdgeInsets.all(6), // Tamaño SM
+                              padding: const EdgeInsets.all(10), // Tamaño intermedio equilibrado
                               decoration: BoxDecoration(
-                                color: AppColors.primary.withOpacity(0.12), // Color plano sutil
-                                shape: BoxShape.circle,
+                                color: AppColors.primary.withOpacity(0.12),
+                                borderRadius: BorderRadius.circular(12), // Squircle suave
                               ),
                               child: const Icon(
                                 Icons.check_rounded,
-                                size: 14, // Icono SM
+                                size: 18, // Icono legible pero no gigante
                                 color: AppColors.primary,
                               ),
                             ),
@@ -1570,7 +1601,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                           ],
                         ),
                         const SizedBox(width: 14),
-                        // Botón de pago compacto SM
+                        // Botón de pago equilibrado (Circle Standard)
                         Material(
                           color: Colors.transparent,
                           child: InkWell(
@@ -1591,16 +1622,16 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                                 weekendAdjustment: false,
                               ),
                             ),
-                            borderRadius: BorderRadius.circular(20),
+                            borderRadius: BorderRadius.circular(12),
                             child: Container(
-                              padding: const EdgeInsets.all(6),
+                              padding: const EdgeInsets.all(10), // Tamaño equilibrado
                               decoration: BoxDecoration(
                                 color: Colors.orange.withOpacity(0.12),
-                                shape: BoxShape.circle,
+                                borderRadius: BorderRadius.circular(12), // Squircle suave
                               ),
                               child: const Icon(
                                 Icons.payments_rounded,
-                                size: 14,
+                                size: 18, // Icono legible
                                 color: Colors.orange,
                               ),
                             ),
