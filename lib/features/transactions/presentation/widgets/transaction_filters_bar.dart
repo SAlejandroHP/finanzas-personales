@@ -15,12 +15,16 @@ class TransactionFiltersBar extends ConsumerWidget {
     final accountsAsync = ref.watch(accountsListProvider);
     final categoriesAsync = ref.watch(categoriesListProvider);
 
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final bgColor = isDark 
+            ? const Color(0xFF121212) 
+            : AppColors.backgroundColor;
+
     return Container(
       width: double.infinity,
       decoration: BoxDecoration(
-        color: Theme.of(context).brightness == Brightness.dark 
-            ? const Color(0xFF121212) 
-            : AppColors.backgroundColor,
+        color: bgColor,
+        // Eliminado el borde inferior según preferencia de diseño sin bordes
       ),
       child: SingleChildScrollView(
         scrollDirection: Axis.horizontal,

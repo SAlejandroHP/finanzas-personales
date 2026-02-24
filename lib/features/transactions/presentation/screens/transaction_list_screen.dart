@@ -45,15 +45,17 @@ class TransactionListScreen extends ConsumerWidget {
         title: Text(
           'Movimientos',
           style: GoogleFonts.montserrat(
-            fontWeight: FontWeight.w700,
+            fontWeight: FontWeight.w800,
             fontSize: AppColors.titleMedium,
             color: isDark ? Colors.white : AppColors.textPrimary,
+            letterSpacing: -0.5,
           ),
         ),
-        centerTitle: false, // Alineación a la izquierda típica de Material 3
+        centerTitle: false,
         elevation: 0,
-        scrolledUnderElevation: 2, // Elevación al hacer scroll
-        backgroundColor: appBarColor,
+        scrolledUnderElevation: 0, // Desactivamos el cambio de color automático a verde (Material 3)
+        surfaceTintColor: Colors.transparent, 
+        backgroundColor: backgroundColor,
         foregroundColor: isDark ? Colors.white : AppColors.textPrimary,
         actions: [
           IconButton(
@@ -135,19 +137,23 @@ class TransactionListScreen extends ConsumerWidget {
 
           return Column(
             children: [
-              const TransactionFiltersBar(),
-              _buildSummaryCard(context, ref, isDark),
+              const TransactionFiltersBar(), // Fixed at top
               Expanded(
                 child: ListView.builder(
-                  padding: const EdgeInsets.only(top: 8, bottom: 120), // Suficiente para que el último registro suba sobre la barra
+                  padding: const EdgeInsets.only(top: 8, bottom: 120),
                   physics: const BouncingScrollPhysics(),
-                  itemCount: transactions.length,
+                  itemCount: transactions.length + 1, // +1 para el SummaryCard
                   itemBuilder: (context, index) {
-                    final transaction = transactions[index];
-                    final showHeader = index == 0 ||
-                        transactions[index - 1].fecha.day != transaction.fecha.day ||
-                        transactions[index - 1].fecha.month != transaction.fecha.month ||
-                        transactions[index - 1].fecha.year != transaction.fecha.year;
+                    if (index == 0) {
+                      return _buildSummaryCard(context, ref, isDark);
+                    }
+                    
+                    final txIndex = index - 1;
+                    final transaction = transactions[txIndex];
+                    final showHeader = txIndex == 0 ||
+                        transactions[txIndex - 1].fecha.day != transaction.fecha.day ||
+                        transactions[txIndex - 1].fecha.month != transaction.fecha.month ||
+                        transactions[txIndex - 1].fecha.year != transaction.fecha.year;
 
                     if (showHeader) {
                       return Column(
@@ -203,7 +209,6 @@ class TransactionListScreen extends ConsumerWidget {
         loading: () => Column(
           children: [
             const TransactionFiltersBar(),
-            _buildSummaryCard(context, ref, isDark),
             const Expanded(
               child: Center(
                 child: CircularProgressIndicator(color: AppColors.primary),
@@ -214,7 +219,6 @@ class TransactionListScreen extends ConsumerWidget {
         error: (error, stackTrace) => Column(
           children: [
             const TransactionFiltersBar(),
-            _buildSummaryCard(context, ref, isDark),
             Expanded(
               child: Center(
                 child: Column(
@@ -274,89 +278,78 @@ class TransactionListScreen extends ConsumerWidget {
     final cardColor = isDark ? const Color(0xFF1E1E1E) : Colors.white;
 
     return Container(
-      margin: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-      padding: const EdgeInsets.all(20),
+      margin: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       decoration: BoxDecoration(
         color: cardColor,
-        borderRadius: BorderRadius.circular(24),
+        borderRadius: BorderRadius.circular(20),
         boxShadow: [
           if (!isDark)
             BoxShadow(
-              color: Colors.black.withOpacity(0.04),
-              blurRadius: 12,
+              color: Colors.black.withOpacity(0.03),
+              blurRadius: 10,
               offset: const Offset(0, 4),
             ),
         ],
       ),
-      child: Column(
+      child: Row(
         children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-               Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Balance del Periodo',
-                    style: GoogleFonts.montserrat(
-                      fontSize: AppColors.bodySmall,
-                      fontWeight: FontWeight.w500,
-                      color: Colors.grey,
-                    ),
+          // Balance Total del Periodo
+          Expanded(
+            flex: 5,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Balance del Periodo',
+                  style: GoogleFonts.montserrat(
+                    fontSize: 10,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.grey,
                   ),
-                  const SizedBox(height: 4),
-                  Text(
+                ),
+                const SizedBox(height: 2),
+                FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Text(
                     currencyFormatter.format(summary.total),
                     style: GoogleFonts.montserrat(
-                      fontSize: AppColors.titleLarge,
-                      fontWeight: FontWeight.w700,
+                      fontSize: 18,
+                      fontWeight: FontWeight.w800,
                       color: isDark ? Colors.white : AppColors.textPrimary,
                     ),
                   ),
-                ],
-              ),
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: AppColors.primary.withOpacity(0.1),
-                  shape: BoxShape.circle,
                 ),
-                child: const Icon(
-                  Icons.analytics_outlined,
-                  color: AppColors.primary,
-                  size: 24,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 20),
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: isDark ? Colors.white.withOpacity(0.03) : AppColors.backgroundColor,
-              borderRadius: BorderRadius.circular(16),
+              ],
             ),
+          ),
+          
+          // Separador Vertical
+          Container(
+            height: 30,
+            width: 1,
+            margin: const EdgeInsets.symmetric(horizontal: 12),
+            color: isDark ? Colors.white10 : Colors.grey.withOpacity(0.2),
+          ),
+          
+          // Ingresos y Gastos Compactos
+          Expanded(
+            flex: 6,
             child: Row(
               children: [
                 Expanded(
-                  child: _buildSummaryItem(
-                    label: 'Ingresos',
+                  child: _buildCompactSummaryItem(
                     amount: summary.income,
                     color: Colors.green,
-                    icon: Icons.arrow_downward_rounded,
+                    icon: Icons.add_circle_outline,
                   ),
                 ),
-                Container(
-                  width: 1,
-                  height: 30,
-                  color: isDark ? Colors.white10 : Colors.grey.withOpacity(0.2),
-                ),
+                const SizedBox(width: 8),
                 Expanded(
-                  child: _buildSummaryItem(
-                    label: 'Gastos',
+                  child: _buildCompactSummaryItem(
                     amount: summary.expenses,
                     color: Colors.redAccent,
-                    icon: Icons.arrow_upward_rounded,
+                    icon: Icons.remove_circle_outline,
                   ),
                 ),
               ],
@@ -367,38 +360,29 @@ class TransactionListScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildSummaryItem({
-    required String label,
+  Widget _buildCompactSummaryItem({
     required double amount,
     required Color color,
     required IconData icon,
   }) {
-    final currencyFormatter = NumberFormat.compactCurrency(symbol: '\$');
+    final compactFormatter = NumberFormat.compactCurrency(symbol: '\$');
     return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Row(
-          mainAxisAlignment: MainAxisAlignment.center,
+          mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icon, size: 14, color: color),
+            Icon(icon, size: 10, color: color),
             const SizedBox(width: 4),
             Text(
-              label,
+              amount >= 0 ? compactFormatter.format(amount) : compactFormatter.format(amount.abs()),
               style: GoogleFonts.montserrat(
-                fontSize: AppColors.bodySmall,
-                fontWeight: FontWeight.w600,
-                color: Colors.grey,
+                fontSize: 12,
+                fontWeight: FontWeight.w700,
+                color: color,
               ),
             ),
           ],
-        ),
-        const SizedBox(height: 4),
-        Text(
-          currencyFormatter.format(amount),
-          style: GoogleFonts.montserrat(
-            fontSize: AppColors.bodyLarge,
-            fontWeight: FontWeight.w700,
-            color: color,
-          ),
         ),
       ],
     );
