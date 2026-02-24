@@ -60,37 +60,49 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
       backgroundColor: backgroundColor,
       body: SafeArea(
         bottom: false,
-        child: RefreshIndicator(
-          onRefresh: () async {
-            // Refresca los proveedores principales del dashboard
-            ref.invalidate(totalBalanceProvider);
-            ref.invalidate(accountsWithBalanceProvider);
-            ref.invalidate(transactionsListProvider);
-            ref.invalidate(pendingTransactionsProvider);
-            ref.invalidate(debtsListProvider);
-            // Pequeño delay artificial para que el usuario sienta la actualización
-            await Future.delayed(const Duration(milliseconds: 1200));
-          },
-          displacement: 20,
-          color: AppColors.primary,
-          child: SingleChildScrollView(
-            physics: const AlwaysScrollableScrollPhysics(), // Necesario para RefreshIndicator
-            padding: const EdgeInsets.all(AppColors.pagePadding),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _buildHeader(context, ref),
-                _buildBalanceSummaryCard(
-                  context,
-                  totalBalance,
-                  totalDebts,
-                  monthlyIncome,
-                  monthlyExpenses,
-                  mxnFormatter,
-                  currencyFormatter,
-                  cardColor,
-                  isDark,
-                ),
+        child: Column(
+          children: [
+            // Header Fixed (Fuera del scroll)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(AppColors.pagePadding, 10, AppColors.pagePadding, 0),
+              child: _buildHeader(context, ref),
+            ),
+            Expanded(
+              child: RefreshIndicator(
+                onRefresh: () async {
+                  // Refresca los proveedores principales del dashboard
+                  ref.invalidate(totalBalanceProvider);
+                  ref.invalidate(accountsWithBalanceProvider);
+                  ref.invalidate(transactionsListProvider);
+                  ref.invalidate(pendingTransactionsProvider);
+                  ref.invalidate(debtsListProvider);
+                  // Pequeño delay artificial para que el usuario sienta la actualización
+                  await Future.delayed(const Duration(milliseconds: 1200));
+                },
+                displacement: 20,
+                color: AppColors.primary,
+                child: SingleChildScrollView(
+                  physics: const AlwaysScrollableScrollPhysics(), // Necesario para RefreshIndicator
+                  padding: const EdgeInsets.fromLTRB(
+                    AppColors.pagePadding, 
+                    0, 
+                    AppColors.pagePadding, 
+                    AppColors.pagePadding
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _buildBalanceSummaryCard(
+                        context,
+                        totalBalance,
+                        totalDebts,
+                        monthlyIncome,
+                        monthlyExpenses,
+                        mxnFormatter,
+                        currencyFormatter,
+                        cardColor,
+                        isDark,
+                      ),
                 const SizedBox(height: 24),
                 _buildAccountsAndCardsSection(
                   context,
