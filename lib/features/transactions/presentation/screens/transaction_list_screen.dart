@@ -11,6 +11,23 @@ import '../widgets/transaction_tile.dart';
 import '../widgets/transaction_filters_bar.dart';
 import '../providers/transaction_filters_provider.dart';
 
+// Función de utilidad para formatear la fecha del encabezado
+String _formatDateHeader(DateTime date) {
+  final now = DateTime.now();
+  final today = DateTime(now.year, now.month, now.day);
+  final yesterday = today.subtract(const Duration(days: 1));
+
+  if (date.year == today.year && date.month == today.month && date.day == today.day) {
+    return 'Hoy';
+  } else if (date.year == yesterday.year && date.month == yesterday.month && date.day == yesterday.day) {
+    return 'Ayer';
+  } else if (date.year == now.year) {
+    return DateFormat('d \'de\' MMMM', 'es_ES').format(date);
+  } else {
+    return DateFormat('d \'de\' MMMM \'de\' y', 'es_ES').format(date);
+  }
+}
+
 /// Pantalla que muestra la lista de todas las transacciones del usuario
 class TransactionListScreen extends ConsumerWidget {
   const TransactionListScreen({Key? key}) : super(key: key);
@@ -127,6 +144,43 @@ class TransactionListScreen extends ConsumerWidget {
                   itemCount: transactions.length,
                   itemBuilder: (context, index) {
                     final transaction = transactions[index];
+                    final showHeader = index == 0 ||
+                        transactions[index - 1].fecha.day != transaction.fecha.day ||
+                        transactions[index - 1].fecha.month != transaction.fecha.month ||
+                        transactions[index - 1].fecha.year != transaction.fecha.year;
+
+                    if (showHeader) {
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Padding(
+                            padding: const EdgeInsets.only(left: 20, top: 20, bottom: 8),
+                            child: Text(
+                              _formatDateHeader(transaction.fecha),
+                              style: GoogleFonts.montserrat(
+                                fontWeight: FontWeight.w600,
+                                fontSize: AppColors.bodyMedium,
+                                color: isDark ? Colors.white70 : AppColors.textPrimary.withOpacity(0.7),
+                              ),
+                            ),
+                          ),
+                          TransactionTile(
+                            transaction: transaction,
+                            currencySymbol: '\$',
+                            onEdit: () {
+                              showTransactionFormSheet(
+                                context,
+                                transaction: transaction,
+                              );
+                            },
+                            onDelete: () {
+                              _showDeleteDialog(context, ref, transaction.id);
+                            },
+                          ),
+                        ],
+                      );
+                    }
+                    
                     return TransactionTile(
                       transaction: transaction,
                       currencySymbol: '\$',

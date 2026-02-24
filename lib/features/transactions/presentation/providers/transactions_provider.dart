@@ -39,7 +39,16 @@ final filteredTransactionsProvider = Provider<AsyncValue<List<TransactionModel>>
   final filters = ref.watch(transactionFiltersProvider);
 
   return transactionsAsync.whenData((transactions) {
-    return transactions.where((t) {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+
+    var filtered = transactions.where((t) {
+      final transactionDate = DateTime(t.fecha.year, t.fecha.month, t.fecha.day);
+      // Muestra futuras/hoy, o pasadas si están pendientes
+      if (transactionDate.isBefore(today) && t.estado != 'pendiente') {
+        return false;
+      }
+
       // Filtro por estatus
       if (filters.status != null && t.estado != filters.status) {
         return false;
@@ -64,12 +73,17 @@ final filteredTransactionsProvider = Provider<AsyncValue<List<TransactionModel>>
       // Filtro por fecha
       if (filters.dateRange != null) {
         if (t.fecha.isBefore(filters.dateRange!.start) || 
-            t.fecha.isAfter(filters.dateRange!.end)) {
+            t.fecha.isAfter(filters.dateRange!.end.add(const Duration(days: 1)))) { // Corrección para incluir el día final
           return false;
         }
       }
       return true;
     }).toList();
+
+    // Ordena por fecha ascendente
+    filtered.sort((a, b) => a.fecha.compareTo(b.fecha));
+
+    return filtered;
   });
 });
 
