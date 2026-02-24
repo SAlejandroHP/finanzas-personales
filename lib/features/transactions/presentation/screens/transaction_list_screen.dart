@@ -297,26 +297,32 @@ class TransactionListScreen extends ConsumerWidget {
   Widget _buildSummaryCard(BuildContext context, WidgetRef ref, bool isDark) {
     final summary = ref.watch(filteredTransactionsSummaryProvider);
     final currencyFormatter = NumberFormat.currency(symbol: '\$', decimalDigits: 2);
-    final cardColor = isDark ? const Color(0xFF1E1E1E) : Colors.white;
-
+    
+    // Homologación con la card de balance del dashboard
     return Container(
       margin: const EdgeInsets.fromLTRB(16, 0, 16, 12),
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       decoration: BoxDecoration(
-        color: cardColor,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(AppColors.radiusXLarge),
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            AppColors.primary,
+            AppColors.primary.withRed(30).withGreen(100),
+          ],
+        ),
         boxShadow: [
-          if (!isDark)
-            BoxShadow(
-              color: Colors.black.withOpacity(0.03),
-              blurRadius: 10,
-              offset: const Offset(0, 4),
-            ),
+          BoxShadow(
+            color: AppColors.primary.withOpacity(0.35),
+            blurRadius: 15,
+            offset: const Offset(0, 5),
+          ),
         ],
       ),
       child: Row(
         children: [
-          // Balance Total del Periodo
+          // Balance Total del Periodo (Mejora visual para fondo primario)
           Expanded(
             flex: 5,
             child: Column(
@@ -326,8 +332,9 @@ class TransactionListScreen extends ConsumerWidget {
                   'Balance del Periodo',
                   style: GoogleFonts.montserrat(
                     fontSize: 10,
-                    fontWeight: FontWeight.w600,
-                    color: Colors.grey,
+                    fontWeight: FontWeight.w700,
+                    color: Colors.white.withOpacity(0.8),
+                    letterSpacing: 0.5,
                   ),
                 ),
                 const SizedBox(height: 2),
@@ -336,9 +343,10 @@ class TransactionListScreen extends ConsumerWidget {
                   child: Text(
                     currencyFormatter.format(summary.total),
                     style: GoogleFonts.montserrat(
-                      fontSize: 18,
+                      fontSize: 22, // Aumentado para mayor énfasis visual
                       fontWeight: FontWeight.w800,
-                      color: isDark ? Colors.white : AppColors.textPrimary,
+                      color: Colors.white,
+                      letterSpacing: -0.5,
                     ),
                   ),
                 ),
@@ -346,15 +354,15 @@ class TransactionListScreen extends ConsumerWidget {
             ),
           ),
           
-          // Separador Vertical
+          // Separador Vertical sutil
           Container(
-            height: 30,
+            height: 35, // Ligeramente más alto para acompañar el nuevo tamaño
             width: 1,
             margin: const EdgeInsets.symmetric(horizontal: 12),
-            color: isDark ? Colors.white10 : Colors.grey.withOpacity(0.2),
+            color: Colors.white.withOpacity(0.2),
           ),
           
-          // Ingresos y Gastos Compactos
+          // Ingresos y Gastos Compactos (Adaptados al fondo primario)
           Expanded(
             flex: 6,
             child: Row(
@@ -362,7 +370,7 @@ class TransactionListScreen extends ConsumerWidget {
                 Expanded(
                   child: _buildCompactSummaryItem(
                     amount: summary.income,
-                    color: Colors.green,
+                    color: Colors.greenAccent,
                     icon: Icons.add_circle_outline,
                   ),
                 ),
@@ -370,7 +378,7 @@ class TransactionListScreen extends ConsumerWidget {
                 Expanded(
                   child: _buildCompactSummaryItem(
                     amount: summary.expenses,
-                    color: Colors.redAccent,
+                    color: Colors.white.withOpacity(0.9),
                     icon: Icons.remove_circle_outline,
                   ),
                 ),
@@ -394,14 +402,15 @@ class TransactionListScreen extends ConsumerWidget {
         Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icon, size: 10, color: color),
+            Icon(icon, size: 14, color: color), // Icono más visible
             const SizedBox(width: 4),
             Text(
               amount >= 0 ? compactFormatter.format(amount) : compactFormatter.format(amount.abs()),
               style: GoogleFonts.montserrat(
-                fontSize: 12,
+                fontSize: 16, // Aumentado significativamente para jerarquía visual
                 fontWeight: FontWeight.w700,
                 color: color,
+                letterSpacing: -0.2, // Menor espaciado para mejor aspecto
               ),
             ),
           ],
