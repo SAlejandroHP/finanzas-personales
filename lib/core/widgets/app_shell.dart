@@ -106,38 +106,35 @@ class AppShell extends ConsumerWidget {
                 child: SafeArea(
                   child: ClipRRect(
                     borderRadius: BorderRadius.circular(32),
-                    child: BackdropFilter(
-                      filter: ImageFilter.blur(sigmaX: 15, sigmaY: 15),
-                      child: Container(
-                        height: 64,
-                        decoration: BoxDecoration(
+                    child: Container(
+                      height: 64,
+                      decoration: BoxDecoration(
+                        color: isDark 
+                            ? const Color(0xFF2C2C2C).withOpacity(0.95) 
+                            : const Color(0xFFF0F0F0).withOpacity(0.95),
+                        borderRadius: BorderRadius.circular(32),
+                        border: Border.all(
                           color: isDark 
-                              ? const Color(0xFF2C2C2C).withOpacity(0.8) 
-                              : const Color(0xFFF0F0F0).withOpacity(0.8),
-                          borderRadius: BorderRadius.circular(32),
-                          border: Border.all(
-                            color: isDark 
-                                ? Colors.white.withOpacity(0.1) 
-                                : Colors.black.withOpacity(0.05),
+                              ? Colors.white.withOpacity(0.1) 
+                              : Colors.black.withOpacity(0.05),
+                        ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.1),
+                            blurRadius: 20,
+                            offset: const Offset(0, 10),
                           ),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withOpacity(0.1),
-                              blurRadius: 20,
-                              offset: const Offset(0, 10),
-                            ),
-                          ],
-                        ),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                          children: [
-                            _buildNavButton(context, ref, navItems[0], currentIndex == 0),
-                            _buildNavButton(context, ref, navItems[1], currentIndex == 1),
-                            const SizedBox(width: 48),
-                            _buildNavButton(context, ref, navItems[2], currentIndex == 2),
-                            _buildNavButton(context, ref, navItems[3], false),
-                          ],
-                        ),
+                        ],
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                        children: [
+                          _buildNavButton(context, ref, navItems[0], currentIndex == 0),
+                          _buildNavButton(context, ref, navItems[1], currentIndex == 1),
+                          const SizedBox(width: 48),
+                          _buildNavButton(context, ref, navItems[2], currentIndex == 2),
+                          _buildNavButton(context, ref, navItems[3], false),
+                        ],
                       ),
                     ),
                   ),

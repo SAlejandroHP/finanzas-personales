@@ -154,24 +154,29 @@ final routerProvider = Provider<GoRouter>((ref) {
           GoRoute(
             path: '/',
             name: 'dashboard',
-            builder: (context, state) {
-              return const DashboardScreen();
-            },
+            pageBuilder: (context, state) => _fadeTransitionPage(
+              state: state,
+              child: const DashboardScreen(),
+            ),
           ),
           // Cuentas
           GoRoute(
             path: '/accounts',
             name: 'accounts',
-            builder: (context, state) {
-              return const AccountsListScreen();
-            },
+            pageBuilder: (context, state) => _fadeTransitionPage(
+              state: state,
+              child: const AccountsListScreen(),
+            ),
             routes: [
               GoRoute(
                 path: 'detail/:id',
                 name: 'account_detail',
-                builder: (context, state) {
+                pageBuilder: (context, state) {
                   final id = state.pathParameters['id']!;
-                  return AccountDetailScreen(accountId: id);
+                  return _fadeTransitionPage(
+                    state: state,
+                    child: AccountDetailScreen(accountId: id),
+                  );
                 },
               ),
             ],
@@ -180,30 +185,36 @@ final routerProvider = Provider<GoRouter>((ref) {
           GoRoute(
             path: '/transactions',
             name: 'transactions',
-            builder: (context, state) {
-              return const TransactionListScreen();
-            },
+            pageBuilder: (context, state) => _fadeTransitionPage(
+              state: state,
+              child: const TransactionListScreen(),
+            ),
           ),
           // Categorías
           GoRoute(
             path: '/categories',
             name: 'categories',
-            builder: (context, state) {
-              return const CategoriesListScreen();
-            },
+            pageBuilder: (context, state) => _fadeTransitionPage(
+              state: state,
+              child: const CategoriesListScreen(),
+            ),
           ),
           // Configuración
           GoRoute(
             path: '/settings',
             name: 'settings',
-            builder: (context, state) {
-              return const SettingsScreen();
-            },
+            pageBuilder: (context, state) => _fadeTransitionPage(
+              state: state,
+              child: const SettingsScreen(),
+            ),
             routes: [
               GoRoute(
                 path: 'debts',
                 name: 'debts',
-                builder: (context, state) => const DebtsListScreen(),
+                pageBuilder: (context, state) => _fadeTransitionPage(
+                  state: state,
+                  child: const DebtsListScreen(),
+                ),
               ),
             ],
           ),
@@ -211,9 +222,10 @@ final routerProvider = Provider<GoRouter>((ref) {
           GoRoute(
             path: '/notifications',
             name: 'notifications',
-            builder: (context, state) {
-              return const NotificationsScreen();
-            },
+            pageBuilder: (context, state) => _fadeTransitionPage(
+              state: state,
+              child: const NotificationsScreen(),
+            ),
           ),
         ],
       ),
@@ -221,17 +233,19 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/auth',
         name: 'auth',
-        builder: (context, state) {
-          return const AuthScreen();
-        },
+        pageBuilder: (context, state) => _fadeTransitionPage(
+          state: state,
+          child: const AuthScreen(),
+        ),
       ),
       // Splash
       GoRoute(
         path: '/splash',
         name: 'splash',
-        builder: (context, state) {
-          return const SplashScreen();
-        },
+        pageBuilder: (context, state) => _fadeTransitionPage(
+          state: state,
+          child: const SplashScreen(),
+        ),
       ),
     ],
     errorBuilder: (context, state) {
@@ -259,6 +273,25 @@ final routerProvider = Provider<GoRouter>((ref) {
     },
   );
 });
+
+/// Helper para crear transiciones suaves de tipo fade (desvanecimiento)
+/// Este tipo de transición es más fluida en la web que el desplazamiento lateral nativo.
+CustomTransitionPage _fadeTransitionPage({
+  required GoRouterState state,
+  required Widget child,
+}) {
+  return CustomTransitionPage(
+    key: state.pageKey,
+    child: child,
+    transitionsBuilder: (context, animation, secondaryAnimation, child) {
+      return FadeTransition(
+        opacity: CurveTween(curve: Curves.easeInOut).animate(animation),
+        child: child,
+      );
+    },
+    transitionDuration: const Duration(milliseconds: 250),
+  );
+}
 
 /// Maneja los redirects al cambiar rutas
 Future<String?> _handleRedirects(
