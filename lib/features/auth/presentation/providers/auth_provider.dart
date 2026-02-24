@@ -219,6 +219,22 @@ class AuthNotifier extends StateNotifier<AsyncValue<User?>> {
     }
   }
 
+  /// Actualiza el nombre a mostrar del usuario
+  Future<void> updateDisplayName(String displayName) async {
+    _setLoading(true);
+    _clearError();
+
+    try {
+      final user = await _authRepository.updateDisplayName(displayName);
+      state = AsyncValue.data(user);
+    } catch (e) {
+      _setError(e.toString());
+      rethrow;
+    } finally {
+      _setLoading(false);
+    }
+  }
+
   /// Deshabilita login biométrico
   Future<void> disableBiometrics() async {
     await _authRepository.clearBiometricCredentials();

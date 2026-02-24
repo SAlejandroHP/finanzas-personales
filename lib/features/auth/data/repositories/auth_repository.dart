@@ -44,4 +44,7 @@ abstract class AuthRepository {
 
   /// Verifica si hay credenciales biométricas guardadas
   Future<bool> hasBiometricCredentials();
+
+  /// Actualiza el nombre a mostrar del usuario en los metadatos de Supabase
+  Future<User> updateDisplayName(String displayName);
 }

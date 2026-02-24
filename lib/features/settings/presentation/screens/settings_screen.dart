@@ -1,22 +1,69 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/providers/ui_provider.dart';
 import '../../../../core/network/supabase_client.dart';
+import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../../transactions/presentation/screens/recurring_transactions_screen.dart';
 
 /// Pantalla de configuración de la aplicación.
 /// Organizada de forma funcional con secciones de gestión, apariencia y cuenta.
-class SettingsScreen extends ConsumerWidget {
+class SettingsScreen extends ConsumerStatefulWidget {
   const SettingsScreen({Key? key}) : super(key: key);
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<SettingsScreen> createState() => _SettingsScreenState();
+}
+
+class _SettingsScreenState extends ConsumerState<SettingsScreen> {
+  late TextEditingController _nameController;
+  bool _isEditingName = false;
+
+  @override
+  void initState() {
+    super.initState();
+    final user = supabaseClient.auth.currentUser;
+    final displayName = user?.userMetadata?['full_name'] ?? '';
+    _nameController = TextEditingController(text: displayName);
+  }
+
+  @override
+  void dispose() {
+    _nameController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _updateName() async {
+    if (_nameController.text.trim().isEmpty) return;
+
+    try {
+      await ref.read(authNotifierProvider.notifier).updateDisplayName(_nameController.text.trim());
+      setState(() {
+        _isEditingName = false;
+      });
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Nombre actualizado correctamente')),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error: ${e.toString()}')),
+        );
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final themeMode = ref.watch(themeModeProvider);
-    final user = supabaseClient.auth.currentUser;
+    final userAsync = ref.watch(currentUserProvider);
+    final user = userAsync.value;
 
     return Scaffold(
       backgroundColor: isDark ? const Color(0xFF121212) : AppColors.backgroundColor,
@@ -43,7 +90,7 @@ class SettingsScreen extends ConsumerWidget {
           // SECCIÓN: PERFIL / CUENTA
           if (user != null) ...[
             _buildSectionHeader(context, 'Cuenta'),
-            _buildProfileCard(context, user.email ?? 'Usuario', isDark),
+            _buildProfileCard(context, user, isDark),
             const SizedBox(height: 12),
           ],
 
@@ -109,24 +156,34 @@ class SettingsScreen extends ConsumerWidget {
                 selectedBackgroundColor: AppColors.primary,
                 selectedForegroundColor: Colors.white,
                 side: BorderSide.none,
-                padding: const EdgeInsets.symmetric(vertical: 8),
+                padding: const EdgeInsets.symmetric(vertical: 4),
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                visualDensity: VisualDensity.compact, // Compacto para evitar cortes
               ),
               segments: [
                 ButtonSegment(
                   value: AppThemeMode.light,
-                  label: Text('Claro', style: GoogleFonts.montserrat(fontSize: 12, fontWeight: FontWeight.w600)),
-                  icon: const Icon(Icons.light_mode_rounded, size: 18),
+                  label: FittedBox(
+                    fit: BoxFit.scaleDown,
+                    child: Text('Claro', style: GoogleFonts.montserrat(fontSize: 12, fontWeight: FontWeight.w600)),
+                  ),
+                  icon: const Icon(Icons.light_mode_rounded, size: 16),
                 ),
                 ButtonSegment(
                   value: AppThemeMode.dark,
-                  label: Text('Oscuro', style: GoogleFonts.montserrat(fontSize: 12, fontWeight: FontWeight.w600)),
-                  icon: const Icon(Icons.dark_mode_rounded, size: 18),
+                  label: FittedBox(
+                    fit: BoxFit.scaleDown,
+                    child: Text('Oscuro', style: GoogleFonts.montserrat(fontSize: 12, fontWeight: FontWeight.w600)),
+                  ),
+                  icon: const Icon(Icons.dark_mode_rounded, size: 16),
                 ),
                 ButtonSegment(
                   value: AppThemeMode.system,
-                  label: Text('Auto', style: GoogleFonts.montserrat(fontSize: 12, fontWeight: FontWeight.w600)),
-                  icon: const Icon(Icons.smartphone_outlined, size: 18),
+                  label: FittedBox(
+                    fit: BoxFit.scaleDown,
+                    child: Text('Auto', style: GoogleFonts.montserrat(fontSize: 12, fontWeight: FontWeight.w600)),
+                  ),
+                  icon: const Icon(Icons.smartphone_outlined, size: 16),
                 ),
               ],
               selected: {themeMode},
@@ -141,7 +198,7 @@ class SettingsScreen extends ConsumerWidget {
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 20),
             child: TextButton(
-              onPressed: () => SupabaseService.signOut(),
+              onPressed: () => ref.read(authNotifierProvider.notifier).signOut(),
               style: TextButton.styleFrom(
                 foregroundColor: Colors.redAccent,
                 padding: const EdgeInsets.symmetric(vertical: 18),
@@ -231,8 +288,8 @@ class SettingsScreen extends ConsumerWidget {
     );
   }
 
-  /// Tarjeta de perfil del usuario (Rediseño Premium)
-  Widget _buildProfileCard(BuildContext context, String email, bool isDark) {
+  /// Tarjeta de perfil del usuario con edición integrada (Rediseño Premium)
+  Widget _buildProfileCard(BuildContext context, User user, bool isDark) {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: AppColors.lg),
       padding: const EdgeInsets.all(AppColors.lg),
@@ -266,28 +323,55 @@ class SettingsScreen extends ConsumerWidget {
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
               children: [
-                Text(
-                  'Cuenta Activa',
-                  style: GoogleFonts.montserrat(
-                    fontSize: 10,
-                    fontWeight: FontWeight.w700,
-                    color: AppColors.primary,
-                    letterSpacing: 0.5,
-                  ),
-                ),
-                Text(
-                  email,
+                TextField(
+                  controller: _nameController,
                   style: GoogleFonts.montserrat(
                     fontSize: AppColors.bodyLarge,
-                    fontWeight: FontWeight.w600,
+                    fontWeight: FontWeight.w700,
                     color: isDark ? Colors.white : AppColors.textPrimary,
+                  ),
+                  decoration: InputDecoration(
+                    hintText: 'Tu nombre',
+                    hintStyle: GoogleFonts.montserrat(
+                      fontSize: AppColors.bodyLarge,
+                      color: Colors.grey.withOpacity(0.5),
+                    ),
+                    suffixIcon: !_isEditingName 
+                      ? Icon(Icons.edit_rounded, size: 14, color: Colors.grey.withOpacity(0.4)) 
+                      : null,
+                    suffixIconConstraints: const BoxConstraints(minWidth: 20, minHeight: 20),
+                    isDense: true,
+                    contentPadding: EdgeInsets.zero,
+                    border: InputBorder.none,
+                  ),
+                  onChanged: (val) {
+                    if (!_isEditingName) setState(() => _isEditingName = true);
+                  },
+                ),
+                Text(
+                  user.email ?? '',
+                  style: GoogleFonts.montserrat(
+                    fontSize: 10,
+                    fontWeight: FontWeight.w500,
+                    color: Colors.grey,
                   ),
                   overflow: TextOverflow.ellipsis,
                 ),
               ],
             ),
           ),
+          if (_isEditingName) ...[
+            const SizedBox(width: 8),
+            IconButton(
+              onPressed: _updateName,
+              icon: const Icon(Icons.check_circle_rounded, color: AppColors.primary, size: 28),
+              tooltip: 'Guardar cambios',
+              padding: EdgeInsets.zero,
+              constraints: const BoxConstraints(),
+            ),
+          ],
         ],
       ),
     );

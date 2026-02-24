@@ -275,6 +275,27 @@ class AuthRepositoryImpl implements AuthRepository {
     return enabled == 'true';
   }
 
+  @override
+  Future<User> updateDisplayName(String displayName) async {
+    try {
+      final response = await _supabaseClient.auth.updateUser(
+        UserAttributes(
+          data: {'full_name': displayName},
+        ),
+      );
+
+      if (response.user == null) {
+        throw Exception('Error al actualizar el nombre');
+      }
+
+      return response.user!;
+    } on AuthException catch (e) {
+      throw _handleAuthException(e);
+    } catch (e) {
+      throw Exception('Error inesperado al actualizar perfil: ${e.toString()}');
+    }
+  }
+
   /// Maneja las excepciones de autenticación de Supabase
   String _handleAuthException(AuthException e) {
     switch (e.message.toLowerCase()) {
