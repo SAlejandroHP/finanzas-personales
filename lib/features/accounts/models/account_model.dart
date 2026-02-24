@@ -37,6 +37,9 @@ class AccountModel {
   /// Fecha de última actualización
   final DateTime? updatedAt;
 
+  /// Indica si esta cuenta es la predeterminada para nuevas transacciones
+  final bool isDefault;
+
   const AccountModel({
     required this.id,
     required this.userId,
@@ -50,6 +53,7 @@ class AccountModel {
     required this.saldoActual,
     required this.createdAt,
     this.updatedAt,
+    this.isDefault = false,
   });
 
   /// Valores permitidos para el campo 'tipo'
@@ -79,6 +83,7 @@ class AccountModel {
       updatedAt: json['updated_at'] != null
           ? DateTime.parse(json['updated_at'] as String)
           : null,
+      isDefault: json['is_default'] as bool? ?? false,
     );
   }
 
@@ -97,6 +102,7 @@ class AccountModel {
       'saldo_actual': saldoActual,
       'created_at': createdAt.toIso8601String(),
       'updated_at': updatedAt?.toIso8601String(),
+      'is_default': isDefault,
     };
   }
 
@@ -114,6 +120,7 @@ class AccountModel {
     double? saldoActual,
     DateTime? createdAt,
     DateTime? updatedAt,
+    bool? isDefault,
   }) {
     return AccountModel(
       id: id ?? this.id,
@@ -128,12 +135,13 @@ class AccountModel {
       saldoActual: saldoActual ?? this.saldoActual,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
+      isDefault: isDefault ?? this.isDefault,
     );
   }
 
   @override
   String toString() {
-    return 'AccountModel(id: $id, nombre: $nombre, tipo: $tipo, saldo: $saldoActual)';
+    return 'AccountModel(id: $id, nombre: $nombre, tipo: $tipo, saldo: $saldoActual, isDefault: $isDefault)';
   }
 
   @override
@@ -152,7 +160,8 @@ class AccountModel {
         other.saldoInicial == saldoInicial &&
         other.saldoActual == saldoActual &&
         other.createdAt == createdAt &&
-        other.updatedAt == updatedAt;
+        other.updatedAt == updatedAt &&
+        other.isDefault == isDefault;
   }
 
   @override
@@ -170,6 +179,7 @@ class AccountModel {
       saldoActual,
       createdAt,
       updatedAt,
+      isDefault,
     );
   }
 }

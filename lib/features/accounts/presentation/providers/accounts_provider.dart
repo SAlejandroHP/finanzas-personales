@@ -184,6 +184,24 @@ class AccountsNotifier extends StateNotifier<AsyncValue<void>> {
     }
   }
 
+  /// Establece una cuenta como predeterminada
+  Future<void> setDefaultAccount(String accountId) async {
+    _setLoading(true);
+    _clearError();
+
+    try {
+      await _repository.setDefaultAccount(accountId);
+      
+      // Invalidamos para que los streams se refresquen
+      _ref.invalidate(accountsListProvider);
+      
+    } catch (e) {
+      _setError(e.toString());
+    } finally {
+      _setLoading(false);
+    }
+  }
+
   void _setLoading(bool loading) {
     _ref.read(accountsLoadingProvider.notifier).state = loading;
   }

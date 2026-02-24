@@ -147,6 +147,21 @@ class _TransactionFormSheetState extends ConsumerState<TransactionFormSheet> {
     _montoController.addListener(_onMontoChanged);
     _montoFocusNode.addListener(() => setState(() {}));
     _descripcionFocusNode.addListener(() => setState(() {}));
+
+    // Cargar cuenta por default si es nueva transacción
+    if (widget.transaction == null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        final accountsAsync = ref.read(accountsWithBalanceProvider);
+        accountsAsync.whenData((accounts) {
+          final defaultAccount = accounts.firstWhereOrNull((a) => a.isDefault);
+          if (defaultAccount != null && mounted) {
+            setState(() {
+              _cuentaOrigenId = defaultAccount.id;
+            });
+          }
+        });
+      });
+    }
   }
 
   @override
@@ -797,23 +812,17 @@ class _TransactionFormSheetState extends ConsumerState<TransactionFormSheet> {
                                     onChanged: (val) {
                                       setState(() {
                                         _isRecurring = val;
-                                        if (val) {
-                                          if (!_recurringRule.contains(
-                                                _fecha.day.toString(),
-                                              ) &&
-                                              _recurringRule.startsWith(
-                                                'monthly_day_',
-                                              )) {
-                                            _recurringRule =
-                                                'monthly_day_${_fecha.day}';
-                                          }
+                                        if (val &&
+                                            _recurringRule ==
+                                                'monthly_day_13') {
+                                          _recurringRule =
+                                              'monthly_day_${_fecha.day}';
                                         }
                                       });
                                     },
                                   ),
                                 ],
                               ),
-
                               if (_isRecurring) ...[
                                 Padding(
                                   padding: const EdgeInsets.only(
@@ -826,87 +835,118 @@ class _TransactionFormSheetState extends ConsumerState<TransactionFormSheet> {
                                   ),
                                 ),
                                 const SizedBox(height: AppColors.sm),
-
-                                // Frecuencia
-                                InkWell(
-                                  onTap: () {},
-                                  splashColor: Colors.transparent,
-                                  highlightColor: Colors.transparent,
-                                  hoverColor: Colors.transparent,
+                                Text(
+                                  'Frecuencia de repetición',
+                                  style: GoogleFonts.montserrat(
+                                    fontSize: AppColors.bodySmall,
+                                    fontWeight: FontWeight.w700,
+                                    color: Colors.grey,
+                                  ),
+                                ),
+                                const SizedBox(height: 12),
+                                SingleChildScrollView(
+                                  scrollDirection: Axis.horizontal,
                                   child: Row(
                                     children: [
-                                      const Icon(
-                                        Icons.update_rounded,
-                                        size: 20,
-                                        color: Colors.grey,
+                                      _buildFrequencyChip(
+                                        label: 'Mensual',
+                                        rule: 'monthly_day_${_fecha.day}',
+                                        isSelected: _recurringRule
+                                            .startsWith('monthly_day_'),
+                                        icon: Icons.calendar_month_rounded,
+                                        isDark: isDark,
                                       ),
-                                      const SizedBox(width: AppColors.md),
-                                      Expanded(
-                                        child: DropdownButtonHideUnderline(
-                                          child: DropdownButton<String>(
-                                            value: _recurringRule,
-                                            isExpanded: true,
-                                            icon: const Icon(
-                                              Icons.keyboard_arrow_down_rounded,
-                                            ),
-                                            style: GoogleFonts.montserrat(
-                                              fontSize: AppColors.bodyMedium,
-                                              fontWeight: FontWeight.w600,
-                                              color: isDark
-                                                  ? Colors.white
-                                                  : AppColors.textPrimary,
-                                            ),
-                                            items: [
-                                              const DropdownMenuItem(
-                                                value: 'quincenal',
-                                                child: Text(
-                                                  'Quincenal (15 y último)',
-                                                ),
-                                              ),
-                                              const DropdownMenuItem(
-                                                value: 'monthly_day_13',
-                                                child: Text('Mensual (día 13)'),
-                                              ),
-                                              const DropdownMenuItem(
-                                                value: 'monthly_day_30',
-                                                child: Text('Mensual (día 30)'),
-                                              ),
-                                              if (_recurringRule !=
-                                                      'quincenal' &&
-                                                  _recurringRule !=
-                                                      'monthly_day_13' &&
-                                                  _recurringRule !=
-                                                      'monthly_day_30')
-                                                DropdownMenuItem(
-                                                  value: _recurringRule,
-                                                  child: Text(
-                                                    _getRuleLabel(
-                                                      _recurringRule,
-                                                    ),
-                                                  ),
-                                                ),
-                                            ],
-                                            onChanged: (val) {
-                                              if (val != null)
-                                                setState(
-                                                  () => _recurringRule = val,
-                                                );
-                                            },
-                                          ),
-                                        ),
+                                      const SizedBox(width: 8),
+                                      _buildFrequencyChip(
+                                        label: '15 y Último',
+                                        rule: 'quincenal',
+                                        isSelected:
+                                            _recurringRule == 'quincenal',
+                                        icon: Icons.event_repeat_rounded,
+                                        isDark: isDark,
+                                      ),
+                                      const SizedBox(width: 8),
+                                      _buildFrequencyChip(
+                                        label: 'Cada 2 semanas',
+                                        rule: 'biweekly',
+                                        isSelected:
+                                            _recurringRule == 'biweekly',
+                                        icon: Icons.replay_10_rounded,
+                                        isDark: isDark,
                                       ),
                                     ],
                                   ),
                                 ),
-
-                                const SizedBox(height: AppColors.md),
-
-                                // Auto-comp Check
+                                const SizedBox(height: 16),
+                                Container(
+                                  padding: const EdgeInsets.all(12),
+                                  decoration: BoxDecoration(
+                                    color: _weekendAdjustment
+                                        ? AppColors.primary
+                                            .withValues(alpha: 0.1)
+                                        : (isDark
+                                            ? Colors.white
+                                                .withValues(alpha: 0.02)
+                                            : Colors.grey[50]),
+                                    borderRadius: BorderRadius.circular(
+                                        AppColors.radiusMedium),
+                                    border: Border.all(
+                                      color: _weekendAdjustment
+                                          ? AppColors.primary
+                                          : Colors.transparent,
+                                    ),
+                                  ),
+                                  child: Column(
+                                    children: [
+                                      Row(
+                                        children: [
+                                          Icon(
+                                            Icons.event_busy_rounded,
+                                            size: 20,
+                                            color: _weekendAdjustment
+                                                ? AppColors.primary
+                                                : Colors.grey,
+                                          ),
+                                          const SizedBox(width: 12),
+                                          Expanded(
+                                            child: Column(
+                                              crossAxisAlignment:
+                                                  CrossAxisAlignment.start,
+                                              children: [
+                                                Text(
+                                                  'Pago por adelantado',
+                                                  style: GoogleFonts.montserrat(
+                                                    fontSize: 12,
+                                                    fontWeight: FontWeight.w700,
+                                                  ),
+                                                ),
+                                                Text(
+                                                  'Si cae en fin de semana, se paga el viernes anterior.',
+                                                  style: GoogleFonts.montserrat(
+                                                    fontSize: 10,
+                                                    color: Colors.grey,
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                          Switch.adaptive(
+                                            value: _weekendAdjustment,
+                                            activeColor: AppColors.primary,
+                                            onChanged: (val) => setState(
+                                                () => _weekendAdjustment = val),
+                                          ),
+                                        ],
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                const SizedBox(height: 16),
                                 Row(
                                   children: [
                                     Icon(
-                                      Icons.check_circle_outline_rounded,
-                                      size: 20,
+                                      Icons.flash_on_rounded,
+                                      size: 18,
                                       color: _autoComplete
                                           ? AppColors.success
                                           : Colors.grey,
@@ -916,7 +956,7 @@ class _TransactionFormSheetState extends ConsumerState<TransactionFormSheet> {
                                       child: Text(
                                         'Auto-completar automáticamente',
                                         style: GoogleFonts.montserrat(
-                                          fontSize: AppColors.bodySmall,
+                                          fontSize: 12,
                                           fontWeight: FontWeight.w600,
                                         ),
                                       ),
@@ -929,21 +969,50 @@ class _TransactionFormSheetState extends ConsumerState<TransactionFormSheet> {
                                     ),
                                   ],
                                 ),
-
-                                const SizedBox(height: AppColors.sm),
-                                // Preview
-                                Row(
-                                  children: [
-                                    const SizedBox(width: 36),
-                                    Text(
-                                      'Próximo: ${_getNextOccurrencePreview()}',
-                                      style: GoogleFonts.montserrat(
-                                        fontSize: AppColors.bodySmall,
-                                        fontWeight: FontWeight.w700,
-                                        color: AppColors.primary,
+                                const SizedBox(height: 12),
+                                Container(
+                                  width: double.infinity,
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 12, vertical: 8),
+                                  decoration: BoxDecoration(
+                                    color: (isDark
+                                            ? Colors.white
+                                            : Colors.black)
+                                        .withValues(alpha: 0.03),
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        'PRÓXIMO MOVIMIENTO:',
+                                        style: GoogleFonts.montserrat(
+                                          fontSize: 9,
+                                          fontWeight: FontWeight.w800,
+                                          letterSpacing: 1,
+                                          color: Colors.grey,
+                                        ),
                                       ),
-                                    ),
-                                  ],
+                                      const SizedBox(height: 4),
+                                      Row(
+                                        children: [
+                                          const Icon(Icons.history_rounded,
+                                              size: 14,
+                                              color: AppColors.primary),
+                                          const SizedBox(width: 8),
+                                          Text(
+                                            _getNextOccurrencePreview(),
+                                            style: GoogleFonts.montserrat(
+                                              fontSize: 13,
+                                              fontWeight: FontWeight.w700,
+                                              color: AppColors.primary,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ],
+                                  ),
                                 ),
                               ],
                             ],
@@ -1154,19 +1223,63 @@ class _TransactionFormSheetState extends ConsumerState<TransactionFormSheet> {
   }
 
   String _getRuleLabel(String rule) {
-    if (rule == 'quincenal') return 'Quincenal (15 y último)';
-    if (rule == 'monthly_day_13') return 'Mensual (día 13)';
-    if (rule == 'monthly_day_30') return 'Mensual (día 30)';
+    if (rule == 'quincenal') return '15 y Último';
     if (rule.startsWith('monthly_day_')) {
       final day = rule.split('_').last;
-      return 'Mensual (día $day)';
+      return 'Día $day de cada mes';
     }
     if (rule == 'biweekly') return 'Cada 2 semanas';
     if (rule == 'weekly') return 'Cada semana';
-    if (rule == 'bimonthly') return 'Cada 2 meses';
-    if (rule == 'monthly_last_day') return 'Último día del mes';
-    if (rule == 'monthly_last_friday') return 'Mensual (último viernes)';
     return rule;
+  }
+
+  Widget _buildFrequencyChip({
+    required String label,
+    required String rule,
+    required bool isSelected,
+    required IconData icon,
+    required bool isDark,
+  }) {
+    return GestureDetector(
+      onTap: () => setState(() => _recurringRule = rule),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+        decoration: BoxDecoration(
+          color: isSelected ? AppColors.primary : (isDark ? Colors.white.withValues(alpha: 0.05) : Colors.grey[100]),
+          borderRadius: BorderRadius.circular(AppColors.radiusMedium),
+          border: Border.all(
+            color: isSelected ? AppColors.primary : Colors.transparent,
+          ),
+          boxShadow: isSelected ? [
+            BoxShadow(
+              color: AppColors.primary.withValues(alpha: 0.3),
+              blurRadius: 8,
+              offset: const Offset(0, 4),
+            )
+          ] : null,
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              icon,
+              size: 16,
+              color: isSelected ? Colors.white : (isDark ? Colors.white70 : Colors.black54),
+            ),
+            const SizedBox(width: 8),
+            Text(
+              label,
+              style: GoogleFonts.montserrat(
+                fontSize: 12,
+                fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                color: isSelected ? Colors.white : (isDark ? Colors.white70 : Colors.black87),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   String _getNextOccurrencePreview() {
@@ -1178,30 +1291,42 @@ class _TransactionFormSheetState extends ConsumerState<TransactionFormSheet> {
         final day = int.parse(rule.split('_').last);
         int m = _fecha.month;
         int y = _fecha.year;
-        if (_fecha.day < day) {
-        } else {
+        
+        // Si el día ya pasó este mes, ver el próximo
+        if (_fecha.day >= day) {
           m++;
           if (m > 12) {
             m = 1;
             y++;
           }
         }
+        
         final lastDay = DateTime(y, m + 1, 0).day;
         next = DateTime(y, m, day > lastDay ? lastDay : day);
       } catch (_) {}
     } else if (rule == 'quincenal') {
-      final lastDay = DateTime(_fecha.year, _fecha.month + 1, 0).day;
+      final lastDayOfMonth = DateTime(_fecha.year, _fecha.month + 1, 0).day;
+      
       if (_fecha.day < 15) {
         next = DateTime(_fecha.year, _fecha.month, 15);
-      } else if (_fecha.day < lastDay)
-        next = DateTime(_fecha.year, _fecha.month, lastDay);
-      else
-        next = DateTime(_fecha.year, _fecha.month + 1, 15);
+      } else if (_fecha.day < lastDayOfMonth) {
+        next = DateTime(_fecha.year, _fecha.month, lastDayOfMonth);
+      } else {
+        // Al día 15 del siguiente mes
+        int nextM = _fecha.month + 1;
+        int nextY = _fecha.year;
+        if (nextM > 12) {
+          nextM = 1;
+          nextY++;
+        }
+        next = DateTime(nextY, nextM, 15);
+      }
+    } else if (rule == 'biweekly') {
+      next = _fecha.add(const Duration(days: 14));
     }
 
-    // Aplicar ajuste de fin de semana para la vista previa
-    if (_weekendAdjustment &&
-        (rule == 'quincenal' || rule == 'monthly_day_30')) {
+    // Aplicar ajuste de fin de semana (Adelantar al viernes anterior)
+    if (_weekendAdjustment) {
       if (next.weekday == DateTime.saturday) {
         next = next.subtract(const Duration(days: 1));
       } else if (next.weekday == DateTime.sunday) {
@@ -1209,7 +1334,7 @@ class _TransactionFormSheetState extends ConsumerState<TransactionFormSheet> {
       }
     }
 
-    return intl.DateFormat('d MMMM, yyyy', 'es').format(next);
+    return intl.DateFormat('EEEE d \'de\' MMMM, yyyy', 'es').format(next);
   }
 
   void _insertOperator(String op) {

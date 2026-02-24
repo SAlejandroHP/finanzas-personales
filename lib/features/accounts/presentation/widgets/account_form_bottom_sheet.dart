@@ -45,6 +45,7 @@ class _AccountFormBottomSheetState extends ConsumerState<AccountFormBottomSheet>
   String? _selectedMonedaId;
   BankModel? _selectedBank;
   bool _isLoading = false;
+  bool _isDefault = false;
 
   @override
   void initState() {
@@ -74,6 +75,7 @@ class _AccountFormBottomSheetState extends ConsumerState<AccountFormBottomSheet>
         setState(() {
           _selectedTipo = selectedAccount.tipo;
           _selectedMonedaId = selectedAccount.monedaId;
+          _isDefault = selectedAccount.isDefault;
           if (selectedAccount.bancoId != null) {
             _selectedBank = BankModel(
               id: selectedAccount.bancoId!,
@@ -190,6 +192,7 @@ class _AccountFormBottomSheetState extends ConsumerState<AccountFormBottomSheet>
         saldoActual: selectedAccount?.saldoActual ?? saldoInicial,
         createdAt: selectedAccount?.createdAt ?? DateTime.now(),
         updatedAt: selectedAccount != null ? DateTime.now() : null,
+        isDefault: _isDefault,
       );
 
       if (selectedAccount != null) {
@@ -203,6 +206,11 @@ class _AccountFormBottomSheetState extends ConsumerState<AccountFormBottomSheet>
           limiteCredito: _selectedTipo == 'tarjeta_credito' ? limiteCredito : null,
           deudaActual: _selectedTipo == 'tarjeta_credito' ? deudaActual : null,
         );
+      }
+
+      // Si se marcó como default, llamamos al notifier para que gestione la exclusividad
+      if (_isDefault) {
+        await ref.read(accountsNotifierProvider.notifier).setDefaultAccount(account.id);
       }
 
       if (mounted) {
@@ -303,6 +311,15 @@ class _AccountFormBottomSheetState extends ConsumerState<AccountFormBottomSheet>
                                 child: _buildBankSelectorInRow(context, isDark),
                               ),
                             ],
+                          ),
+                          const SizedBox(height: 16),
+                          SwitchListTile.adaptive(
+                            contentPadding: EdgeInsets.zero,
+                            title: Text('Establecer como cuenta por default', style: GoogleFonts.montserrat(fontSize: 12, fontWeight: FontWeight.w600, color: isDark ? Colors.white70 : AppColors.textPrimary)),
+                            subtitle: Text('Esta cuenta se seleccionará automáticamente al crear transacciones.', style: GoogleFonts.montserrat(fontSize: 10, color: isDark ? Colors.white38 : Colors.grey[500])),
+                            activeColor: AppColors.primary,
+                            value: _isDefault,
+                            onChanged: _isLoading ? null : (val) => setState(() => _isDefault = val),
                           ),
                           const SizedBox(height: 24),
                           _buildSectionTitle('DETALLE FINANCIERO', isDark),

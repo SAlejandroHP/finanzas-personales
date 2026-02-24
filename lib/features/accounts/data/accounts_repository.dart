@@ -98,13 +98,38 @@ class AccountsRepository {
       final updatedAccount = account.copyWith(
         updatedAt: DateTime.now(),
       );
-
+      
       await _supabase
           .from('cuentas')
           .update(updatedAccount.toJson())
           .eq('id', account.id);
     } catch (e) {
       throw Exception('Error al actualizar cuenta: $e');
+    }
+  }
+
+  /// Establece una cuenta como predeterminada y desactiva las demás
+  Future<void> setDefaultAccount(String accountId) async {
+    try {
+      final userId = _supabase.auth.currentUser?.id;
+      if (userId == null) {
+        throw Exception('Usuario no autenticado');
+      }
+
+      // 1. Quitar el flag de predeterminado a todas las cuentas del usuario
+      await _supabase
+          .from('cuentas')
+          .update({'is_default': false})
+          .eq('user_id', userId);
+
+      // 2. Establecer el flag a la cuenta objetivo
+      await _supabase
+          .from('cuentas')
+          .update({'is_default': true})
+          .eq('id', accountId);
+          
+    } catch (e) {
+      throw Exception('Error al establecer cuenta predeterminada: $e');
     }
   }
 

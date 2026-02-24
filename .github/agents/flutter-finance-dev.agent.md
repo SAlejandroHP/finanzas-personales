@@ -44,3 +44,5 @@ Puedes usar contexto de archivos como context_deudas.txt, context_pagos.txt, con
 - Nunca modifiques UI pura (pantallas, widgets visuales) a menos que sea estrictamente necesario para usabilidad financiera y lo justifiques.
 
 Responde siempre en español cuando el usuario hable en español.
+
+Al confirmar un buen trabajo por parte del usuario hara el commit de los cambios de la siguiente manera git commit -m "tipo: descripcion" y no subiras a ningun repositorio remoto, solo se hara el commit de forma local
