@@ -9,20 +9,28 @@ import '../../../accounts/presentation/providers/accounts_provider.dart';
 import '../../../categories/models/category_model.dart';
 import '../../../categories/presentation/providers/categories_provider.dart';
 import '../../../transactions/models/transaction_model.dart';
-import '../../../../core/widgets/app_toast.dart';
 import '../../../transactions/presentation/providers/transactions_provider.dart';
-import '../../../transactions/presentation/providers/recurring_warnings_provider.dart';
+import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../../../core/widgets/bank_logo.dart';
 import '../../../debts/presentation/providers/debts_provider.dart';
 import '../../../transactions/presentation/widgets/transaction_form_sheet.dart';
 
 /// Pantalla del dashboard que muestra un resumen financiero.
 /// Permite navegar a cuentas, categorías y transacciones.
-class DashboardScreen extends ConsumerWidget {
+class DashboardScreen extends ConsumerStatefulWidget {
   const DashboardScreen({Key? key}) : super(key: key);
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<DashboardScreen> createState() => _DashboardScreenState();
+}
+
+class _DashboardScreenState extends ConsumerState<DashboardScreen> {
+  int touchedIndex = -1;
+  String periodFilter = 'Este mes';
+  bool _showAllCategories = false;
+
+  @override
+  Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final backgroundColor = isDark
         ? AppColors.backgroundDark
@@ -52,177 +60,109 @@ class DashboardScreen extends ConsumerWidget {
       backgroundColor: backgroundColor,
       body: SafeArea(
         bottom: false,
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(AppColors.pagePadding),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _buildHeader(context, ref),
-              _buildWarningsSection(context, ref),
-              const SizedBox(height: 16),
-              _buildBalanceSummaryCard(
-                context,
-                totalBalance,
-                totalDebts,
-                monthlyIncome,
-                monthlyExpenses,
-                mxnFormatter,
-                currencyFormatter,
-                cardColor,
-                isDark,
-              ),
-              const SizedBox(height: 24),
-              _buildAccountsAndCardsSection(
-                context,
-                accounts,
-                currencyFormatter,
-                isDark,
-                cardColor,
-              ),
-              const SizedBox(height: 24),
-              _buildCategoryStatsCard(context, ref, cardColor, isDark),
-              const SizedBox(height: 24),
-              _buildRecentTransactionsCard(
-                context,
-                ref,
-                pendingTransactions,
-                currencyFormatter,
-                isDark,
-                cardColor,
-              ),
-              const SizedBox(height: 24),
-              _buildActiveDebtsCard(
-                context,
-                ref,
-                currencyFormatter,
-                isDark,
-                cardColor,
-              ),
-              const SizedBox(height: 100), // Espacio para el nav island
-            ],
+        child: RefreshIndicator(
+          onRefresh: () async {
+            // Refresca los proveedores principales del dashboard
+            ref.invalidate(totalBalanceProvider);
+            ref.invalidate(accountsWithBalanceProvider);
+            ref.invalidate(transactionsListProvider);
+            ref.invalidate(pendingTransactionsProvider);
+            ref.invalidate(debtsListProvider);
+            // Pequeño delay artificial para que el usuario sienta la actualización
+            await Future.delayed(const Duration(milliseconds: 1200));
+          },
+          displacement: 20,
+          color: AppColors.primary,
+          child: SingleChildScrollView(
+            physics: const AlwaysScrollableScrollPhysics(), // Necesario para RefreshIndicator
+            padding: const EdgeInsets.all(AppColors.pagePadding),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _buildHeader(context, ref),
+                _buildBalanceSummaryCard(
+                  context,
+                  totalBalance,
+                  totalDebts,
+                  monthlyIncome,
+                  monthlyExpenses,
+                  mxnFormatter,
+                  currencyFormatter,
+                  cardColor,
+                  isDark,
+                ),
+                const SizedBox(height: 24),
+                _buildAccountsAndCardsSection(
+                  context,
+                  accounts,
+                  currencyFormatter,
+                  isDark,
+                  cardColor,
+                ),
+                const SizedBox(height: 24),
+                _buildCategoryStatsCard(context, cardColor, isDark),
+                const SizedBox(height: 24),
+                _buildRecentTransactionsCard(
+                  context,
+                  ref,
+                  pendingTransactions,
+                  currencyFormatter,
+                  isDark,
+                  cardColor,
+                ),
+                const SizedBox(height: 24),
+                _buildActiveDebtsCard(
+                  context,
+                  ref,
+                  currencyFormatter,
+                  isDark,
+                  cardColor,
+                ),
+                const SizedBox(height: 100), // Espacio para el nav island
+              ],
+            ),
           ),
         ),
       ),
     );
   }
 
-  Widget _buildWarningsSection(BuildContext context, WidgetRef ref) {
-    final warnings = ref.watch(recurringWarningsProvider);
-    if (warnings.isEmpty) return const SizedBox.shrink();
-
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-
-    return Column(
-      children: warnings.map((warning) {
-        final isVence = warning.type == WarningType.vence;
-        return Container(
-          margin: const EdgeInsets.only(bottom: 8),
-          padding: const EdgeInsets.all(AppColors.contentGap),
-          decoration: BoxDecoration(
-            color: isVence
-                ? Colors.red.withOpacity(0.1)
-                : AppColors.primary.withOpacity(0.1),
-            borderRadius: BorderRadius.circular(AppColors.radiusLarge),
-            border: Border.all(
-              color: isVence
-                  ? Colors.red.withOpacity(0.3)
-                  : AppColors.primary.withOpacity(0.3),
-            ),
-          ),
-          child: Row(
-            children: [
-              Icon(
-                isVence
-                    ? Icons.warning_amber_rounded
-                    : Icons.lightbulb_outline_rounded,
-                color: isVence ? Colors.red : AppColors.primary,
-                size: 20,
-              ),
-              const SizedBox(width: AppColors.contentGap),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      warning.title,
-                      style: GoogleFonts.montserrat(
-                        fontSize: AppColors.bodySmall,
-                        fontWeight: FontWeight.w700,
-                        color: isVence ? Colors.red : AppColors.primary,
-                      ),
-                    ),
-                    Text(
-                      warning.message,
-                      style: GoogleFonts.montserrat(
-                        fontSize: AppColors.bodySmall,
-                        color: isDark ? Colors.white70 : Colors.black87,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              TextButton(
-                onPressed: () async {
-                  try {
-                    await ref
-                        .read(transactionsNotifierProvider.notifier)
-                        .payRecurringEarly(warning.transaction);
-                    if (context.mounted) {
-                      showAppToast(
-                        context,
-                        message: 'Pago realizado con éxito',
-                        type: ToastType.success,
-                      );
-                    }
-                  } catch (e) {
-                    if (context.mounted) {
-                      showAppToast(
-                        context,
-                        message: 'Error: $e',
-                        type: ToastType.error,
-                      );
-                    }
-                  }
-                },
-                style: TextButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 4,
-                  ),
-                  minimumSize: Size.zero,
-                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                ),
-                child: Text(
-                  'Pagar ahora',
-                  style: GoogleFonts.montserrat(
-                    fontSize: AppColors.bodySmall,
-                    fontWeight: FontWeight.w700,
-                    color: isVence ? Colors.red : AppColors.primary,
-                  ),
-                ),
-              ),
-            ],
-          ),
-        );
-      }).toList(),
-    );
-  }
-
   Widget _buildHeader(BuildContext context, WidgetRef ref) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final warnings = ref.watch(recurringWarningsProvider);
-    final notificationCount = warnings.length;
+    final userAsync = ref.watch(currentUserProvider);
+    final user = userAsync.value;
+
+    // Obtener nombre del usuario si está disponible a través de metadatos o email
+    String? userName;
+    if (user != null) {
+      if (user.userMetadata != null) {
+        userName = user.userMetadata?['full_name'] ?? 
+                   user.userMetadata?['name'] ?? 
+                   user.userMetadata?['first_name'];
+      }
+      // Fallback a primera parte del email si no hay nombre
+      userName ??= user.email?.split('@')[0];
+    }
+
+    // Capitalizar primera letra del nombre
+    if (userName != null && userName.isNotEmpty) {
+      userName = userName[0].toUpperCase() + userName.substring(1);
+    }
 
     // Obtener saludo según la hora
     final hour = DateTime.now().hour;
     String greeting;
     if (hour < 12) {
-      greeting = 'Buenos días';
+      greeting = userName != null ? 'Buenos días, $userName' : 'Buenos días';
     } else if (hour < 19) {
-      greeting = 'Buenas tardes';
+      greeting = userName != null ? 'Buenas tardes, $userName' : 'Buenas tardes';
     } else {
-      greeting = 'Buenas noches';
+      greeting = userName != null ? 'Buenas noches, $userName' : 'Buenas noches';
     }
+
+    // Fecha actual para el reloj
+    final now = DateTime.now();
+    final formattedDate = DateFormat('EEE, d MMM', 'es_MX').format(now);
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 20),
@@ -251,53 +191,50 @@ class DashboardScreen extends ConsumerWidget {
               ),
             ],
           ),
-          Stack(
-            clipBehavior: Clip.none,
-            children: [
-              GestureDetector(
-                onTap: () => context.push('/notifications'),
-                child: Container(
-                  padding: const EdgeInsets.all(10),
-                  decoration: BoxDecoration(
-                    color: isDark ? Colors.white.withOpacity(0.05) : Colors.white,
-                    shape: BoxShape.circle,
-                    boxShadow: [
-                      if (!isDark)
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.05),
-                          blurRadius: 10,
-                          offset: const Offset(0, 2),
-                        ),
-                    ],
-                  ),
-                  child: Icon(
-                    Icons.notifications_none_rounded,
-                    size: 24,
-                    color: isDark ? Colors.white70 : AppColors.textPrimary,
-                  ),
-                ),
-              ),
-              if (notificationCount > 0)
-                Positioned(
-                  top: 0,
-                  right: 0,
-                  child: Container(
-                    padding: const EdgeInsets.all(4),
-                    decoration: BoxDecoration(
-                      color: AppColors.secondary,
-                      shape: BoxShape.circle,
-                      border: Border.all(
-                        color: isDark ? AppColors.backgroundDark : AppColors.backgroundColor,
-                        width: 2,
-                      ),
-                    ),
-                    constraints: const BoxConstraints(
-                      minWidth: 16,
-                      minHeight: 16,
-                    ),
-                  ),
-                ),
-            ],
+          _buildDateClock(context, isDark, formattedDate),
+        ],
+      ),
+    );
+  }
+
+  /// Construye un pequeño widget con la fecha e icono de calendario
+  Widget _buildDateClock(BuildContext context, bool isDark, String date) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: isDark ? Colors.white.withOpacity(0.05) : Colors.white,
+        borderRadius: BorderRadius.circular(AppColors.radiusLarge),
+        border: Border.all(
+          color: isDark 
+              ? Colors.white.withOpacity(0.05) 
+              : Colors.black.withOpacity(0.05),
+        ),
+        boxShadow: [
+          if (!isDark)
+            BoxShadow(
+              color: Colors.black.withOpacity(0.03),
+              blurRadius: 5,
+              offset: const Offset(0, 2),
+            ),
+        ],
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            Icons.calendar_today_rounded,
+            size: 14,
+            color: isDark ? Colors.white38 : Colors.grey[600],
+          ),
+          const SizedBox(width: 6),
+          Text(
+            date.toUpperCase(),
+            style: GoogleFonts.montserrat(
+              fontSize: 10,
+              fontWeight: FontWeight.w700,
+              color: isDark ? Colors.white60 : Colors.black54,
+              letterSpacing: 0.5,
+            ),
           ),
         ],
       ),
@@ -317,116 +254,179 @@ class DashboardScreen extends ConsumerWidget {
   ) {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: AppColors.primary,
         borderRadius: BorderRadius.circular(AppColors.radiusXLarge),
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            AppColors.primary,
+            AppColors.primary.withRed(30).withGreen(100), // Un teal más profundo/vibrante
+          ],
+        ),
         boxShadow: [
           BoxShadow(
-            color: AppColors.primary.withOpacity(0.3),
-            blurRadius: 15,
-            offset: const Offset(0, 8),
+            color: AppColors.primary.withOpacity(0.35),
+            blurRadius: 20,
+            offset: const Offset(0, 10),
           ),
         ],
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Column(
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(AppColors.radiusXLarge),
+        child: Stack(
+          children: [
+            // Círculos decorativos para efecto Glassmorphism Premium
+            Positioned(
+              top: -30,
+              right: -30,
+              child: Container(
+                width: 140,
+                height: 140,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: Colors.white.withOpacity(0.08),
+                ),
+              ),
+            ),
+            Positioned(
+              bottom: -50,
+              left: -20,
+              child: Container(
+                width: 100,
+                height: 100,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: Colors.black.withOpacity(0.1),
+                ),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+              child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    'Balance Total Liquido',
-                    style: GoogleFonts.montserrat(
-                      fontSize: AppColors.bodySmall,
-                      color: Colors.white.withOpacity(0.8),
-                      fontWeight: FontWeight.w600,
-                    ),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'LIQUIDEZ TOTAL',
+                            style: GoogleFonts.montserrat(
+                              fontSize: 10,
+                              fontWeight: FontWeight.w700,
+                              color: Colors.white.withOpacity(0.7),
+                              letterSpacing: 1.2,
+                            ),
+                          ),
+                          const SizedBox(height: 1),
+                          Text(
+                            balanceFormatter.format(balance),
+                            style: GoogleFonts.montserrat(
+                              fontSize: 22,
+                              fontWeight: FontWeight.w800,
+                              color: Colors.white,
+                              letterSpacing: -0.8,
+                            ),
+                          ),
+                        ],
+                      ),
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.end,
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(8),
+                            decoration: BoxDecoration(
+                              color: Colors.white.withOpacity(0.12),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: const Icon(
+                              Icons.account_balance_wallet_rounded, 
+                              color: Colors.white, 
+                              size: 18
+                            ),
+                          ),
+                          if (totalDebts > 0) ...[
+                            const SizedBox(height: 6),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                              decoration: BoxDecoration(
+                                color: Colors.black.withOpacity(0.15),
+                                borderRadius: BorderRadius.circular(8),
+                                border: Border.all(color: Colors.white.withOpacity(0.05)),
+                              ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Text(
+                                  'DEUDA ',
+                                  style: GoogleFonts.montserrat(
+                                    fontSize: 7,
+                                    fontWeight: FontWeight.w800,
+                                    color: Colors.white.withOpacity(0.6),
+                                    letterSpacing: 0.5,
+                                  ),
+                                ),
+                                Text(
+                                  flowFormatter.format(totalDebts),
+                                  style: GoogleFonts.montserrat(
+                                    fontSize: 10,
+                                    color: Colors.white.withOpacity(0.9),
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            ),
+                          ],
+                        ],
+                      ),
+                    ],
                   ),
-                  const SizedBox(height: 4),
-                  Text(
-                    balanceFormatter.format(balance),
-                    style: GoogleFonts.montserrat(
-                      fontSize: AppColors.titleLarge,
-                      fontWeight: FontWeight.w800,
-                      color: Colors.white,
-                      letterSpacing: -0.5,
+                  
+                  const SizedBox(height: 14),
+                  
+                  // Sección inferior (Glass bar) más compacta
+                  Container(
+                    padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
+                    decoration: BoxDecoration(
+                      color: Colors.black.withOpacity(0.12),
+                      borderRadius: BorderRadius.circular(16),
                     ),
-                  ),
-                ],
-              ),
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.2),
-                  shape: BoxShape.circle,
-                ),
-                child: const Icon(Icons.account_balance_wallet_outlined, color: Colors.white, size: 24),
-              ),
-            ],
-          ),
-          if (totalDebts > 0) ...[
-            const SizedBox(height: 12),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-              decoration: BoxDecoration(
-                color: Colors.black.withOpacity(0.15),
-                borderRadius: BorderRadius.circular(AppColors.radiusSmall),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Icon(Icons.info_outline, size: 14, color: Colors.white70),
-                  const SizedBox(width: 6),
-                  Text(
-                    'Deuda pendiente: ${flowFormatter.format(totalDebts)}',
-                    style: GoogleFonts.montserrat(
-                      fontSize: 11,
-                      color: Colors.white70,
-                      fontWeight: FontWeight.w600,
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: _buildFlowColumn(
+                            'Ingresos',
+                            incomes,
+                            Colors.white,
+                            Icons.arrow_upward_rounded,
+                          ),
+                        ),
+                        Container(
+                          height: 20,
+                          width: 1,
+                          color: Colors.white.withOpacity(0.15),
+                        ),
+                        Expanded(
+                          child: _buildFlowColumn(
+                            'Gastos',
+                            expenses,
+                            Colors.white,
+                            Icons.arrow_downward_rounded,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 ],
               ),
             ),
           ],
-          const SizedBox(height: 20),
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(AppColors.radiusLarge),
-            ),
-            child: Row(
-              children: [
-                Expanded(
-                  child: _buildFlowColumn(
-                    'Ingresos',
-                    incomes,
-                    Colors.white,
-                    Icons.arrow_upward_rounded,
-                  ),
-                ),
-                Container(
-                  height: 30,
-                  width: 1,
-                  color: Colors.white.withOpacity(0.2),
-                ),
-                Expanded(
-                  child: _buildFlowColumn(
-                    'Gastos',
-                    expenses,
-                    Colors.white,
-                    Icons.arrow_downward_rounded,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
+        ),
       ),
     );
   }
@@ -437,31 +437,41 @@ class DashboardScreen extends ConsumerWidget {
     Color color,
     IconData icon,
   ) {
-    return Column(
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
+        Container(
+          padding: const EdgeInsets.all(6),
+          decoration: BoxDecoration(
+            color: Colors.white.withOpacity(0.12),
+            shape: BoxShape.circle,
+          ),
+          child: Icon(icon, color: color, size: 12),
+        ),
+        const SizedBox(width: 8),
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icon, color: color.withOpacity(0.7), size: 14),
-            const SizedBox(width: 4),
             Text(
-              label,
+              label.toUpperCase(),
               style: GoogleFonts.montserrat(
-                fontSize: 11,
-                fontWeight: FontWeight.w600,
+                fontSize: 8,
+                fontWeight: FontWeight.w700,
                 color: color.withOpacity(0.7),
+                letterSpacing: 0.5,
+              ),
+            ),
+            Text(
+              NumberFormat.currency(symbol: r'$', decimalDigits: 2).format(amount),
+              style: GoogleFonts.montserrat(
+                fontSize: 13,
+                fontWeight: FontWeight.w800,
+                color: color,
+                letterSpacing: -0.5,
               ),
             ),
           ],
-        ),
-        const SizedBox(height: 4),
-        Text(
-          NumberFormat.currency(symbol: r'$', decimalDigits: 2).format(amount),
-          style: GoogleFonts.montserrat(
-            fontSize: 14,
-            fontWeight: FontWeight.w800,
-            color: color,
-          ),
         ),
       ],
     );
@@ -586,109 +596,137 @@ class DashboardScreen extends ConsumerWidget {
                   }
 
                   return Container(
-                    width: 165, // Ancho optimizado para mobile
+                    width: 175, // Ligeramente más ancho
                     decoration: BoxDecoration(
-                      color: cardColor,
-                      borderRadius: BorderRadius.circular(AppColors.radiusLarge),
+                      gradient: isTC 
+                          ? LinearGradient(
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                              colors: isDark 
+                                  ? [const Color(0xFF2C2C2C), const Color(0xFF1A1A1A)]
+                                  : [Colors.white, const Color(0xFFF8F9FB)],
+                            )
+                          : null,
+                      color: !isTC ? cardColor : null,
+                      borderRadius: BorderRadius.circular(22), // Bordes más suaves Apple-style
                       boxShadow: [
                         if (!isDark)
                           BoxShadow(
                             color: Colors.black.withOpacity(0.04),
-                            blurRadius: 8,
+                            blurRadius: 12,
                             offset: const Offset(0, 4),
                           ),
                       ],
                       border: Border.all(
-                        color: isDark ? Colors.white.withOpacity(0.05) : Colors.black.withOpacity(0.05),
+                        color: isDark 
+                            ? Colors.white.withOpacity(0.08) 
+                            : (isTC ? Colors.red.withOpacity(0.1) : Colors.black.withOpacity(0.04)),
+                        width: 1.2,
                       ),
                     ),
                     child: Material(
                       color: Colors.transparent,
                       child: InkWell(
                         onTap: () => context.push('/accounts/detail/${acc.id}'),
-                        borderRadius: BorderRadius.circular(AppColors.radiusLarge),
-                        child: Padding(
-                          padding: const EdgeInsets.all(AppColors.cardPadding),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Row(
+                        borderRadius: BorderRadius.circular(22),
+                        child: Stack(
+                          children: [
+                            // Indicador visual discreto de tipo de cuenta
+                            Positioned(
+                              top: 0,
+                              right: 0,
+                              child: Container(
+                                width: 40,
+                                height: 40,
+                                decoration: BoxDecoration(
+                                  color: typeColor.withOpacity(0.05),
+                                  borderRadius: const BorderRadius.only(
+                                    topRight: Radius.circular(22),
+                                    bottomLeft: Radius.circular(22),
+                                  ),
+                                ),
+                                child: Icon(typeIcon, size: 14, color: typeColor.withOpacity(0.4)),
+                              ),
+                            ),
+                            Padding(
+                              padding: const EdgeInsets.all(16),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   if (acc.bancoLogo != null && acc.bancoLogo!.isNotEmpty)
                                     BankLogo(
                                       bankName: acc.bancoNombre ?? acc.nombre,
                                       primaryColor: typeColor.value.toRadixString(16).padLeft(8, '0').substring(2),
-                                      size: 24,
+                                      size: 32,
                                     )
                                   else
                                     Container(
-                                      padding: const EdgeInsets.all(6),
+                                      padding: const EdgeInsets.all(8),
                                       decoration: BoxDecoration(
-                                        color: typeColor.withOpacity(0.1),
-                                        shape: BoxShape.circle,
+                                        color: typeColor.withOpacity(0.12),
+                                        borderRadius: BorderRadius.circular(10),
                                       ),
-                                      child: Icon(typeIcon, size: 14, color: typeColor),
+                                      child: Icon(typeIcon, size: 16, color: typeColor),
                                     ),
                                   const Spacer(),
-                                  if (isTC)
-                                    Container(
-                                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                                      decoration: BoxDecoration(
-                                        color: Colors.red.withOpacity(0.1),
-                                        borderRadius: BorderRadius.circular(4),
-                                      ),
-                                      child: Text(
-                                        'TC',
-                                        style: GoogleFonts.montserrat(
-                                          fontSize: 9,
-                                          fontWeight: FontWeight.w800,
-                                          color: Colors.red,
-                                        ),
-                                      ),
-                                    ),
-                                ],
-                              ),
-                              const Spacer(),
-                              Text(
-                                acc.nombre,
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: GoogleFonts.montserrat(
-                                  fontSize: AppColors.bodyMedium,
-                                  fontWeight: FontWeight.w700,
-                                  color: isDark ? Colors.white : AppColors.textPrimary,
-                                ),
-                              ),
-                              const SizedBox(height: 2),
-                              Text(
-                                currencyFormatter.format(acc.saldoActual),
-                                style: GoogleFonts.montserrat(
-                                  fontSize: 15,
-                                  fontWeight: FontWeight.w800,
-                                  color: isDark ? Colors.white : AppColors.textPrimary,
-                                  letterSpacing: -0.5,
-                                ),
-                              ),
-                              if (isTC) ...[
-                                const SizedBox(height: 6),
-                                ClipRRect(
-                                  borderRadius: BorderRadius.circular(2),
-                                  child: LinearProgressIndicator(
-                                    value: acc.saldoInicial > 0
-                                        ? ((acc.saldoInicial - acc.saldoActual) / acc.saldoInicial)
-                                        : 0,
-                                    minHeight: 3,
-                                    backgroundColor: isDark ? Colors.white10 : Colors.grey[200],
-                                    valueColor: AlwaysStoppedAnimation<Color>(
-                                      ((acc.saldoInicial - acc.saldoActual) / acc.saldoInicial) > 0.8
-                                          ? Colors.red
-                                          : typeColor,
+                                  Text(
+                                    acc.nombre,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: GoogleFonts.montserrat(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w600,
+                                      color: isDark ? Colors.white.withOpacity(0.6) : Colors.black54,
+                                      letterSpacing: 0.2,
                                     ),
                                   ),
-                                ),
-                              ],
-                            ],
-                          ),
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    currencyFormatter.format(acc.saldoActual),
+                                    style: GoogleFonts.montserrat(
+                                      fontSize: 17,
+                                      fontWeight: FontWeight.w800,
+                                      color: isDark ? Colors.white : AppColors.textPrimary,
+                                      letterSpacing: -0.5,
+                                    ),
+                                  ),
+                                  if (isTC) ...[
+                                    const SizedBox(height: 8),
+                                    Row(
+                                      children: [
+                                        Expanded(
+                                          child: ClipRRect(
+                                            borderRadius: BorderRadius.circular(4),
+                                            child: LinearProgressIndicator(
+                                              value: acc.saldoInicial > 0
+                                                  ? ((acc.saldoInicial - acc.saldoActual) / acc.saldoInicial)
+                                                  : 0,
+                                              minHeight: 4,
+                                              backgroundColor: isDark ? Colors.white10 : Colors.black.withOpacity(0.05),
+                                              valueColor: AlwaysStoppedAnimation<Color>(
+                                                ((acc.saldoInicial - acc.saldoActual) / acc.saldoInicial) > 0.8
+                                                    ? Colors.red[400]!
+                                                    : typeColor,
+                                              ),
+                                            ),
+                                          ),
+                                        ),
+                                        const SizedBox(width: 8),
+                                        Text(
+                                          '${(acc.saldoInicial > 0 ? ((acc.saldoInicial - acc.saldoActual) / acc.saldoInicial * 100) : 0).toInt()}%',
+                                          style: GoogleFonts.montserrat(
+                                            fontSize: 9,
+                                            fontWeight: FontWeight.bold,
+                                            color: isDark ? Colors.white38 : Colors.black38,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ],
+                                ],
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                     ),
@@ -879,248 +917,469 @@ class DashboardScreen extends ConsumerWidget {
     );
   }
 
+  /// Tarjeta de estadísticas por categoría.
   Widget _buildCategoryStatsCard(
     BuildContext context,
-    WidgetRef ref,
     Color cardColor,
     bool isDark,
   ) {
-    final transactionsAsync = ref.watch(transactionsListProvider);
-    final categoriesAsync = ref.watch(categoriesListProvider);
-
     return Container(
-      padding: EdgeInsets.all(AppColors.cardPadding),
+      width: double.infinity,
+      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: cardColor,
-        borderRadius: BorderRadius.circular(AppColors.radiusXLarge),
-        boxShadow: [
-          if (!isDark)
-            BoxShadow(
-              color: Colors.black.withOpacity(0.05),
-              blurRadius: 10,
-              offset: const Offset(0, 4),
-            ),
-        ],
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(
+          color: isDark ? Colors.white.withOpacity(0.05) : Colors.black.withOpacity(0.05),
+        ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            'GASTO POR CATEGORÍA',
-            style: GoogleFonts.montserrat(
-              fontSize: AppColors.bodySmall,
-              fontWeight: FontWeight.w700,
-              color: AppColors.primary.withOpacity(0.8),
-              letterSpacing: 1.1,
-            ),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'Gasto por Categoría',
+                style: GoogleFonts.montserrat(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: isDark ? Colors.white : AppColors.textPrimary,
+                ),
+              ),
+              _buildPeriodSelector(isDark),
+            ],
           ),
-          const SizedBox(height: 16),
-          transactionsAsync.when(
-            data: (transactions) {
-              return categoriesAsync.when(
-                data: (categories) {
-                  // Filtrar solo gastos
-                  final expensesOnly = (transactions as List)
-                      .where(
-                        (tx) =>
-                            tx.tipo == 'gasto' ||
-                            tx.tipo == 'pago_deuda' ||
-                            tx.tipo == 'meta_aporte',
-                      )
-                      .toList();
+          const SizedBox(height: 24),
+          Consumer(
+            builder: (context, ref, child) {
+              final transactionsAsync = ref.watch(transactionsListProvider);
+              final categoriesAsync = ref.watch(categoriesListProvider);
 
-                  if (expensesOnly.isEmpty) {
-                    return const SizedBox(
-                      height: 120,
-                      child: Center(
-                        child: Text(
-                          'Sin datos',
-                          style: TextStyle(fontSize: AppColors.bodySmall),
-                        ),
-                      ),
-                    );
-                  }
+              return transactionsAsync.when(
+                data: (transactions) {
+                  return categoriesAsync.when(
+                    data: (categories) {
+                      // 1. Filtrar transacciones por periodo y tipo 'gasto'
+                      final now = DateTime.now();
+                      final filteredTransactions = transactions.where((tx) {
+                        final isExpense = tx.tipo == 'gasto' || tx.tipo == 'pago_deuda' || tx.tipo == 'meta_aporte';
+                        if (!isExpense) return false;
 
-                  // Agrupar por categoría
-                  final Map<String, double> categoryMap = {};
+                        if (periodFilter == 'Este mes') {
+                          return tx.fecha.month == now.month && tx.fecha.year == now.year;
+                        } else if (periodFilter == '30 días') {
+                          return tx.fecha.isAfter(now.subtract(const Duration(days: 30)));
+                        } else {
+                          return tx.fecha.year == now.year;
+                        }
+                      }).toList();
 
-                  for (final tx in (expensesOnly as List<TransactionModel>)) {
-                    String catId;
-                    if (tx.tipo == 'pago_deuda') {
-                      catId = 'cat_pago_deuda';
-                    } else if (tx.tipo == 'meta_aporte') {
-                      catId = 'cat_meta_aporte';
-                    } else {
-                      catId = tx.categoriaId ?? 'sin_cat';
-                    }
-                    categoryMap[catId] = (categoryMap[catId] ?? 0) + tx.monto;
-                  }
+                      // 2. Agrupar por categoría
+                      final Map<String, double> categoryMap = {};
+                      double totalExpenses = 0;
 
-                  // Ordenar y tomar top 5 para la leyenda
-                  final sortedCats = categoryMap.entries.toList()
-                    ..sort((a, b) => b.value.compareTo(a.value));
+                      for (final tx in filteredTransactions) {
+                        String catId;
+                        if (tx.tipo == 'pago_deuda') {
+                          catId = 'cat_pago_deuda';
+                        } else if (tx.tipo == 'meta_aporte') {
+                          catId = 'cat_meta_aporte';
+                        } else {
+                          catId = tx.categoriaId ?? 'sin_cat';
+                        }
+                        categoryMap[catId] = (categoryMap[catId] ?? 0) + tx.monto;
+                        totalExpenses += tx.monto;
+                      }
 
-                  final topForChart = sortedCats.take(4).toList();
-                  final topForLegend = sortedCats.take(5).toList();
-
-                  // Función auxiliar para obtener datos de categoría (incluso virtuales)
-                  CategoryModel getCategory(String id) {
-                    if (id == 'cat_pago_deuda') {
-                      return CategoryModel(
-                        id: 'cat_pago_deuda',
-                        userId: '',
-                        nombre: 'Pago de deuda',
-                        tipo: 'gasto',
-                        color: '#FF8A65', // Coral (Asociado a deudas)
-                        createdAt: DateTime.now(),
-                      );
-                    } else if (id == 'cat_meta_aporte') {
-                      return CategoryModel(
-                        id: 'cat_meta_aporte',
-                        userId: '',
-                        nombre: 'Aporte a Meta',
-                        tipo: 'gasto',
-                        color: '#4DB6AC', // Teal (Asociado a metas)
-                        createdAt: DateTime.now(),
-                      );
-                    } else if (id == 'sin_cat') {
-                      return CategoryModel(
-                        id: 'sin_cat',
-                        userId: '',
-                        nombre: 'Sin categoría',
-                        tipo: 'gasto',
-                        color: '#BDBDBD',
-                        createdAt: DateTime.now(),
-                      );
-                    }
-                    return categories.firstWhere(
-                      (c) => c.id == id,
-                      orElse: () => categories.first,
-                    );
-                  }
-
-                  return Column(
-                    children: [
-                      const SizedBox(height: 16),
-                      Row(
-                        children: [
-                          SizedBox(
-                            height: 100,
-                            width: 100,
-                            child: PieChart(
-                              PieChartData(
-                                sectionsSpace: 2,
-                                centerSpaceRadius: 20,
-                                sections: topForChart.map((entry) {
-                                  final category = getCategory(entry.key);
-
-                                  Color color = AppColors.primary;
-                                  if (category.color != null) {
-                                    try {
-                                      String colorStr = category.color!
-                                          .replaceAll('#', '');
-                                      if (colorStr.length == 6)
-                                        colorStr = 'FF$colorStr';
-                                      color = Color(
-                                        int.parse(colorStr, radix: 16),
-                                      );
-                                    } catch (_) {}
-                                  }
-
-                                  return PieChartSectionData(
-                                    color: color,
-                                    value: entry.value,
-                                    title: '',
-                                    radius: 20,
-                                  );
-                                }).toList(),
-                              ),
+                      if (totalExpenses == 0) {
+                        return Center(
+                          child: Padding(
+                            padding: const EdgeInsets.all(32.0),
+                            child: Text(
+                              'Sin gastos en este periodo',
+                              style: GoogleFonts.montserrat(color: Colors.grey),
                             ),
                           ),
-                          const SizedBox(width: 20),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: topForLegend.map((entry) {
-                                final category = getCategory(entry.key);
+                        );
+                      }
 
-                                Color dotColor = AppColors.primary;
-                                if (category.color != null) {
-                                  try {
-                                    String colorStr = category.color!
-                                        .replaceAll('#', '');
-                                    if (colorStr.length == 6)
-                                      colorStr = 'FF$colorStr';
-                                    dotColor = Color(
-                                      int.parse(colorStr, radix: 16),
-                                    );
-                                  } catch (_) {}
-                                }
+                      // 3. Preparar datos para la lista (ordenados por monto)
+                      final sortedEntries = categoryMap.entries.toList()
+                        ..sort((a, b) => b.value.compareTo(a.value));
 
-                                return Padding(
-                                  padding: const EdgeInsets.only(bottom: 6),
+                      // Función auxiliar para obtener datos de categoría
+                      CategoryModel getCategory(String id) {
+                        if (id == 'cat_pago_deuda') {
+                          return CategoryModel(
+                            id: 'cat_pago_deuda',
+                            userId: '',
+                            nombre: 'Pagos Deuda',
+                            tipo: 'gasto',
+                            color: '#FF7043',
+                            icono: 'credit_card',
+                            createdAt: DateTime.now(),
+                          );
+                        } else if (id == 'cat_meta_aporte') {
+                          return CategoryModel(
+                            id: 'cat_meta_aporte',
+                            userId: '',
+                            nombre: 'Ahorro Metas',
+                            tipo: 'gasto',
+                            color: '#26A69A',
+                            icono: 'savings',
+                            createdAt: DateTime.now(),
+                          );
+                        } else if (id == 'sin_cat') {
+                          return CategoryModel(
+                            id: 'sin_cat',
+                            userId: '',
+                            nombre: 'Otros',
+                            tipo: 'gasto',
+                            color: '#9E9E9E',
+                            icono: 'more_horiz',
+                            createdAt: DateTime.now(),
+                          );
+                        }
+                        return categories.firstWhere(
+                          (c) => c.id == id,
+                          orElse: () => CategoryModel(
+                            id: 'unknown',
+                            userId: '',
+                            nombre: 'Desconocido',
+                            tipo: 'gasto',
+                            color: '#000000',
+                            icono: 'category',
+                            createdAt: DateTime.now(),
+                          ),
+                        );
+                      }
+
+                      return Column(
+                        children: [
+                          // Gráfica de Pie Interactiva con Total al centro
+                          SizedBox(
+                            height: 220,
+                            child: Stack(
+                              alignment: Alignment.center,
+                              children: [
+                                PieChart(
+                                  PieChartData(
+                                    pieTouchData: PieTouchData(
+                                      touchCallback: (FlTouchEvent event, pieTouchResponse) {
+                                        setState(() {
+                                          if (!event.isInterestedForInteractions ||
+                                              pieTouchResponse == null ||
+                                              pieTouchResponse.touchedSection == null) {
+                                            touchedIndex = -1;
+                                            return;
+                                          }
+                                          touchedIndex = pieTouchResponse.touchedSection!.touchedSectionIndex;
+                                        });
+                                      },
+                                    ),
+                                    borderData: FlBorderData(show: false),
+                                    sectionsSpace: 4,
+                                    centerSpaceRadius: 65,
+                                    sections: sortedEntries.asMap().entries.map((entry) {
+                                      final isTouched = entry.key == touchedIndex;
+                                      final double radius = isTouched ? 35 : 28;
+                                      final category = getCategory(entry.value.key);
+                                      Color color = _parseColor(category.color);
+
+                                      return PieChartSectionData(
+                                        color: color,
+                                        value: entry.value.value,
+                                        title: '',
+                                        radius: radius,
+                                        badgeWidget: isTouched ? _buildChartBadge(category, color) : null,
+                                        badgePositionPercentageOffset: 1.25,
+                                      );
+                                    }).toList(),
+                                  ),
+                                ),
+                                // Textos en el centro
+                                Column(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Text(
+                                      'Total',
+                                      style: GoogleFonts.montserrat(
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w500,
+                                        color: Colors.grey,
+                                      ),
+                                    ),
+                                    Text(
+                                      NumberFormat.compactCurrency(symbol: '\$').format(totalExpenses),
+                                      style: GoogleFonts.montserrat(
+                                        fontSize: 22,
+                                        fontWeight: FontWeight.bold,
+                                        color: isDark ? Colors.white : AppColors.textPrimary,
+                                      ),
+                                    ),
+                                    Text(
+                                      'MXN',
+                                      style: GoogleFonts.montserrat(
+                                        fontSize: 10,
+                                        fontWeight: FontWeight.w600,
+                                        color: AppColors.primary,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(height: 12), // Espacio ultra-reducido
+                          // Leyenda Vertical Detallada (Top 2 para máxima compacidad)
+                          ListView.separated(
+                            padding: EdgeInsets.zero,
+                            shrinkWrap: true,
+                            physics: const NeverScrollableScrollPhysics(),
+                            itemCount: _showAllCategories ? sortedEntries.length : (sortedEntries.length > 2 ? 2 : sortedEntries.length),
+                            separatorBuilder: (_, __) => const SizedBox(height: 6),
+                            itemBuilder: (context, index) {
+                              final entry = sortedEntries[index];
+                              final category = getCategory(entry.key);
+                              final percentage = (entry.value / totalExpenses) * 100;
+                              final color = _parseColor(category.color);
+                              final isSelected = touchedIndex == index;
+
+                              return GestureDetector(
+                                onTap: () {
+                                  setState(() {
+                                    touchedIndex = isSelected ? -1 : index;
+                                  });
+                                },
+                                child: AnimatedContainer(
+                                  duration: const Duration(milliseconds: 300),
+                                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                  decoration: BoxDecoration(
+                                    color: isSelected ? color.withOpacity(0.12) : (isDark ? Colors.white.withOpacity(0.04) : Colors.black.withOpacity(0.02)),
+                                    borderRadius: BorderRadius.circular(12),
+                                    border: Border.all(
+                                      color: isSelected ? color.withOpacity(0.3) : Colors.transparent,
+                                    ),
+                                  ),
                                   child: Row(
                                     children: [
                                       Container(
-                                        width: 8,
-                                        height: 8,
+                                        width: 32,
+                                        height: 32,
                                         decoration: BoxDecoration(
-                                          color: dotColor,
-                                          shape: BoxShape.circle,
+                                          color: color.withOpacity(0.15),
+                                          borderRadius: BorderRadius.circular(8),
+                                        ),
+                                        child: Icon(
+                                          _getIconData(category.icono),
+                                          color: color,
+                                          size: 16,
                                         ),
                                       ),
-                                      const SizedBox(width: 8),
+                                      const SizedBox(width: 12),
                                       Expanded(
-                                        child: Text(
-                                          category.nombre,
-                                          style: GoogleFonts.montserrat(
-                                            fontSize: AppColors.bodySmall,
-                                            color: isDark
-                                                ? Colors.white70
-                                                : AppColors.textPrimary,
-                                            fontWeight: FontWeight.w500,
-                                          ),
-                                          maxLines: 1,
-                                          overflow: TextOverflow.ellipsis,
+                                        child: Column(
+                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          children: [
+                                            Text(
+                                              category.nombre,
+                                              style: GoogleFonts.montserrat(
+                                                fontSize: 12,
+                                                fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
+                                                color: isDark ? Colors.white : AppColors.textPrimary,
+                                              ),
+                                            ),
+                                            Text(
+                                              '${percentage.toStringAsFixed(1)}% del total',
+                                              style: GoogleFonts.montserrat(
+                                                fontSize: 10,
+                                                color: isSelected ? color.withOpacity(0.8) : Colors.grey,
+                                              ),
+                                            ),
+                                          ],
                                         ),
                                       ),
-                                      Text(
-                                        NumberFormat.compactCurrency(
-                                          symbol: '\$',
-                                        ).format(entry.value),
-                                        style: GoogleFonts.montserrat(
-                                          fontSize: AppColors.bodySmall,
-                                          fontWeight: FontWeight.w600,
-                                          color: isDark
-                                              ? Colors.white
-                                              : AppColors.textPrimary,
-                                        ),
+                                      Column(
+                                        crossAxisAlignment: CrossAxisAlignment.end,
+                                        children: [
+                                          Text(
+                                            NumberFormat.simpleCurrency().format(entry.value),
+                                            style: GoogleFonts.montserrat(
+                                              fontSize: 12,
+                                              fontWeight: FontWeight.bold,
+                                              color: isDark ? Colors.white : AppColors.textPrimary,
+                                            ),
+                                          ),
+                                          if (isSelected)
+                                            Container(
+                                              width: 24,
+                                              height: 2,
+                                              margin: const EdgeInsets.only(top: 2),
+                                              decoration: BoxDecoration(
+                                                color: color,
+                                                borderRadius: BorderRadius.circular(1),
+                                              ),
+                                            ),
+                                        ],
                                       ),
                                     ],
                                   ),
-                                );
-                              }).toList(),
-                            ),
+                                ),
+                              );
+                            },
                           ),
+                          if (sortedEntries.length > 2)
+                            Padding(
+                              padding: const EdgeInsets.only(top: 6), // Espacio sutil con el último ítem
+                              child: Center(
+                                child: InkWell(
+                                  onTap: () => setState(() => _showAllCategories = !_showAllCategories),
+                                  borderRadius: BorderRadius.circular(20),
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 18), // Incrementado 2px para mejor área táctil
+                                    decoration: BoxDecoration(
+                                      color: AppColors.primary.withOpacity(0.05),
+                                      borderRadius: BorderRadius.circular(20),
+                                    ),
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Icon(
+                                          _showAllCategories ? Icons.keyboard_arrow_up : Icons.more_horiz,
+                                          size: 14,
+                                          color: AppColors.primary,
+                                        ),
+                                        const SizedBox(width: 6),
+                                        Text(
+                                          _showAllCategories ? 'Ocultar' : 'Ver ${sortedEntries.length - 2} más',
+                                          style: GoogleFonts.montserrat(
+                                            fontSize: 10,
+                                            fontWeight: FontWeight.bold,
+                                            color: AppColors.primary,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
                         ],
-                      ),
-                    ],
+                      );
+                    },
+                    loading: () => const _ChartLoadingSkeleton(),
+                    error: (_, __) => const Text('Error al cargar categorías'),
                   );
                 },
-                loading: () => const SizedBox(
-                  height: 100,
-                  child: Center(child: CircularProgressIndicator()),
-                ),
-                error: (_, __) => const Text('Error'),
+                loading: () => const _ChartLoadingSkeleton(),
+                error: (_, __) => const Text('Error al cargar transacciones'),
               );
             },
-            loading: () => const SizedBox(
-              height: 100,
-              child: Center(child: CircularProgressIndicator()),
-            ),
-            error: (_, __) => const Text('Error'),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildPeriodSelector(bool isDark) {
+    final periods = ['Este mes', '30 días', 'Este año'];
+    final textColor = isDark ? Colors.white.withOpacity(0.9) : AppColors.textPrimary;
+    final bgColor = isDark ? Colors.white.withOpacity(0.08) : Colors.black.withOpacity(0.05);
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
+      decoration: BoxDecoration(
+        color: bgColor,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: DropdownButtonHideUnderline(
+        child: DropdownButton<String>(
+          value: periodFilter,
+          icon: Icon(Icons.keyboard_arrow_down, size: 18, color: textColor),
+          elevation: 16,
+          dropdownColor: isDark ? AppColors.surfaceDark : Colors.white,
+          style: GoogleFonts.montserrat(
+            fontSize: 12,
+            fontWeight: FontWeight.w600,
+            color: textColor,
+          ),
+          onChanged: (String? newValue) {
+            if (newValue != null) {
+              setState(() {
+                periodFilter = newValue;
+                touchedIndex = -1; // Reset selection
+                _showAllCategories = false; // Reset view
+              });
+            }
+          },
+          items: periods.map<DropdownMenuItem<String>>((String value) {
+            return DropdownMenuItem<String>(
+              value: value,
+              child: Text(
+                value,
+                style: GoogleFonts.montserrat(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: textColor,
+                ),
+              ),
+            );
+          }).toList(),
+        ),
+      ),
+    );
+  }
+
+  Color _parseColor(String? colorHex) {
+    if (colorHex == null || colorHex.isEmpty) return AppColors.primary;
+    try {
+      String colorStr = colorHex.replaceAll('#', '');
+      if (colorStr.length == 6) colorStr = 'FF$colorStr';
+      return Color(int.parse(colorStr, radix: 16));
+    } catch (_) {
+      return AppColors.primary;
+    }
+  }
+
+  IconData _getIconData(String? iconName) {
+    switch (iconName) {
+      case 'shopping_cart': return Icons.shopping_cart;
+      case 'restaurant': return Icons.restaurant;
+      case 'directions_car': return Icons.directions_car;
+      case 'home': return Icons.home;
+      case 'credit_card': return Icons.credit_card;
+      case 'savings': return Icons.savings;
+      case 'more_horiz': return Icons.more_horiz;
+      case 'fastfood': return Icons.fastfood;
+      case 'electric_bolt': return Icons.electric_bolt;
+      case 'movie': return Icons.movie;
+      case 'fitness_center': return Icons.fitness_center;
+      case 'medical_services': return Icons.medical_services;
+      case 'school': return Icons.school;
+      case 'flight': return Icons.flight;
+      default: return Icons.category;
+    }
+  }
+
+  Widget _buildChartBadge(CategoryModel category, Color color) {
+    return Container(
+      padding: const EdgeInsets.all(4),
+      decoration: BoxDecoration(
+        color: color,
+        shape: BoxShape.circle,
+        boxShadow: [
+          BoxShadow(
+            color: color.withOpacity(0.3),
+            blurRadius: 4,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Icon(
+        _getIconData(category.icono),
+        color: Colors.white,
+        size: 14,
       ),
     );
   }
@@ -1557,5 +1816,17 @@ class DashboardScreen extends ConsumerWidget {
     }
 
     return iconMap[iconName] ?? Icons.description_outlined;
+  }
+}
+
+class _ChartLoadingSkeleton extends StatelessWidget {
+  const _ChartLoadingSkeleton({Key? key}) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return const SizedBox(
+      height: 200,
+      child: Center(child: CircularProgressIndicator()),
+    );
   }
 }
