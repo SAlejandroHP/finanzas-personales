@@ -101,6 +101,20 @@ class AppButton extends StatelessWidget {
       buttonHeight = height!;
     }
 
+    // Determina el tamaño de icono según el tamaño del botón
+    late double iconSize;
+    switch (size) {
+      case 'small':
+        iconSize = AppColors.iconXSmall;
+        break;
+      case 'large':
+        iconSize = AppColors.iconLarge;
+        break;
+      case 'medium':
+      default:
+        iconSize = AppColors.iconSmall;
+    }
+
     final buttonChild = isLoading
         ? SizedBox(
             width: 20,
@@ -115,8 +129,8 @@ class AppButton extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             children: [
               if (icon != null) ...[
-                Icon(icon, color: textColorFinal, size: AppColors.iconMedium),
-                SizedBox(width: AppColors.sm),
+                Icon(icon, color: textColorFinal, size: iconSize),
+                const SizedBox(width: AppColors.xs),
               ],
               Text(
                 label,

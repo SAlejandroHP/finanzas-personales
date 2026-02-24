@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import '../../../../core/constants/app_colors.dart';
+import '../../../../core/widgets/app_button.dart';
 import '../../data/transactions_repository.dart';
 import '../../models/transaction_model.dart';
 import '../widgets/transaction_form_sheet.dart';
@@ -25,11 +26,36 @@ class RecurringTransactionsScreen extends ConsumerWidget {
       backgroundColor: isDark ? const Color(0xFF121212) : AppColors.backgroundColor,
       appBar: AppBar(
         title: Text(
-          'Transacciones Recurrentes',
-          style: GoogleFonts.montserrat(fontWeight: FontWeight.w700),
+          'Reglas Recurrentes',
+          style: GoogleFonts.montserrat(
+            fontWeight: FontWeight.w800,
+            fontSize: 18,
+            color: isDark ? Colors.white : AppColors.textPrimary,
+            letterSpacing: -0.5,
+          ),
         ),
         elevation: 0,
-        centerTitle: true,
+        scrolledUnderElevation: 0,
+        surfaceTintColor: Colors.transparent,
+        backgroundColor: Colors.transparent,
+        centerTitle: false,
+        actions: [
+          Padding(
+            padding: const EdgeInsets.only(right: 8),
+            child: IconButton(
+              icon: Container(
+                padding: const EdgeInsets.all(6),
+                decoration: BoxDecoration(
+                  color: AppColors.primary.withOpacity(0.15),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(Icons.add_rounded, size: 20, color: AppColors.primary),
+              ),
+              onPressed: () => showTransactionFormSheet(context, isRecurringDefault: true)
+                  .then((_) => ref.refresh(recurringTransactionsProvider)),
+            ),
+          ),
+        ],
       ),
       body: recurringAsync.when(
         data: (transactions) {
@@ -59,7 +85,8 @@ class RecurringTransactionsScreen extends ConsumerWidget {
           }
           
           return ListView.separated(
-            padding: const EdgeInsets.all(AppColors.md),
+            padding: const EdgeInsets.fromLTRB(AppColors.pagePadding, 8, AppColors.pagePadding, 120),
+            physics: const BouncingScrollPhysics(),
             itemCount: transactions.length,
             separatorBuilder: (_, __) => const SizedBox(height: 12),
             itemBuilder: (context, index) {
@@ -70,16 +97,6 @@ class RecurringTransactionsScreen extends ConsumerWidget {
         },
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (err, stack) => Center(child: Text('Error: $err')),
-      ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => showTransactionFormSheet(context, isRecurringDefault: true)
-            .then((_) => ref.refresh(recurringTransactionsProvider)),
-        label: Text(
-          'Nueva Regla',
-          style: GoogleFonts.montserrat(fontWeight: FontWeight.w600),
-        ),
-        icon: const Icon(Icons.add),
-        backgroundColor: AppColors.primary,
       ),
     );
   }
@@ -119,118 +136,149 @@ class _RecurringTransactionCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = transaction.tipo == 'ingreso' ? Colors.green : Colors.red;
+    final color = transaction.tipo == 'ingreso' ? Colors.green : Colors.redAccent;
     
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(22),
         boxShadow: [
           if (!isDark)
             BoxShadow(
-              color: Colors.black.withOpacity(0.05),
+              color: Colors.black.withOpacity(0.04),
               blurRadius: 10,
               offset: const Offset(0, 4),
             ),
         ],
       ),
-      child: Row(
+      child: Column(
         children: [
-          Container(
-            padding: const EdgeInsets.all(10),
-            decoration: BoxDecoration(
-              color: color.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Icon(
-              Icons.repeat_rounded,
-              color: color,
-            ),
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  transaction.descripcion ?? 'Sin descripción',
-                  style: GoogleFonts.montserrat(
-                    fontSize: AppColors.bodyLarge,
-                    fontWeight: FontWeight.w600,
-                    color: isDark ? Colors.white : AppColors.textPrimary,
-                  ),
-                ),
-                Text(
-                  _getFrequencyLabel(transaction.recurringRule),
-                  style: GoogleFonts.montserrat(
-                    fontSize: AppColors.bodySmall,
-                    color: Colors.grey,
-                  ),
-                ),
-                if (transaction.nextOccurrence != null)
-                  Text(
-                    'Próx: ${DateFormat('d MMM yyyy', 'es').format(transaction.nextOccurrence!)}',
-                    style: GoogleFonts.montserrat(
-                      fontSize: AppColors.bodySmall,
-                      color: AppColors.primary,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-              ],
-            ),
-          ),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.end,
+          Row(
             children: [
-              Text(
-                _formatCurrency(transaction.monto),
-                style: GoogleFonts.montserrat(
-                  fontSize: AppColors.bodyLarge,
-                  fontWeight: FontWeight.w700,
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: color.withOpacity(0.15),
+                  borderRadius: BorderRadius.circular(10), // Squircle homologado
+                ),
+                child: Icon(
+                  Icons.repeat_rounded,
                   color: color,
+                  size: 20,
                 ),
               ),
-              const SizedBox(height: 8),
-              Row(
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      transaction.descripcion ?? 'Sin descripción',
+                      style: GoogleFonts.montserrat(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w700,
+                        color: isDark ? Colors.white : AppColors.textPrimary,
+                        letterSpacing: -0.3,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    Text(
+                      _getFrequencyLabel(transaction.recurringRule),
+                      style: GoogleFonts.montserrat(
+                        fontSize: 10,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.grey,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
-                  IconButton(
-                    icon: const Icon(Icons.edit_outlined, size: 20, color: Colors.grey),
-                    onPressed: () => showTransactionFormSheet(context, transaction: transaction)
-                        .then((_) => ref.refresh(recurringTransactionsProvider)),
-                    padding: EdgeInsets.zero,
-                    constraints: const BoxConstraints(),
+                  Text(
+                    _formatCurrency(transaction.monto),
+                    style: GoogleFonts.montserrat(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w800,
+                      color: isDark ? Colors.white : AppColors.textPrimary,
+                      letterSpacing: -0.5,
+                    ),
                   ),
-                  const SizedBox(width: 16),
-                  IconButton(
-                    icon: Icon(Icons.delete_outline_rounded, size: 20, color: Colors.red[300]),
-                    onPressed: () async {
-                      // Confirmar eliminación
-                      final confirm = await showDialog<bool>(
-                        context: context,
-                        builder: (context) => AlertDialog(
-                          title: const Text('Eliminar regla'),
-                          content: const Text('¿Estás seguro de eliminar esta regla recurrente?'),
-                          actions: [
-                            TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancelar')),
-                            TextButton(onPressed: () => Navigator.pop(context, true), child: const Text('Eliminar', style: TextStyle(color: Colors.red))),
-                          ],
-                        ),
-                      );
-                      
-                      if (confirm == true) {
-                        try {
-                          await TransactionsRepository(supabase: supabaseClient).deleteTransaction(transaction.id);
-                          ref.invalidate(recurringTransactionsProvider);
-                        } catch (e) {
+                  if (transaction.nextOccurrence != null)
+                    Text(
+                      'Próx: ${DateFormat('d MMM', 'es').format(transaction.nextOccurrence!)}',
+                      style: GoogleFonts.montserrat(
+                        fontSize: 9,
+                        color: color.withOpacity(0.8),
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                ],
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Divider(
+            height: 1,
+            color: isDark ? Colors.white.withOpacity(0.05) : Colors.black.withOpacity(0.03),
+          ),
+          const SizedBox(height: 8),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              SizedBox(
+                height: 32,
+                child: TextButton.icon(
+                  onPressed: () async {
+                    // Confirmar eliminación
+                    final confirm = await showDialog<bool>(
+                      context: context,
+                      builder: (context) => AlertDialog(
+                        title: const Text('Eliminar regla'),
+                        content: const Text('¿Estás seguro de eliminar esta regla recurrente?'),
+                        actions: [
+                          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancelar')),
+                          TextButton(onPressed: () => Navigator.pop(context, true), child: const Text('Eliminar', style: const TextStyle(color: Colors.red))),
+                        ],
+                      ),
+                    );
+                    
+                    if (confirm == true) {
+                      try {
+                        await TransactionsRepository(supabase: supabaseClient).deleteTransaction(transaction.id);
+                        ref.invalidate(recurringTransactionsProvider);
+                      } catch (e) {
+                        if (context.mounted) {
                           ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
                         }
                       }
-                    },
-                    padding: EdgeInsets.zero,
-                    constraints: const BoxConstraints(),
+                    }
+                  },
+                  icon: Icon(Icons.delete_outline_rounded, size: 14, color: Colors.red[300]),
+                  label: Text(
+                    'Eliminar',
+                    style: GoogleFonts.montserrat(
+                      fontSize: 11, 
+                      fontWeight: FontWeight.w700,
+                      color: Colors.red[300],
+                    ),
                   ),
-                ],
+                  style: TextButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(horizontal: 8),
+                  ),
+                ),
+              ),
+              AppButton(
+                label: 'Editar Regla',
+                icon: Icons.edit_rounded,
+                onPressed: () => showTransactionFormSheet(context, transaction: transaction)
+                    .then((_) => ref.refresh(recurringTransactionsProvider)),
+                variant: 'primary',
+                size: 'small',
+                height: 32,
               ),
             ],
           ),

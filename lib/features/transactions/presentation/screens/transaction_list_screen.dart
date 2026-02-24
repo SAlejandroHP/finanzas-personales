@@ -36,44 +36,64 @@ class TransactionListScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final backgroundColor = isDark ? const Color(0xFF121212) : AppColors.backgroundColor;
-    final appBarColor = isDark ? const Color(0xFF121212) : AppColors.backgroundColor;
     final transactionsAsync = ref.watch(filteredTransactionsProvider);
 
     return Scaffold(
       backgroundColor: backgroundColor,
-      appBar: AppBar(
-        title: Text(
-          'Movimientos',
-          style: GoogleFonts.montserrat(
-            fontWeight: FontWeight.w800,
-            fontSize: AppColors.titleMedium,
-            color: isDark ? Colors.white : AppColors.textPrimary,
-            letterSpacing: -0.5,
+      body: Column(
+        children: [
+          // Fixed Premium Header
+          SafeArea(
+            bottom: false,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Row(
+                    children: [
+                      IconButton(
+                        onPressed: () => Navigator.pop(context),
+                        icon: Icon(
+                          Icons.arrow_back_ios_new_rounded,
+                          color: isDark ? Colors.white : AppColors.textPrimary,
+                          size: 20,
+                        ),
+                        padding: EdgeInsets.zero,
+                        constraints: const BoxConstraints(),
+                      ),
+                      const SizedBox(width: 12),
+                      Text(
+                        'Movimientos',
+                        style: GoogleFonts.montserrat(
+                          fontSize: 24,
+                          fontWeight: FontWeight.w800,
+                          color: isDark ? Colors.white : AppColors.textPrimary,
+                          letterSpacing: -0.5,
+                        ),
+                      ),
+                    ],
+                  ),
+                  _HeaderAction(
+                    onTap: () async {
+                      final transactions = transactionsAsync.asData?.value;
+                      if (transactions != null && transactions.isNotEmpty) {
+                         await showSearch(
+                          context: context,
+                          delegate: _TransactionSearchDelegate(transactions, ref),
+                        );
+                      }
+                    },
+                    icon: Icons.search_rounded,
+                  ),
+                ],
+              ),
+            ),
           ),
-        ),
-        centerTitle: false,
-        elevation: 0,
-        scrolledUnderElevation: 0, // Desactivamos el cambio de color automático a verde (Material 3)
-        surfaceTintColor: Colors.transparent, 
-        backgroundColor: backgroundColor,
-        foregroundColor: isDark ? Colors.white : AppColors.textPrimary,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.search_rounded),
-            onPressed: () async {
-              final transactions = transactionsAsync.asData?.value;
-              if (transactions != null && transactions.isNotEmpty) {
-                 await showSearch(
-                  context: context,
-                  delegate: _TransactionSearchDelegate(transactions, ref),
-                );
-              }
-            },
-          ),
-        ],
-      ),
-      body: transactionsAsync.when(
-        data: (transactions) {
+          
+          Expanded(
+            child: transactionsAsync.when(
+              data: (transactions) {
           if (transactions.isEmpty) {
             final hasFilters = _hasAnyFilter(ref.watch(transactionFiltersProvider));
             return Column(
@@ -267,8 +287,10 @@ class TransactionListScreen extends ConsumerWidget {
             ),
           ],
         ),
-      ),
-    // Corrección v5: Eliminar FloatingActionButton (ya está en nav central)
+      ), // Cierra async when
+    ), // Cierra Expanded
+  ], // Cierra children de Column
+), // Cierra Column
     );
   }
 
@@ -556,6 +578,33 @@ class _TransactionSearchDelegate extends SearchDelegate {
             },
           );
         },
+      ),
+    );
+  }
+}
+
+// Botón de acción en el header homologado
+class _HeaderAction extends StatelessWidget {
+  final VoidCallback onTap;
+  final IconData icon;
+
+  const _HeaderAction({required this.onTap, required this.icon});
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.all(8),
+        decoration: BoxDecoration(
+          color: AppColors.primary.withOpacity(0.1),
+          borderRadius: BorderRadius.circular(10), // Squircle
+        ),
+        child: Icon(
+          icon,
+          color: AppColors.primary,
+          size: 20,
+        ),
       ),
     );
   }

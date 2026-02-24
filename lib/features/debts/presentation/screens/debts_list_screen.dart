@@ -3,11 +3,15 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import '../../../../core/constants/app_colors.dart';
+import '../../../../core/widgets/app_button.dart';
 import '../../../../core/widgets/loading_indicator.dart';
 import '../../../../core/widgets/app_toast.dart';
 import 'package:finanzas/features/debts/models/debt_model.dart';
 import '../providers/debts_provider.dart';
 import '../widgets/debt_form_sheet.dart';
+
+// Provider local para filtro de estado
+final debtFilterProvider = StateProvider<String>((ref) => 'todas');
 
 class DebtsListScreen extends ConsumerWidget {
   const DebtsListScreen({Key? key}) : super(key: key);
@@ -20,51 +24,238 @@ class DebtsListScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final debtsAsync = ref.watch(debtsListProvider);
+    final currentFilter = ref.watch(debtFilterProvider);
     final currencyFormatter = NumberFormat.currency(symbol: r'$', decimalDigits: 2);
 
     return Scaffold(
       backgroundColor: isDark ? const Color(0xFF121212) : AppColors.backgroundColor,
-      appBar: AppBar(
-        title: Text(
-          'Mis Deudas',
+      body: Column(
+        children: [
+          // Header Fijo Moderno (Premium)
+          SafeArea(
+            bottom: false,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Row(
+                    children: [
+                      IconButton(
+                        onPressed: () => Navigator.pop(context),
+                        icon: Icon(
+                          Icons.arrow_back_ios_new_rounded,
+                          color: isDark ? Colors.white : AppColors.textPrimary,
+                          size: 20,
+                        ),
+                        padding: EdgeInsets.zero,
+                        constraints: const BoxConstraints(),
+                      ),
+                      const SizedBox(width: 12),
+                      Text(
+                        'Deudas',
+                        style: GoogleFonts.montserrat(
+                          fontSize: 24,
+                          fontWeight: FontWeight.w800,
+                          color: isDark ? Colors.white : AppColors.textPrimary,
+                          letterSpacing: -0.5,
+                        ),
+                      ),
+                    ],
+                  ),
+                  _HeaderAction(
+                    onTap: () => _showDebtForm(context),
+                    icon: Icons.add_rounded,
+                  ),
+                ],
+              ),
+            ),
+          ),
+          
+          Expanded(
+            child: debtsAsync.when(
+              data: (debts) {
+                if (debts.isEmpty) {
+                  return _buildEmptyState(isDark);
+                }
+
+                // Filtrar según el estado
+                final filteredDebts = currentFilter == 'todas'
+                    ? debts
+                    : debts.where((d) => d.estado == currentFilter).toList();
+
+                // Calcular totales para el summary
+                final totalDebt = debts.fold<double>(0.0, (s, d) => s + d.montoTotal);
+                final totalRemaining = debts.fold<double>(0.0, (s, d) => s + d.montoRestante);
+
+                return RefreshIndicator(
+                  onRefresh: () async => ref.refresh(debtsListProvider),
+                  child: ListView(
+                    padding: const EdgeInsets.fromLTRB(20, 10, 20, 100),
+                    physics: const BouncingScrollPhysics(),
+                    children: [
+                      _buildSummaryHeader(context, totalDebt, totalRemaining, isDark),
+                      const SizedBox(height: 20),
+                      _buildStatusTabs(ref, currentFilter, isDark),
+                      const SizedBox(height: 16),
+                      if (filteredDebts.isEmpty)
+                        Center(
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 40),
+                            child: Text(
+                              'Sin deudas "${currentFilter}"',
+                              style: GoogleFonts.montserrat(color: Colors.grey),
+                            ),
+                          ),
+                        )
+                      else
+                        ...filteredDebts.map((debt) => 
+                          _buildDebtCard(context, ref, debt, currencyFormatter, isDark)
+                        ),
+                    ],
+                  ),
+                );
+              },
+              loading: () => const Center(child: LoadingIndicator()),
+              error: (error, _) => Center(child: Text('Error: $error')),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSummaryHeader(BuildContext context, double total, double remaining, bool isDark) {
+    final paid = total - remaining;
+    final progress = total > 0 ? (paid / total).clamp(0.0, 1.0) : 1.0;
+    final currencyFormatter = NumberFormat.currency(symbol: r'$', decimalDigits: 0);
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: AppColors.primary,
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.primary.withOpacity(0.3),
+            blurRadius: 15,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'Saldo Pendiente',
+                style: GoogleFonts.montserrat(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.white.withOpacity(0.8),
+                ),
+              ),
+              Icon(Icons.credit_card_rounded, color: Colors.white.withOpacity(0.4), size: 24),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Text(
+            currencyFormatter.format(remaining),
+            style: GoogleFonts.montserrat(
+              fontSize: 32,
+              fontWeight: FontWeight.w800,
+              color: Colors.white,
+              letterSpacing: -1,
+            ),
+          ),
+          const SizedBox(height: 16),
+          // Mini barra de progreso general
+          ClipRRect(
+            borderRadius: BorderRadius.circular(5),
+            child: LinearProgressIndicator(
+              value: progress,
+              backgroundColor: Colors.white.withOpacity(0.1),
+              valueColor: const AlwaysStoppedAnimation<Color>(Colors.white),
+              minHeight: 6,
+            ),
+          ),
+          const SizedBox(height: 12),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              _buildSummaryMiniDetail('Total original', currencyFormatter.format(total)),
+              _buildSummaryMiniDetail('Pagado', currencyFormatter.format(paid)),
+              _buildSummaryMiniDetail('Progreso', '${(progress * 100).toInt()}%'),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSummaryMiniDetail(String label, String value) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
           style: GoogleFonts.montserrat(
-            fontWeight: FontWeight.w700,
-            fontSize: AppColors.titleMedium,
-            color: isDark ? Colors.white : AppColors.textPrimary,
+            fontSize: 10,
+            color: Colors.white.withOpacity(0.6),
+            fontWeight: FontWeight.w500,
           ),
         ),
-        centerTitle: false,
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        leading: IconButton(
-          icon: Icon(Icons.arrow_back_ios_new_rounded, 
-                color: isDark ? Colors.white : AppColors.textPrimary),
-          onPressed: () => Navigator.of(context).pop(),
+        Text(
+          value,
+          style: GoogleFonts.montserrat(
+            fontSize: 12,
+            color: Colors.white,
+            fontWeight: FontWeight.w700,
+          ),
         ),
+      ],
+    );
+  }
+
+  Widget _buildStatusTabs(WidgetRef ref, String currentFilter, bool isDark) {
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: Row(
+        children: [
+          _buildTab(ref, 'todas', 'Cualquiera', currentFilter == 'todas', isDark),
+          _buildTab(ref, 'activa', 'Activas', currentFilter == 'activa', isDark),
+          _buildTab(ref, 'pagada', 'Pagadas', currentFilter == 'pagada', isDark),
+          _buildTab(ref, 'vencida', 'Vencidas', currentFilter == 'vencida', isDark),
+        ],
       ),
-      body: debtsAsync.when(
-        data: (debts) {
-          if (debts.isEmpty) {
-            return _buildEmptyState(isDark);
-          }
-          return ListView.builder(
-            padding: const EdgeInsets.all(16),
-            itemCount: debts.length,
-            itemBuilder: (context, index) {
-              final debt = debts[index];
-              return _buildDebtCard(context, ref, debt, currencyFormatter, isDark);
-            },
-          );
-        },
-        loading: () => const Center(child: LoadingIndicator()),
-        error: (error, _) => Center(child: Text('Error: $error')),
-      ),
-      floatingActionButton: Padding(
-        padding: const EdgeInsets.only(bottom: 60), // Subido para que no lo tape el menú
-        child: FloatingActionButton(
-          onPressed: () => _showDebtForm(context),
-          backgroundColor: AppColors.primary,
-          child: const Icon(Icons.add, color: Colors.white),
+    );
+  }
+
+  Widget _buildTab(WidgetRef ref, String filter, String label, bool isActive, bool isDark) {
+    return GestureDetector(
+      onTap: () => ref.read(debtFilterProvider.notifier).state = filter,
+      child: Container(
+        margin: const EdgeInsets.only(right: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+        decoration: BoxDecoration(
+          color: isActive 
+              ? AppColors.primary.withOpacity(0.15) 
+              : (isDark ? Colors.white.withOpacity(0.05) : Colors.white),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: isActive ? AppColors.primary.withOpacity(0.3) : Colors.transparent,
+          ),
+        ),
+        child: Text(
+          label,
+          style: GoogleFonts.montserrat(
+            fontSize: 12,
+            fontWeight: isActive ? FontWeight.w700 : FontWeight.w600,
+            color: isActive ? AppColors.primary : Colors.grey,
+          ),
         ),
       ),
     );
@@ -75,26 +266,39 @@ class DebtsListScreen extends ConsumerWidget {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(
-            Icons.credit_score_outlined,
-            size: 80,
-            color: isDark ? Colors.white10 : Colors.black12,
+          Container(
+            padding: const EdgeInsets.all(24),
+            decoration: BoxDecoration(
+              color: isDark ? Colors.white.withOpacity(0.05) : AppColors.primary.withOpacity(0.05),
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: Icon(
+              Icons.credit_score_rounded,
+              size: 48,
+              color: AppColors.primary.withOpacity(0.5),
+            ),
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 20),
           Text(
-            'No tienes deudas registradas',
+            'Sin deudas registradas',
             style: GoogleFonts.montserrat(
-              fontSize: AppColors.bodyLarge,
-              fontWeight: FontWeight.w600,
-              color: isDark ? Colors.white38 : Colors.grey,
+              fontSize: 16,
+              fontWeight: FontWeight.w700,
+              color: isDark ? Colors.white : AppColors.textPrimary,
+              letterSpacing: -0.3,
             ),
           ),
           const SizedBox(height: 8),
-          Text(
-            'Toca el botón + para agregar una nueva deuda',
-            style: GoogleFonts.montserrat(
-              fontSize: AppColors.bodySmall,
-              color: isDark ? Colors.white24 : Colors.grey[400],
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 40),
+            child: Text(
+              'Toca el botón + en la esquina superior para agregar una nueva deuda y llevar el control.',
+              textAlign: TextAlign.center,
+              style: GoogleFonts.montserrat(
+                fontSize: 12,
+                color: Colors.grey,
+                fontWeight: FontWeight.w500,
+              ),
             ),
           ),
         ],
@@ -113,162 +317,190 @@ class DebtsListScreen extends ConsumerWidget {
         ? (1 - (debt.montoRestante / debt.montoTotal)).clamp(0.0, 1.0) 
         : 1.0;
     
-    return GestureDetector(
-      onTap: () => _showDebtForm(context, debt: debt),
-      child: Container(
-        margin: const EdgeInsets.only(bottom: 16),
-        padding: const EdgeInsets.all(20),
-        decoration: BoxDecoration(
-          color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
-          borderRadius: BorderRadius.circular(24),
-          border: Border.all(
-            color: isDark ? Colors.white.withOpacity(0.05) : Colors.black.withOpacity(0.05),
-          ),
-          boxShadow: [
-            if (!isDark)
-              BoxShadow(
-                color: Colors.black.withOpacity(0.03),
-                blurRadius: 10,
-                offset: const Offset(0, 4),
-              ),
-          ],
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        debt.nombre,
-                        style: GoogleFonts.montserrat(
-                          fontSize: AppColors.bodyLarge,
-                          fontWeight: FontWeight.w700,
-                          color: isDark ? Colors.white : AppColors.textPrimary,
-                        ),
-                      ),
-                      Text(
-                        _formatTipo(debt.tipo),
-                        style: GoogleFonts.montserrat(
-                          fontSize: AppColors.bodySmall,
-                          color: Colors.grey,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: _getEstadoColor(debt.estado).withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Text(
-                        debt.estado.toUpperCase(),
-                        style: GoogleFonts.montserrat(
-                          fontSize: AppColors.bodySmall,
-                          fontWeight: FontWeight.w700,
-                          color: _getEstadoColor(debt.estado),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    IconButton(
-                      icon: const Icon(Icons.delete_outline_rounded, color: Colors.redAccent, size: 20),
-                      onPressed: () => _confirmDelete(context, ref, debt),
-                      padding: EdgeInsets.zero,
-                      constraints: const BoxConstraints(),
-                    ),
-                  ],
-                ),
-              ],
+    // Color según estado
+    final estadoColor = _getEstadoColor(debt.estado);
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: [
+          if (!isDark)
+            BoxShadow(
+              color: Colors.black.withOpacity(0.04),
+              blurRadius: 12,
+              offset: const Offset(0, 4),
             ),
-            const SizedBox(height: 20),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Column(
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              // Icono premium squircle
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: estadoColor.withOpacity(0.12),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Icon(
+                  _getTipoIcon(debt.tipo),
+                  color: estadoColor,
+                  size: 20,
+                ),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Resta por pagar',
-                      style: GoogleFonts.montserrat(fontSize: AppColors.bodySmall, color: Colors.grey),
-                    ),
-                    Text(
-                      formatter.format(debt.montoRestante),
+                      debt.nombre,
                       style: GoogleFonts.montserrat(
-                        fontSize: AppColors.titleSmall,
-                        fontWeight: FontWeight.w800,
+                        fontSize: 15,
+                        fontWeight: FontWeight.w700,
                         color: isDark ? Colors.white : AppColors.textPrimary,
+                        letterSpacing: -0.3,
+                        height: 1.2,
                       ),
                     ),
-                  ],
-                ),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  children: [
                     Text(
-                      'Monto total',
-                      style: GoogleFonts.montserrat(fontSize: AppColors.bodySmall, color: Colors.grey),
-                    ),
-                    Text(
-                      formatter.format(debt.montoTotal),
+                      _formatTipo(debt.tipo),
                       style: GoogleFonts.montserrat(
-                        fontSize: AppColors.bodyMedium,
+                        fontSize: 10,
                         fontWeight: FontWeight.w600,
-                        color: isDark ? Colors.white70 : Colors.black54,
+                        color: Colors.grey,
                       ),
                     ),
                   ],
                 ),
-              ],
-            ),
-            const SizedBox(height: 16),
-            ClipRRect(
-              borderRadius: BorderRadius.circular(10),
-              child: LinearProgressIndicator(
-                value: progress,
-                backgroundColor: isDark ? Colors.white10 : Colors.grey[100],
-                valueColor: AlwaysStoppedAnimation<Color>(
-                  debt.estado == 'pagada' ? Colors.green : AppColors.primary,
-                ),
-                minHeight: 8,
               ),
-            ),
-            const SizedBox(height: 8),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  'Progreso: ${(progress * 100).toStringAsFixed(1)}%',
-                  style: GoogleFonts.montserrat(
-                    fontSize: AppColors.bodySmall,
-                    color: Colors.grey,
-                  ),
-                ),
-                if (debt.fechaVencimiento != null)
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
                   Text(
-                    'Vence: ${DateFormat('dd MMM').format(debt.fechaVencimiento!)}',
+                    formatter.format(debt.montoRestante),
                     style: GoogleFonts.montserrat(
-                      fontSize: AppColors.bodySmall,
-                      fontWeight: FontWeight.w600,
-                      color: debt.fechaVencimiento!.isBefore(DateTime.now()) && debt.estado != 'pagada' 
-                          ? Colors.red 
-                          : Colors.grey,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w800,
+                      color: isDark ? Colors.white : AppColors.textPrimary,
+                      letterSpacing: -0.5,
                     ),
                   ),
-              ],
-            ),
-          ],
-        ),
+                  Text(
+                    'Por pagar',
+                    style: GoogleFonts.montserrat(
+                      fontSize: 9,
+                      color: estadoColor.withOpacity(0.8),
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+          const SizedBox(height: 18),
+          // Barra de progreso estilizada
+          Stack(
+            children: [
+              Container(
+                height: 4,
+                width: double.infinity,
+                decoration: BoxDecoration(
+                  color: isDark ? Colors.white.withOpacity(0.05) : Colors.grey[100],
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              FractionallySizedBox(
+                widthFactor: progress,
+                child: Container(
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: debt.estado == 'pagada' ? Colors.green : AppColors.primary,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'Pagado: ${(progress * 100).toInt()}%',
+                style: GoogleFonts.montserrat(
+                  fontSize: 10,
+                  fontWeight: FontWeight.w700,
+                  color: Colors.grey,
+                ),
+              ),
+              if (debt.fechaVencimiento != null)
+                Text(
+                  'Vence ${DateFormat('d MMM').format(debt.fechaVencimiento!)}',
+                  style: GoogleFonts.montserrat(
+                    fontSize: 10,
+                    fontWeight: FontWeight.w700,
+                    color: debt.fechaVencimiento!.isBefore(DateTime.now()) && debt.estado != 'pagada' 
+                        ? Colors.red 
+                        : Colors.grey[600],
+                  ),
+                ),
+            ],
+          ),
+          const SizedBox(height: 14),
+          Divider(
+            height: 1,
+            color: isDark ? Colors.white.withOpacity(0.05) : Colors.black.withOpacity(0.02),
+          ),
+          const SizedBox(height: 8),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              SizedBox(
+                height: 32,
+                child: TextButton.icon(
+                  onPressed: () => _confirmDelete(context, ref, debt),
+                  icon: Icon(Icons.delete_outline_rounded, size: 14, color: Colors.red[300]),
+                  label: Text(
+                    'Eliminar',
+                    style: GoogleFonts.montserrat(
+                      fontSize: 11, 
+                      fontWeight: FontWeight.w700,
+                      color: Colors.red[300],
+                    ),
+                  ),
+                  style: TextButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(horizontal: 8),
+                  ),
+                ),
+              ),
+              AppButton(
+                label: 'Editar Deuda',
+                icon: Icons.edit_rounded,
+                onPressed: () => _showDebtForm(context, debt: debt),
+                variant: 'primary',
+                size: 'small',
+                height: 32,
+              ),
+            ],
+          ),
+        ],
       ),
     );
+  }
+
+  IconData _getTipoIcon(String tipo) {
+    switch (tipo) {
+      case 'prestamo_personal': return Icons.person_outline_rounded;
+      case 'prestamo_bancario': return Icons.account_balance_rounded;
+      case 'servicio': return Icons.receipt_long_rounded;
+      default: return Icons.credit_card_rounded;
+    }
   }
 
   String _formatTipo(String tipo) {
@@ -312,6 +544,33 @@ class DebtsListScreen extends ConsumerWidget {
             child: const Text('Eliminar', style: TextStyle(color: Colors.red)),
           ),
         ],
+      ),
+    );
+  }
+}
+
+// Botón de acción en el header homologado
+class _HeaderAction extends StatelessWidget {
+  final VoidCallback onTap;
+  final IconData icon;
+
+  const _HeaderAction({required this.onTap, required this.icon});
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.all(8),
+        decoration: BoxDecoration(
+          color: AppColors.primary.withOpacity(0.1),
+          borderRadius: BorderRadius.circular(10), // Squircle
+        ),
+        child: Icon(
+          icon,
+          color: AppColors.primary,
+          size: 20,
+        ),
       ),
     );
   }
