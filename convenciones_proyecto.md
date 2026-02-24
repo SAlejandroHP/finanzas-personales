@@ -55,6 +55,14 @@ El archivo **`lib/core/constants/app_colors.dart`** es la **FUENTE ÚNICA DE VER
   - TODOS los widgets visuales deben consumir las propiedades estáticas de `AppColors`.
   - Ejemplo: Usar `style: TextStyle(fontSize: AppColors.titleMedium)` en lugar de `fontSize: 20`.
 
+### Iconografía y Componentes Visuales (Homologación)
+Para mantener un estilo "Premium" y consistente, todos los iconos de categorías en listas, gráficas y transacciones deben seguir este estándar visual:
+- **Contenedor**: Cuadrado suave (Squircle) con `BorderRadius.circular(10)`.
+- **Fondo**: Color de la categoría con opacidad del 15-20% (`color.withOpacity(0.15)`).
+- **Icono**: Color de la categoría sólido (100% opacidad).
+- **Dimensiones**: Contenedor de `32x32dp` con icono de `16dp` para listas estándar.
+- **Ubicación**: Se deben usar siempre los mapeos de `_getIconFromString` para asegurar que el icono guardado en BD coincida con el mostrado.
+
 - **State Management**: Riverpod 2.x en todos lados (Provider, StateProvider, FutureProvider, StreamProvider).
 - **Actualización de datos**: TODA actualización de saldos, deudas, ingresos/gastos, totales y reportes debe pasar por **FinanceService** (lib/core/services/finance_service.dart).
 - **FinanceService**: 

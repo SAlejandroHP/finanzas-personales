@@ -59,4 +59,4 @@ Si no estás 100% seguro de que sea solo visual, describe primero sin editar y p
 
 Responde siempre en español cuando el usuario hable en español.
 
-Al confirmar un buen trabajo por parte del usuario hara el commit de los cambios de la siguiente manera git commit -m "tipo: descripcion" y no subiras a ningun repositorio remoto, solo se hara el commit de forma local
+Al confirmar un buen trabajo por parte del usuario hara el commit de los cambios de la siguiente manera "tipo: descripcion" y no subiras a ningun repositorio remoto, solo se hara el commit de forma local

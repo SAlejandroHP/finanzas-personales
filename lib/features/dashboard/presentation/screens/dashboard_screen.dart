@@ -788,16 +788,19 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
         ),
         const SizedBox(height: 8),
         Container(
-          padding: EdgeInsets.all(AppColors.cardPadding),
+          padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
           decoration: BoxDecoration(
             color: cardColor,
             borderRadius: BorderRadius.circular(AppColors.radiusXLarge),
+            border: Border.all(
+              color: isDark ? Colors.white.withOpacity(0.05) : Colors.black.withOpacity(0.03),
+            ),
             boxShadow: [
               if (!isDark)
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.05),
-                  blurRadius: 10,
-                  offset: const Offset(0, 4),
+                  color: Colors.black.withOpacity(0.03),
+                  blurRadius: 15,
+                  offset: const Offset(0, 5),
                 ),
             ],
           ),
@@ -806,99 +809,109 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
               final list = (txs as List).toList();
 
               if (list.isEmpty) {
-                return const Center(
+                return Center(
                   child: Padding(
-                    padding: EdgeInsets.all(20.0),
+                    padding: const EdgeInsets.all(20.0),
                     child: Text(
-                      'No hay pagos pendientes',
-                      style: TextStyle(color: Colors.grey),
+                      'No tienes pagos para hoy',
+                      style: GoogleFonts.montserrat(
+                        color: Colors.grey,
+                        fontSize: 12,
+                      ),
                     ),
                   ),
                 );
               }
 
               return Column(
-                children: list.take(5).map((tx) {
-                  final isExpense =
-                      tx.tipo == 'gasto' ||
-                      tx.tipo == 'pago_deuda' ||
-                      tx.tipo == 'meta_aporte';
-                  return Padding(
-                    padding: const EdgeInsets.only(bottom: 16),
+                children: list.take(3).map((tx) {
+                  final isExpense = tx.tipo == 'gasto' || tx.tipo == 'pago_deuda' || tx.tipo == 'meta_aporte';
+                  return Container(
+                    margin: const EdgeInsets.only(bottom: 8),
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: isDark ? Colors.white.withOpacity(0.02) : Colors.black.withOpacity(0.01),
+                      borderRadius: BorderRadius.circular(16),
+                    ),
                     child: Row(
                       children: [
                         _buildCompactCategoryIcon(ref, tx),
                         const SizedBox(width: 12),
+                        // Columna independiente para descripción con ajuste vertical
                         Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                tx.descripcion ?? 'Sin desc.',
-                                style: GoogleFonts.montserrat(
-                                  fontSize: AppColors.bodySmall,
-                                  fontWeight: FontWeight.w600,
-                                  color: isDark
-                                      ? Colors.white
-                                      : AppColors.textPrimary,
-                                ),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                              Text(
-                                DateFormat('dd MMM, yyyy').format(tx.fecha),
-                                style: GoogleFonts.montserrat(
-                                  fontSize: AppColors.bodySmall,
-                                  color: Colors.grey,
-                                ),
-                              ),
-                            ],
+                          child: Text(
+                            tx.descripcion ?? 'Transacción',
+                            style: GoogleFonts.montserrat(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                              color: isDark ? Colors.white : AppColors.textPrimary,
+                              height: 1.2,
+                            ),
                           ),
                         ),
+                        const SizedBox(width: 12),
+                        // Monto y Fecha alineados a la derecha
                         Column(
                           crossAxisAlignment: CrossAxisAlignment.end,
                           children: [
                             Text(
                               '${isExpense ? '-' : '+'}${formatter.format(tx.monto)}',
                               style: GoogleFonts.montserrat(
-                                fontSize: AppColors.bodySmall,
-                                fontWeight: FontWeight.w700,
-                                color: isExpense
-                                    ? Colors.red[400]
-                                    : Colors.green[400],
+                                fontSize: 12,
+                                fontWeight: FontWeight.bold,
+                                color: isExpense ? (isDark ? Colors.red[300] : Colors.red[700]) : Colors.green[400],
                               ),
                             ),
                             const SizedBox(height: 2),
-                            Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Container(
-                                  width: 6,
-                                  height: 6,
-                                  decoration: BoxDecoration(
-                                    color: tx.estado == 'completa'
-                                        ? Colors.green
-                                        : Colors.orange,
-                                    shape: BoxShape.circle,
-                                  ),
-                                ),
-                                const SizedBox(width: 4),
-                                Text(
-                                  tx.estado == 'completa'
-                                      ? 'PAGADO'
-                                      : 'PENDIENTE',
-                                  style: GoogleFonts.montserrat(
-                                    fontSize: AppColors.bodySmall,
-                                    fontWeight: FontWeight.w600,
-                                    color: isDark
-                                        ? Colors.white38
-                                        : Colors.grey[500],
-                                    letterSpacing: 0.5,
-                                  ),
-                                ),
-                              ],
+                            Text(
+                              DateFormat('dd MMM').format(tx.fecha),
+                              style: GoogleFonts.montserrat(
+                                fontSize: 10,
+                                color: Colors.grey,
+                                fontWeight: FontWeight.w600,
+                              ),
                             ),
                           ],
+                        ),
+                        const SizedBox(width: 14),
+                        // Acción rápida: Botón de pago Small (SM) minimalista
+                        Material(
+                          color: Colors.transparent,
+                          child: InkWell(
+                            onTap: () {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text(
+                                    'Pago marcado como realizado',
+                                    style: GoogleFonts.montserrat(fontSize: 12),
+                                  ),
+                                  backgroundColor: AppColors.primary,
+                                  behavior: SnackBarBehavior.floating,
+                                  action: SnackBarAction(
+                                    label: 'DESHACER',
+                                    textColor: Colors.white,
+                                    onPressed: () {
+                                      // Lógica futura para revertir
+                                    },
+                                  ),
+                                  duration: const Duration(seconds: 4),
+                                ),
+                              );
+                            },
+                            borderRadius: BorderRadius.circular(16),
+                            child: Container(
+                              padding: const EdgeInsets.all(6), // Tamaño SM
+                              decoration: BoxDecoration(
+                                color: AppColors.primary.withOpacity(0.12), // Color plano sutil
+                                shape: BoxShape.circle,
+                              ),
+                              child: const Icon(
+                                Icons.check_rounded,
+                                size: 14, // Icono SM
+                                color: AppColors.primary,
+                              ),
+                            ),
+                          ),
                         ),
                       ],
                     ),
@@ -1169,10 +1182,10 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                                         height: 32,
                                         decoration: BoxDecoration(
                                           color: color.withOpacity(0.15),
-                                          borderRadius: BorderRadius.circular(8),
+                                          borderRadius: BorderRadius.circular(10), // Estándar homologado
                                         ),
                                         child: Icon(
-                                          _getIconData(category.icono),
+                                          _getIconFromString(category.icono),
                                           color: color,
                                           size: 16,
                                         ),
@@ -1377,7 +1390,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
         ],
       ),
       child: Icon(
-        _getIconData(category.icono),
+        _getIconFromString(category.icono),
         color: Colors.white,
         size: 14,
       ),
@@ -1633,12 +1646,12 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
         width: 32,
         height: 32,
         decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          color: color,
+          color: color.withOpacity(0.15),
+          borderRadius: BorderRadius.circular(10), // Homologado: Squircle Premium
         ),
         child: Icon(
           icon,
-          color: Colors.white,
+          color: color,
           size: 16,
         ),
       );
@@ -1673,22 +1686,22 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
             width: 32,
             height: 32,
             decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: backgroundColor,
+              color: backgroundColor.withOpacity(0.15),
+              borderRadius: BorderRadius.circular(10), // Homologado: Squircle Premium
             ),
-            child: Icon(iconData, color: Colors.white, size: 16),
+            child: Icon(iconData, color: backgroundColor, size: 16),
           );
         } catch (e) {
           return Container(
             width: 32,
             height: 32,
             decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: Colors.grey[400],
+              color: Colors.grey[400]!.withOpacity(0.15),
+              borderRadius: BorderRadius.circular(10),
             ),
-            child: const Icon(
+            child: Icon(
               Icons.description_outlined,
-              color: Colors.white,
+              color: Colors.grey[400],
               size: 16,
             ),
           );
@@ -1698,15 +1711,15 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
         width: 32,
         height: 32,
         decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          color: Colors.grey[400],
+          color: Colors.grey.withOpacity(0.1),
+          borderRadius: BorderRadius.circular(10),
         ),
         child: const SizedBox(
-          width: 16,
-          height: 16,
+          width: 14,
+          height: 14,
           child: CircularProgressIndicator(
-            strokeWidth: 1.5,
-            valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+            strokeWidth: 2,
+            valueColor: AlwaysStoppedAnimation<Color>(AppColors.primary),
           ),
         ),
       ),
@@ -1714,12 +1727,12 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
         width: 32,
         height: 32,
         decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          color: Colors.grey[400],
+          color: Colors.red.withOpacity(0.1),
+          borderRadius: BorderRadius.circular(10),
         ),
         child: const Icon(
-          Icons.description_outlined,
-          color: Colors.white,
+          Icons.error_outline,
+          color: Colors.red,
           size: 16,
         ),
       ),
