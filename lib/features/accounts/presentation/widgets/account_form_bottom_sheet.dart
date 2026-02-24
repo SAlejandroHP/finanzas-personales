@@ -436,20 +436,48 @@ class _AccountFormBottomSheetState extends ConsumerState<AccountFormBottomSheet>
       loading: () => Container(height: 52, decoration: _getBoxDecoration(isDark), child: const Center(child: SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2)))),
       error: (_, __) => Container(height: 52, decoration: _getBoxDecoration(isDark), child: const Icon(Icons.error_outline)),
       data: (banks) => GestureDetector(
-        onTap: _isLoading ? null : () => _showBankPicker(context, banks, isDark),
+        onTap: () => _showBankPicker(context, banks, isDark),
         child: Container(
-          height: 52,
-          padding: const EdgeInsets.symmetric(horizontal: 12),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           decoration: _getBoxDecoration(isDark),
           child: Row(
             children: [
-              if (_selectedBank != null)
-                ClipRRect(borderRadius: BorderRadius.circular(4), child: BankLogo(bankName: _selectedBank!.displayName, primaryColor: _selectedBank!.primaryColor, size: 20))
-              else
-                Icon(Icons.account_balance_rounded, size: 20, color: isDark ? Colors.white24 : Colors.grey[400]),
+              _selectedBank != null
+                  ? BankLogo(bankName: _selectedBank!.displayName, primaryColor: _selectedBank!.primaryColor, size: 32)
+                  : Icon(Icons.account_balance_rounded, color: isDark ? Colors.white70 : AppColors.textPrimary.withOpacity(0.8), size: 22),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      'BANCO',
+                      style: GoogleFonts.montserrat(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                        letterSpacing: 0.5,
+                        color: Colors.grey,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      _selectedBank?.displayName ?? 'Seleccionar banco',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: GoogleFonts.montserrat(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w500,
+                        color: _selectedBank == null 
+                            ? (isDark ? Colors.white54 : Colors.black54)
+                            : (isDark ? Colors.white : AppColors.textPrimary),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
               const SizedBox(width: 8),
-              Expanded(child: Text(_selectedBank?.displayName ?? 'Banco', maxLines: 1, overflow: TextOverflow.ellipsis, style: GoogleFonts.montserrat(fontSize: 12, color: _selectedBank == null ? (isDark ? Colors.white24 : Colors.grey[500]) : (isDark ? Colors.white : AppColors.textPrimary)))),
-              Icon(Icons.keyboard_arrow_down_rounded, size: 16, color: isDark ? Colors.white24 : Colors.grey[400]),
+              Icon(Icons.chevron_right_rounded, color: Colors.grey[400]),
             ],
           ),
         ),
@@ -457,41 +485,51 @@ class _AccountFormBottomSheetState extends ConsumerState<AccountFormBottomSheet>
     );
   }
 
-  Widget _buildMontoField({required String label, required TextEditingController controller, required FocusNode focusNode, required IconData icon, required bool isDark}) {
+  Widget _buildMontoField({
+    required String label,
+    required TextEditingController controller,
+    required FocusNode focusNode,
+    required IconData icon,
+    required bool isDark,
+  }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        AppTextField(
-          label: label,
+        TextFormField(
           controller: controller,
           focusNode: focusNode,
           keyboardType: const TextInputType.numberWithOptions(decimal: true),
-          prefixIcon: icon,
-          enabled: !_isLoading,
-          onSubmitted: (_) {
-            if (_calculatorResult.value != null) controller.text = _calculatorResult.value!.toStringAsFixed(2);
-            focusNode.unfocus();
+          style: GoogleFonts.montserrat(fontSize: 16, fontWeight: FontWeight.w500, color: isDark ? Colors.white : AppColors.textPrimary),
+          decoration: _getInputDecoration(label, icon, isDark),
+          validator: (value) {
+            if (value == null || value.isEmpty) {
+              return 'Ingresa un monto';
+            }
+            final result = _evaluateExpressionSafely(value);
+            if (result == null) {
+              return 'Monto inválido';
+            }
+            return null;
           },
         ),
-        if (focusNode.hasFocus)
-          ValueListenableBuilder<double?>(
-            valueListenable: _calculatorResult,
-            builder: (context, result, _) {
-              if (result == null) return const SizedBox.shrink();
-              return Padding(
-                padding: const EdgeInsets.only(top: 8, left: 12),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                  decoration: BoxDecoration(color: AppColors.success.withOpacity(0.1), borderRadius: BorderRadius.circular(20)),
-                  child: Row(mainAxisSize: MainAxisSize.min, children: [
-                    const Icon(Icons.calculate_outlined, size: 14, color: AppColors.success),
-                    const SizedBox(width: 6),
-                    Text('= ${_moneyFormatter.format(result)}', style: GoogleFonts.montserrat(fontSize: 12, color: AppColors.success, fontWeight: FontWeight.w700)),
-                  ]),
+        ValueListenableBuilder<double?>(
+          valueListenable: _calculatorResult,
+          builder: (context, value, child) {
+            final currentFocus = focusNode.hasFocus;
+            if (value == null || !currentFocus) return const SizedBox.shrink();
+            return Padding(
+              padding: const EdgeInsets.only(top: 8.0, left: 16),
+              child: Text(
+                '= ${_moneyFormatter.format(value)}',
+                style: GoogleFonts.montserrat(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.primary,
                 ),
-              );
-            },
-          ),
+              ),
+            );
+          },
+        ),
       ],
     );
   }

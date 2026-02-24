@@ -400,6 +400,7 @@ class _DebtFormSheetState extends ConsumerState<DebtFormSheet> {
     required IconData icon,
     required bool isDark,
     int maxLines = 1,
+    bool isAmount = false, // Añadido para identificar el campo de monto
   }) {
     return Container(
       padding: const EdgeInsets.all(16),
@@ -413,24 +414,53 @@ class _DebtFormSheetState extends ConsumerState<DebtFormSheet> {
         children: [
           Row(
             children: [
-              Icon(icon, size: 16, color: Colors.grey),
-              const SizedBox(width: 8),
-              Text(label, style: GoogleFonts.montserrat(fontSize: 11, color: Colors.grey, fontWeight: FontWeight.w600)),
+              Icon(icon, color: isDark ? Colors.white38 : Colors.grey[400], size: 20),
+              const SizedBox(width: 12),
+              Text(
+                label.toUpperCase(),
+                style: GoogleFonts.montserrat(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w600,
+                  letterSpacing: 0.8,
+                  color: Colors.grey.withOpacity(0.8),
+                ),
+              ),
             ],
           ),
+          const SizedBox(height: 8),
           TextField(
             controller: controller,
             focusNode: focusNode,
             maxLines: maxLines,
-            style: GoogleFonts.montserrat(fontSize: 16, fontWeight: FontWeight.w700),
+            style: GoogleFonts.montserrat(fontSize: 16, fontWeight: FontWeight.w500, color: isDark ? Colors.white : AppColors.textPrimary),
+            keyboardType: isAmount ? const TextInputType.numberWithOptions(decimal: true) : TextInputType.text,
             decoration: InputDecoration(
               hintText: hint,
-              hintStyle: const TextStyle(color: Colors.grey, fontWeight: FontWeight.w400),
+              hintStyle: GoogleFonts.montserrat(color: isDark ? Colors.white24 : Colors.grey[400]),
               border: InputBorder.none,
               isDense: true,
-              contentPadding: const EdgeInsets.only(top: 8),
+              contentPadding: EdgeInsets.zero,
             ),
           ),
+          // Homologación: Muestra el resultado de la calculadora si existe
+          if (isAmount)
+            ValueListenableBuilder<double?>(
+              valueListenable: _calculatorResult,
+              builder: (context, value, child) {
+                if (value == null) return const SizedBox.shrink();
+                return Padding(
+                  padding: const EdgeInsets.only(top: 8.0),
+                  child: Text(
+                    '= ${_moneyFormatter.format(value)}',
+                    style: GoogleFonts.montserrat(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.primary,
+                    ),
+                  ),
+                );
+              },
+            ),
         ],
       ),
     );
@@ -485,12 +515,13 @@ class _DebtFormSheetState extends ConsumerState<DebtFormSheet> {
     required IconData icon,
     required VoidCallback onTap,
     required bool isDark,
+    Widget? trailing, // Añadido para consistencia
   }) {
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(16),
       child: Container(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         decoration: BoxDecoration(
           color: isDark ? Colors.white.withOpacity(0.05) : Colors.grey[50],
           borderRadius: BorderRadius.circular(16),
@@ -498,25 +529,39 @@ class _DebtFormSheetState extends ConsumerState<DebtFormSheet> {
         ),
         child: Row(
           children: [
-            Container(
-              padding: const EdgeInsets.all(10),
-              decoration: BoxDecoration(
-                color: AppColors.primary.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Icon(icon, size: 20, color: AppColors.primary),
-            ),
+            Icon(icon, color: isDark ? Colors.white70 : AppColors.textPrimary.withOpacity(0.8), size: 22),
             const SizedBox(width: 16),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Text(label, style: GoogleFonts.montserrat(fontSize: 11, color: Colors.grey, fontWeight: FontWeight.w600)),
-                  Text(value, style: GoogleFonts.montserrat(fontSize: 16, fontWeight: FontWeight.w700)),
+                  Text(
+                    label,
+                    style: GoogleFonts.montserrat(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                      letterSpacing: 0.5,
+                      color: Colors.grey,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    value,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: GoogleFonts.montserrat(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w500,
+                      color: isDark ? Colors.white : AppColors.textPrimary,
+                    ),
+                  ),
                 ],
               ),
             ),
-            const Icon(Icons.chevron_right_rounded, color: Colors.grey),
+            if (trailing != null) trailing,
+            const SizedBox(width: 8),
+            Icon(Icons.chevron_right_rounded, color: Colors.grey[400]),
           ],
         ),
       ),
