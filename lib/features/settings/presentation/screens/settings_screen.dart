@@ -138,6 +138,16 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             subtitle: 'Préstamos, deudas con familiares y servicios',
             onTap: () => context.push('/settings/debts'),
           ),
+          const SizedBox(height: 8),
+          _buildNavigationCard(
+            context,
+            isDark,
+            icon: Icons.track_changes_rounded,
+            iconColor: Colors.teal,
+            title: 'Mis Metas de Ahorro',
+            subtitle: 'Viajes, fondos de emergencia y compras',
+            onTap: () => context.push('/goals'),
+          ),
           const SizedBox(height: 16),
 
           // SECCIÓN: PREFERENCIAS

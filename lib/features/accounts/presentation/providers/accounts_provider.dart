@@ -5,6 +5,8 @@ import '../../models/account_model.dart';
 import 'package:finanzas/features/debts/models/debt_model.dart';
 import '../../../debts/presentation/providers/debts_provider.dart';
 import '../../../../core/services/finance_service.dart';
+import '../../../../features/goals/presentation/providers/goals_provider.dart';
+import '../../../../features/transactions/presentation/providers/transactions_provider.dart';
 /// Provider del repositorio de cuentas
 final accountsRepositoryProvider = Provider<AccountsRepository>((ref) {
   final repo = AccountsRepository();
@@ -63,6 +65,29 @@ final totalBalanceProvider = Provider<double>((ref) {
     },
     orElse: () => 0.0,
   );
+});
+
+/// Provider que calcula el Saldo "Libre" Real:
+/// Saldo Total - (Metas Ahorradas + Gastos Pendientes de este mes)
+/// Esto ayuda al usuario a no gastar dinero comprometido.
+final realAvailableBalanceProvider = Provider<double>((ref) {
+  final totalBalance = ref.watch(totalBalanceProvider);
+  final goalsSaved = ref.watch(totalGoalsSavedProvider);
+  final pendingTransactionsAsync = ref.watch(pendingTransactionsProvider);
+  
+  double pendingExpenses = 0.0;
+  pendingTransactionsAsync.maybeWhen(
+    data: (transactions) {
+      final now = DateTime.now();
+      // Solo tomamos gastos pendientes de este mes para el "Disponible HOY"
+      pendingExpenses = transactions
+          .where((t) => t.tipo == 'gasto' && t.fecha.month == now.month && t.fecha.year == now.year)
+          .fold<double>(0.0, (sum, t) => sum + t.monto);
+    },
+    orElse: () {},
+  );
+
+  return totalBalance - (goalsSaved + pendingExpenses);
 });
 
 /// Provider para el estado de carga de operaciones

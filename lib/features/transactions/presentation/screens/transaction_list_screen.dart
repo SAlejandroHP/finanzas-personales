@@ -779,20 +779,16 @@ class _HeaderAction extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.all(8),
+    return IconButton(
+      icon: Container(
+        padding: const EdgeInsets.all(6),
         decoration: BoxDecoration(
-          color: AppColors.primary.withOpacity(0.1),
-          borderRadius: BorderRadius.circular(10), // Squircle
+          color: AppColors.primary.withOpacity(0.15),
+          shape: BoxShape.circle,
         ),
-        child: Icon(
-          icon,
-          color: AppColors.primary,
-          size: 20,
-        ),
+        child: Icon(icon, size: 20, color: AppColors.primary),
       ),
+      onPressed: onTap,
     );
   }
 }

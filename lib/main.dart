@@ -18,6 +18,7 @@ import 'features/categories/presentation/screens/categories_list_screen.dart';
 import 'features/transactions/presentation/screens/transaction_list_screen.dart';
 import 'features/settings/presentation/screens/settings_screen.dart';
 import 'features/debts/presentation/screens/debts_list_screen.dart';
+import 'features/goals/presentation/screens/goals_list_screen.dart';
 
 
 /// ==============================================================
@@ -188,6 +189,15 @@ final routerProvider = Provider<GoRouter>((ref) {
             pageBuilder: (context, state) => _fadeTransitionPage(
               state: state,
               child: const TransactionListScreen(),
+            ),
+          ),
+          // Metas
+          GoRoute(
+            path: '/goals',
+            name: 'goals',
+            pageBuilder: (context, state) => _fadeTransitionPage(
+              state: state,
+              child: const GoalsListScreen(),
             ),
           ),
           // Categorías

@@ -14,6 +14,7 @@ import '../../../transactions/presentation/providers/transactions_provider.dart'
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../../../core/widgets/bank_logo.dart';
 import '../../../debts/presentation/providers/debts_provider.dart';
+import '../../../goals/presentation/providers/goals_provider.dart';
 import '../../../transactions/presentation/widgets/transaction_form_sheet.dart';
 
 /// Pantalla del dashboard que muestra un resumen financiero.
@@ -37,6 +38,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
         ? AppColors.backgroundDark
         : AppColors.backgroundColor;
     final totalBalance = ref.watch(totalBalanceProvider);
+    final realAvailable = ref.watch(realAvailableBalanceProvider);
     final totalDebts = ref.watch(totalDebtsProvider);
     final monthlyIncome = ref.watch(monthlyIncomeProvider);
     final monthlyExpenses = ref.watch(monthlyExpensesProvider);
@@ -46,6 +48,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
 
     // Formateador de moneda estándar
     final currencyFormatter = NumberFormat.currency(
+      locale: 'es_MX',
       symbol: '\$',
       decimalDigits: 2,
     );
@@ -96,6 +99,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                       _buildBalanceSummaryCard(
                         context,
                         totalBalance,
+                        realAvailable,
                         totalDebts,
                         monthlyIncome,
                         monthlyExpenses,
@@ -119,6 +123,14 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                         context,
                         ref,
                         pendingTransactions,
+                        currencyFormatter,
+                        isDark,
+                        cardColor,
+                      ),
+                      const SizedBox(height: 24),
+                      _buildGoalsCard(
+                        context,
+                        ref,
                         currencyFormatter,
                         isDark,
                         cardColor,
@@ -260,6 +272,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   Widget _buildBalanceSummaryCard(
     BuildContext context,
     double balance,
+    double realAvailable,
     double totalDebts,
     double incomes,
     double expenses,
@@ -365,44 +378,46 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                               size: 18
                             ),
                           ),
-                          if (totalDebts > 0) ...[
-                            const SizedBox(height: 6),
-                            Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                              decoration: BoxDecoration(
-                                color: Colors.black.withOpacity(0.15),
-                                borderRadius: BorderRadius.circular(8),
-                                border: Border.all(color: Colors.white.withOpacity(0.05)),
-                              ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Text(
-                                  'DEUDA ',
-                                  style: GoogleFonts.montserrat(
-                                    fontSize: 7,
-                                    fontWeight: FontWeight.w800,
-                                    color: Colors.white.withOpacity(0.6),
-                                    letterSpacing: 0.5,
-                                  ),
-                                ),
-                                Text(
-                                  flowFormatter.format(totalDebts),
-                                  style: GoogleFonts.montserrat(
-                                    fontSize: 10,
-                                    color: Colors.white.withOpacity(0.9),
-                                    fontWeight: FontWeight.w700,
-                                  ),
-                                ),
-                              ],
-                            ),
-                            ),
-                          ],
                         ],
                       ),
                     ],
                   ),
                   
+                  const SizedBox(height: 12),
+
+                  // Nuevo: Disponible Real
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: Colors.white.withOpacity(0.05)),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.check_circle_outline, color: Colors.white.withOpacity(0.7), size: 14),
+                        const SizedBox(width: 6),
+                        Text(
+                          'Puesto a salvo / Disponible: ',
+                          style: GoogleFonts.montserrat(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w500,
+                            color: Colors.white.withOpacity(0.8),
+                          ),
+                        ),
+                        Text(
+                          flowFormatter.format(realAvailable),
+                          style: GoogleFonts.montserrat(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w700,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+
                   const SizedBox(height: 14),
                   
                   // Sección inferior (Glass bar) más compacta
@@ -435,6 +450,21 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                             Icons.arrow_downward_rounded,
                           ),
                         ),
+                        if (totalDebts > 0) ... [
+                          Container(
+                            height: 20,
+                            width: 1,
+                            color: Colors.white.withOpacity(0.15),
+                          ),
+                          Expanded(
+                            child: _buildFlowColumn(
+                              'Deudas',
+                              totalDebts,
+                              Colors.white.withOpacity(0.9),
+                              Icons.money_off_rounded,
+                            ),
+                          ),
+                        ],
                       ],
                     ),
                   ),
@@ -1440,6 +1470,160 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
         color: Colors.white,
         size: 14,
       ),
+    );
+  }
+
+  Widget _buildGoalsCard(
+    BuildContext context,
+    WidgetRef ref,
+    NumberFormat currencyFormatter,
+    bool isDark,
+    Color cardColor,
+  ) {
+    final goalsAsync = ref.watch(goalsListProvider);
+    
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 4),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'METAS DE AHORRO',
+                style: GoogleFonts.montserrat(
+                  fontSize: AppColors.bodySmall,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.primary.withOpacity(0.8),
+                  letterSpacing: 1.1,
+                ),
+              ),
+              TextButton(
+                onPressed: () => context.push('/goals'),
+                style: TextButton.styleFrom(
+                  padding: EdgeInsets.zero,
+                  minimumSize: const Size(0, 0),
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                ),
+                child: Text(
+                  'Ver todas',
+                  style: GoogleFonts.montserrat(
+                    fontSize: AppColors.bodySmall,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.primary,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 8),
+        Container(
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            color: cardColor,
+            borderRadius: BorderRadius.circular(AppColors.radiusXLarge),
+            border: Border.all(
+              color: isDark ? Colors.white.withOpacity(0.05) : Colors.black.withOpacity(0.03),
+            ),
+            boxShadow: [
+              if (!isDark)
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.03),
+                  blurRadius: 15,
+                  offset: const Offset(0, 5),
+                ),
+            ],
+          ),
+          child: goalsAsync.when(
+            data: (goals) {
+              if (goals.isEmpty) {
+                return Center(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 20),
+                    child: Text(
+                      'No tienes metas activas',
+                      style: GoogleFonts.montserrat(
+                        fontSize: 13,
+                        color: AppColors.description,
+                      ),
+                    ),
+                  ),
+                );
+              }
+              // Mostrar solo los 2 con más progreso
+              final displayGoals = goals.take(2).toList();
+              return Column(
+                children: [
+                  ...displayGoals.map((goal) {
+                    final progress = goal.progress;
+                    final goalColor = Color(int.parse(goal.colorHex.replaceFirst('#', '0xFF')));
+                    return Padding(
+                      padding: const EdgeInsets.only(bottom: 12),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text(
+                                goal.title,
+                                style: GoogleFonts.montserrat(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                              Text(
+                                '${(progress * 100).toStringAsFixed(0)}%',
+                                style: GoogleFonts.montserrat(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w700,
+                                  color: goalColor,
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 6),
+                          ClipRRect(
+                            borderRadius: BorderRadius.circular(4),
+                            child: LinearProgressIndicator(
+                              value: progress,
+                              minHeight: 6,
+                              backgroundColor: isDark ? Colors.white10 : Colors.black12,
+                              valueColor: AlwaysStoppedAnimation<Color>(goalColor),
+                            ),
+                          ),
+                          if (goal.suggestedMonthlySavings != null && !goal.isCompleted)
+                            Padding(
+                              padding: const EdgeInsets.only(top: 6),
+                              child: Row(
+                                children: [
+                                  Icon(Icons.tips_and_updates_outlined, size: 12, color: AppColors.warning.withOpacity(0.8)),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    'Ahorro sugerido: ${currencyFormatter.format(goal.suggestedMonthlySavings!)} este mes',
+                                    style: GoogleFonts.montserrat(
+                                      fontSize: 10,
+                                      fontWeight: FontWeight.w500,
+                                      color: isDark ? Colors.white60 : AppColors.description,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                        ],
+                      ),
+                    );
+                  }).toList(),
+                ],
+              );
+            },
+            loading: () => const Center(child: CircularProgressIndicator()),
+            error: (e, _) => const Text('Error al cargar metas'),
+          ),
+        ),
+      ],
     );
   }
 

@@ -503,6 +503,27 @@ class TransactionsRepository {
         
         await _supabase.from('cuentas').update({'saldo_actual': nuevoSaldo, 'updated_at': DateTime.now().toIso8601String()}).eq('id', sourceAcc.id);
 
+        // --- D. Sync Meta (Aporte a Meta) ---
+        if (tx.tipo == 'meta_aporte' && tx.metaId != null) {
+          final goalData = await _supabase.from('metas').select().eq('id', tx.metaId!).maybeSingle();
+          if (goalData != null) {
+            final currentAmount = (goalData['current_amount'] as num).toDouble();
+            bool isAddition = true;
+            if (isUndo) isAddition = false;
+
+            double nuevoMontoActual = isAddition 
+                ? currentAmount + tx.monto 
+                : currentAmount - tx.monto;
+            
+            if (nuevoMontoActual < 0) nuevoMontoActual = 0;
+            
+            await _supabase.from('metas').update({
+              'current_amount': nuevoMontoActual,
+              'updated_at': DateTime.now().toIso8601String()
+            }).eq('id', tx.metaId!);
+          }
+        }
+
         // Si es TC, sincronizar deuda asociada
         if (sourceAcc.tipo == 'tarjeta_credito') {
           final debtData = await _supabase.from('deudas').select().eq('cuenta_asociada_id', sourceAcc.id).maybeSingle();
