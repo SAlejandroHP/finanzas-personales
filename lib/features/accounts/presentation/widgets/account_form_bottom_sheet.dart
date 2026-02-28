@@ -285,6 +285,7 @@ class _AccountFormBottomSheetState extends ConsumerState<AccountFormBottomSheet>
                             hintText: 'Ej: Nómina, Ahorros, etc.',
                             prefixIcon: Icons.badge_outlined,
                             enabled: !_isLoading,
+                            autofocus: true,
                             onSubmitted: (_) => FocusScope.of(context).nextFocus(),
                           ),
                           const SizedBox(height: 24),

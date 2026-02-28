@@ -5,8 +5,13 @@ import '../../../accounts/presentation/providers/accounts_provider.dart'; // Cor
 import '../../../../core/services/finance_service.dart';
 import './transaction_filters_provider.dart';
 
+import '../../../auth/presentation/providers/auth_provider.dart';
+
 /// Provider del repositorio de transacciones
 final transactionsRepositoryProvider = Provider<TransactionsRepository>((ref) {
+  // Asegura la recreación del repositorio al cambiar de usuario
+  ref.watch(currentUserProvider);
+  
   final repo = TransactionsRepository();
 
   // Limpia la suscripción cuando el provider se destruye

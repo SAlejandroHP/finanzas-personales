@@ -7,6 +7,7 @@ import '../../../../core/widgets/app_button.dart';
 import '../../../../core/widgets/loading_indicator.dart';
 import '../../../../core/widgets/app_toast.dart';
 import 'package:finanzas/features/debts/models/debt_model.dart';
+import 'package:finanzas/features/auth/presentation/providers/auth_provider.dart';
 import '../providers/debts_provider.dart';
 import '../widgets/debt_form_sheet.dart';
 
@@ -320,6 +321,13 @@ class DebtsListScreen extends ConsumerWidget {
     // Color según estado
     final estadoColor = _getEstadoColor(debt.estado);
 
+    final currentUser = ref.watch(currentUserProvider).value;
+    final currentUserId = currentUser?.id;
+
+    // Identificar si soy el "Invitado" (Lectura únicamente)
+    // En el modelo de Registro Único, soy invitado si la deuda está compartida Y NO soy el dueño (user_id)
+    final isGuest = debt.isShared && debt.estadoInvitacion == 'accepted' && debt.userId != currentUserId;
+
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       padding: const EdgeInsets.all(18),
@@ -376,6 +384,10 @@ class DebtsListScreen extends ConsumerWidget {
                         color: Colors.grey,
                       ),
                     ),
+                    if (debt.isShared) ...[
+                      const SizedBox(height: 4),
+                      _buildInvitationBadge(debt.estadoInvitacion, isDark),
+                    ],
                   ],
                 ),
               ),
@@ -405,38 +417,41 @@ class DebtsListScreen extends ConsumerWidget {
           ),
           const SizedBox(height: 18),
           // Barra de progreso estilizada
-          Stack(
-            children: [
-              Container(
-                height: 4,
-                width: double.infinity,
-                decoration: BoxDecoration(
-                  color: isDark ? Colors.white.withOpacity(0.05) : Colors.grey[100],
-                  borderRadius: BorderRadius.circular(2),
+          Container(
+            height: 6,
+            width: double.infinity,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(3),
+            ),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(3),
+              child: LinearProgressIndicator(
+                value: progress,
+                backgroundColor: isDark ? Colors.white.withOpacity(0.05) : Colors.grey[100],
+                valueColor: AlwaysStoppedAnimation<Color>(
+                  debt.estado == 'pagada' ? Colors.green : AppColors.primary,
                 ),
               ),
-              FractionallySizedBox(
-                widthFactor: progress,
-                child: Container(
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color: debt.estado == 'pagada' ? Colors.green : AppColors.primary,
-                    borderRadius: BorderRadius.circular(2),
-                  ),
-                ),
-              ),
-            ],
+            ),
           ),
           const SizedBox(height: 8),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
+                'Saldo: ${formatter.format(debt.montoRestante)} • Total: ${formatter.format(debt.montoTotal)}',
+                style: GoogleFonts.montserrat(
+                  fontSize: 10,
+                  fontWeight: FontWeight.w700,
+                  color: isDark ? Colors.white60 : Colors.black54,
+                ),
+              ),
+              Text(
                 'Pagado: ${(progress * 100).toInt()}%',
                 style: GoogleFonts.montserrat(
                   fontSize: 10,
                   fontWeight: FontWeight.w700,
-                  color: Colors.grey,
+                  color: isDark ? Colors.white60 : Colors.black54,
                 ),
               ),
               if (debt.fechaVencimiento != null)
@@ -452,43 +467,89 @@ class DebtsListScreen extends ConsumerWidget {
                 ),
             ],
           ),
-          const SizedBox(height: 14),
-          Divider(
-            height: 1,
-            color: isDark ? Colors.white.withOpacity(0.05) : Colors.black.withOpacity(0.02),
-          ),
-          const SizedBox(height: 8),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              SizedBox(
-                height: 32,
-                child: TextButton.icon(
-                  onPressed: () => _confirmDelete(context, ref, debt),
-                  icon: Icon(Icons.delete_outline_rounded, size: 14, color: Colors.red[300]),
-                  label: Text(
-                    'Eliminar',
-                    style: GoogleFonts.montserrat(
-                      fontSize: 11, 
-                      fontWeight: FontWeight.w700,
-                      color: Colors.red[300],
-                    ),
-                  ),
-                  style: TextButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(horizontal: 8),
+          if (!isGuest) ...[
+            const SizedBox(height: 14),
+            Divider(
+              height: 1,
+              color: isDark ? Colors.white.withOpacity(0.05) : Colors.black.withOpacity(0.02),
+            ),
+            const SizedBox(height: 8),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                SizedBox(
+                  height: 32,
+                  child: Row(
+                    children: [
+                      TextButton.icon(
+                        onPressed: () => _confirmDelete(context, ref, debt),
+                        icon: Icon(Icons.delete_outline_rounded, size: 14, color: Colors.red[300]),
+                        label: Text(
+                          'Eliminar',
+                          style: GoogleFonts.montserrat(
+                            fontSize: 11, 
+                            fontWeight: FontWeight.w700,
+                            color: Colors.red[300],
+                          ),
+                        ),
+                        style: TextButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(horizontal: 8),
+                        ),
+                      ),
+                      if (debt.isShared)
+                        TextButton.icon(
+                          onPressed: () => _confirmUnlink(context, ref, debt),
+                          icon: const Icon(Icons.link_off_rounded, size: 14, color: Colors.orange),
+                          label: Text(
+                            'Desvincular',
+                            style: GoogleFonts.montserrat(
+                              fontSize: 11, 
+                              fontWeight: FontWeight.w700,
+                              color: Colors.orange,
+                            ),
+                          ),
+                          style: TextButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(horizontal: 8),
+                          ),
+                        ),
+                    ],
                   ),
                 ),
+                AppButton(
+                  label: 'Editar Deuda',
+                  icon: Icons.edit_rounded,
+                  onPressed: () => _showDebtForm(context, debt: debt),
+                  variant: 'primary',
+                  size: 'small',
+                  height: 32,
+                ),
+              ],
+            ),
+          ],
+          if (isGuest) ...[
+            const SizedBox(height: 12),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              decoration: BoxDecoration(
+                color: Colors.blue.withOpacity(0.05),
+                borderRadius: BorderRadius.circular(12),
               ),
-              AppButton(
-                label: 'Editar Deuda',
-                icon: Icons.edit_rounded,
-                onPressed: () => _showDebtForm(context, debt: debt),
-                variant: 'primary',
-                size: 'small',
-                height: 32,
+              child: Row(
+                children: [
+                   const Icon(Icons.info_outline_rounded, size: 14, color: Colors.blue),
+                   const SizedBox(width: 8),
+                   Text(
+                     'Modo lectura: Solo el dueño puede editar',
+                     style: GoogleFonts.montserrat(
+                       fontSize: 10,
+                       fontWeight: FontWeight.w600,
+                       color: Colors.blue[700],
+                     ),
+                   ),
+                ],
               ),
-            ],
-          ),
+            ),
+          ],
         ],
       ),
     );
@@ -542,6 +603,86 @@ class DebtsListScreen extends ConsumerWidget {
               }
             },
             child: const Text('Eliminar', style: TextStyle(color: Colors.red)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _confirmUnlink(BuildContext context, WidgetRef ref, DebtModel debt) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: const Text('¿Desvincular deuda?'),
+        content: const Text(
+          'Esto dejará de sincronizar los pagos con el otro usuario. '
+          'Ambos conservarán su propio registro de forma independiente.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancelar'),
+          ),
+          TextButton(
+            onPressed: () async {
+              Navigator.pop(context);
+              await ref.read(debtsNotifierProvider.notifier).unlinkDebt(debt.id);
+              if (context.mounted) {
+                showAppToast(context, message: 'Deuda desvinculada', type: ToastType.success);
+              }
+            },
+            child: const Text('Desvincular', style: TextStyle(color: Colors.orange)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildInvitationBadge(String estado, bool isDark) {
+    Color color;
+    String text;
+    IconData icon;
+
+    switch (estado) {
+      case 'accepted':
+        color = Colors.blue;
+        text = 'Vinculada';
+        icon = Icons.link_rounded;
+        break;
+      case 'rejected':
+        color = Colors.red;
+        text = 'Rechazada';
+        icon = Icons.link_off_rounded;
+        break;
+      case 'pending':
+        color = Colors.orange;
+        text = 'Pendiente';
+        icon = Icons.hourglass_empty_rounded;
+        break;
+      default:
+        return const SizedBox.shrink();
+    }
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(6),
+        border: Border.all(color: color.withOpacity(0.2)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 10, color: color),
+          const SizedBox(width: 4),
+          Text(
+            text,
+            style: GoogleFonts.montserrat(
+              fontSize: 9,
+              fontWeight: FontWeight.w800,
+              color: color,
+            ),
           ),
         ],
       ),

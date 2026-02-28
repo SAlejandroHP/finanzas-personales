@@ -231,14 +231,11 @@ class AuthRepositoryImpl implements AuthRepository {
         localizedReason: 'Autentica para acceder a tu cuenta',
       );
     } on PlatformException catch (e) {
-      print('Error de autenticación biométrica: ${e.message}');
       return false;
     } on MissingPluginException {
       // Plugin no configurado, retorna false de forma segura
-      print('Plugin de autenticación biométrica no disponible');
       return false;
     } catch (e) {
-      print('Error inesperado en autenticación biométrica: $e');
       return false;
     }
   }

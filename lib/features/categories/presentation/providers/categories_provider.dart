@@ -2,8 +2,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../data/categories_repository.dart';
 import '../../models/category_model.dart';
 
+import '../../../auth/presentation/providers/auth_provider.dart';
+
 /// Provider del repositorio de categorías
 final categoriesRepositoryProvider = Provider<CategoriesRepository>((ref) {
+  // Asegura la recreación del repositorio al cambiar de usuario
+  ref.watch(currentUserProvider);
+  
   final repo = CategoriesRepository();
   
   // Limpia la suscripción cuando el provider se destruye

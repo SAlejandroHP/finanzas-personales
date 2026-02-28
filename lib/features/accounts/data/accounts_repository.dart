@@ -52,7 +52,7 @@ class AccountsRepository {
     try {
       final userId = _supabase.auth.currentUser?.id;
       if (userId == null) {
-        throw Exception('Usuario no autenticado');
+        return [];
       }
 
       final response = await _supabase

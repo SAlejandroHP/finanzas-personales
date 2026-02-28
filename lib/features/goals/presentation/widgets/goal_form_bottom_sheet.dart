@@ -184,6 +184,7 @@ class _GoalFormBottomSheetState extends ConsumerState<GoalFormBottomSheet> {
                         filled: true,
                         fillColor: isDark ? Colors.white.withOpacity(0.05) : Colors.grey[100],
                       ),
+                      autofocus: true,
                       validator: (v) => v == null || v.isEmpty ? 'Requerido' : null,
                     ),
                   ),
@@ -191,10 +192,9 @@ class _GoalFormBottomSheetState extends ConsumerState<GoalFormBottomSheet> {
               ),
               const SizedBox(height: 16),
               
-              // Monto Objetivo
               TextFormField(
                 controller: _amountController,
-                keyboardType: TextInputType.number,
+                keyboardType: const TextInputType.numberWithOptions(decimal: true),
                 style: GoogleFonts.montserrat(fontWeight: FontWeight.w700, fontSize: 18),
                 decoration: InputDecoration(
                   labelText: 'Monto Objetivo',

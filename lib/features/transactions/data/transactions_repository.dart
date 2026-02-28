@@ -54,19 +54,36 @@ class TransactionsRepository {
         .subscribe();
   }
 
-  /// Obtiene todas las transacciones del usuario actual
   Future<List<TransactionModel>> getUserTransactions() async {
     try {
-      final userId = _supabase.auth.currentUser?.id;
-      if (userId == null) {
-        throw Exception('Usuario no autenticado');
+      final user = _supabase.auth.currentUser;
+      final userId = user?.id;
+      final email = user?.email?.trim().toLowerCase();
+
+      if (userId == null) return [];
+
+      // 1. Obtener IDs de deudas donde soy invitado y he aceptado
+      final sharedDebtsResponse = await _supabase
+          .from('deudas')
+          .select('id')
+          .ilike('shared_with_email', email ?? '')
+          .eq('estado_invitacion', 'accepted');
+      
+      final sharedDebtIds = (sharedDebtsResponse as List).map((d) => d['id'] as String).toList();
+
+      var query = _supabase
+          .from('transacciones')
+          .select();
+      
+      // Filtramos mis transacciones OR transacciones vinculadas a deudas compartidas aceptadas
+      if (sharedDebtIds.isNotEmpty) {
+        final idsStr = sharedDebtIds.map((id) => '"$id"').join(',');
+        query = query.or('user_id.eq.$userId,deuda_id.in.($idsStr)');
+      } else {
+        query = query.eq('user_id', userId);
       }
 
-      final response = await _supabase
-          .from('transacciones')
-          .select()
-          .eq('user_id', userId)
-          .order('fecha', ascending: false);
+      final response = await query.order('fecha', ascending: false);
 
       final transactions = (response as List)
           .map((json) => TransactionModel.fromJson(json))
@@ -81,23 +98,8 @@ class TransactionsRepository {
   /// Obtiene las últimas N transacciones del usuario
   Future<List<TransactionModel>> getRecentTransactions({int limit = 5}) async {
     try {
-      final userId = _supabase.auth.currentUser?.id;
-      if (userId == null) {
-        throw Exception('Usuario no autenticado');
-      }
-
-      final response = await _supabase
-          .from('transacciones')
-          .select()
-          .eq('user_id', userId)
-          .order('fecha', ascending: false)
-          .limit(limit);
-
-      final transactions = (response as List)
-          .map((json) => TransactionModel.fromJson(json))
-          .toList();
-
-      return transactions;
+      final transactions = await getUserTransactions();
+      return transactions.take(limit).toList();
     } catch (e) {
       throw Exception('Error al obtener transacciones recientes: $e');
     }
@@ -111,7 +113,7 @@ class TransactionsRepository {
     try {
       final userId = _supabase.auth.currentUser?.id;
       if (userId == null) {
-        throw Exception('Usuario no autenticado');
+        return [];
       }
 
       final startDate = DateTime(year, month, 1);
@@ -240,7 +242,7 @@ class TransactionsRepository {
     try {
       final userId = _supabase.auth.currentUser?.id;
       if (userId == null) {
-        throw Exception('Usuario no autenticado');
+        return [];
       }
 
       final response = await _supabase
@@ -501,7 +503,7 @@ class TransactionsRepository {
             ? sourceAcc.saldoActual - tx.monto 
             : sourceAcc.saldoActual + tx.monto;
         
-        await _supabase.from('cuentas').update({'saldo_actual': nuevoSaldo, 'updated_at': DateTime.now().toIso8601String()}).eq('id', sourceAcc.id);
+        await _supabase.from('cuentas').update({'saldo_actual': nuevoSaldo}).eq('id', sourceAcc.id);
 
         // --- D. Sync Meta (Aporte a Meta) ---
         if (tx.tipo == 'meta_aporte' && tx.metaId != null) {
@@ -519,7 +521,6 @@ class TransactionsRepository {
             
             await _supabase.from('metas').update({
               'current_amount': nuevoMontoActual,
-              'updated_at': DateTime.now().toIso8601String()
             }).eq('id', tx.metaId!);
           }
         }
@@ -535,11 +536,18 @@ class TransactionsRepository {
             double nuevoMontoRestante = isPaymentToDebt ? debt.montoRestante - tx.monto : debt.montoRestante + tx.monto;
             if (nuevoMontoRestante < 0) nuevoMontoRestante = 0;
             
-            await _supabase.from('deudas').update({
-              'monto_restante': nuevoMontoRestante,
-              'estado': nuevoMontoRestante <= 0 ? 'pagada' : 'activa',
-              'updated_at': DateTime.now().toIso8601String()
-            }).eq('id', debt.id);
+            // Sincronización de Deuda Compartida: Si tiene shared_id, actualizamos ambos registros
+            if (debt.isShared && debt.sharedId != null) {
+              await _supabase.from('deudas').update({
+                'monto_restante': nuevoMontoRestante,
+                'estado': nuevoMontoRestante <= 0 ? 'pagada' : 'activa',
+              }).eq('shared_id', debt.sharedId!);
+            } else {
+              await _supabase.from('deudas').update({
+                'monto_restante': nuevoMontoRestante,
+                'estado': nuevoMontoRestante <= 0 ? 'pagada' : 'activa',
+              }).eq('id', debt.id);
+            }
           }
         }
       }
@@ -556,7 +564,7 @@ class TransactionsRepository {
               ? destAcc.saldoActual + tx.monto 
               : destAcc.saldoActual - tx.monto;
           
-          await _supabase.from('cuentas').update({'saldo_actual': nuevoSaldo, 'updated_at': DateTime.now().toIso8601String()}).eq('id', destAcc.id);
+          await _supabase.from('cuentas').update({'saldo_actual': nuevoSaldo}).eq('id', destAcc.id);
 
           if (destAcc.tipo == 'tarjeta_credito') {
             final debtData = await _supabase.from('deudas').select().eq('cuenta_asociada_id', destAcc.id).maybeSingle();
@@ -568,10 +576,18 @@ class TransactionsRepository {
               double nuevoMontoRestante = isPaymentToDebt ? debt.montoRestante - tx.monto : debt.montoRestante + tx.monto;
               if (nuevoMontoRestante < 0) nuevoMontoRestante = 0;
               
-              await _supabase.from('deudas').update({
-                'monto_restante': nuevoMontoRestante,
-                'estado': nuevoMontoRestante <= 0 ? 'pagada' : 'activa'
-              }).eq('id', debt.id);
+                // Sincronización de Deuda Compartida
+                if (debt.isShared && debt.sharedId != null) {
+                  await _supabase.from('deudas').update({
+                    'monto_restante': nuevoMontoRestante,
+                    'estado': nuevoMontoRestante <= 0 ? 'pagada' : 'activa'
+                  }).eq('shared_id', debt.sharedId!);
+                } else {
+                  await _supabase.from('deudas').update({
+                    'monto_restante': nuevoMontoRestante,
+                    'estado': nuevoMontoRestante <= 0 ? 'pagada' : 'activa'
+                  }).eq('id', debt.id);
+                }
             }
           }
         }
@@ -579,9 +595,7 @@ class TransactionsRepository {
 
       // --- C. Sync Deuda Directa (Pago de Deuda externa) ---
       if (tx.tipo == 'pago_deuda' && tx.deudaId != null) {
-        // Solo si no se sincronizó ya por ser cuenta destino
-        if (tx.cuentaDestinoId == null) {
-          final debtData = await _supabase.from('deudas').select().eq('id', tx.deudaId!).maybeSingle();
+        final debtData = await _supabase.from('deudas').select().eq('id', tx.deudaId!).maybeSingle();
           if (debtData != null) {
             final debt = DebtModel.fromJson(debtData);
             bool isPayment = true;
@@ -590,12 +604,17 @@ class TransactionsRepository {
             double nuevoMontoRestante = isPayment ? debt.montoRestante - tx.monto : debt.montoRestante + tx.monto;
             if (nuevoMontoRestante < 0) nuevoMontoRestante = 0;
             
+            // Sincronización de Deuda Compartida: Actualizar balance del registro único
+            // Al ser registro único, esta actualización ya es visible para ambos usuarios.
             await _supabase.from('deudas').update({
               'monto_restante': nuevoMontoRestante,
               'estado': nuevoMontoRestante <= 0 ? 'pagada' : 'activa'
             }).eq('id', debt.id);
 
-            // Si la deuda está asociada a otra cuenta de TC (ej. pago desde débito a TC)
+            // Nota: Ya no creamos transacciones espejo [SYNC] porque el invitado
+            // podrá ver esta misma transacción original gracias al filtro en getUserTransactions.
+
+            // Si la deuda está asociada a otra cuenta de TC ...
             if (debt.cuentaAsociadaId != null) {
               final associatedAccData = await _supabase.from('cuentas').select().eq('id', debt.cuentaAsociadaId!).maybeSingle();
               if (associatedAccData != null) {
@@ -608,7 +627,6 @@ class TransactionsRepository {
             }
           }
         }
-      }
     } catch (e) {
       throw Exception('Error en sincronización en cascada: $e');
     }

@@ -36,6 +36,21 @@ class DebtModel {
   /// Fecha de última actualización
   final DateTime? updatedAt;
 
+  /// Indica si la deuda es compartida con otro usuario
+  final bool isShared;
+
+  /// ID único que vincula la deuda entre los dos usuarios
+  final String? sharedId;
+
+  /// Email del usuario con quien se comparte
+  final String? sharedWithEmail;
+
+  /// Rol del propietario actual: 'lender' (prestamista) o 'borrower' (deudor)
+  final String ownerRole;
+
+  /// Estado de la invitación compartida: 'none', 'pending', 'accepted', 'rejected'
+  final String estadoInvitacion;
+
   const DebtModel({
     required this.id,
     required this.userId,
@@ -49,6 +64,11 @@ class DebtModel {
     required this.estado,
     required this.createdAt,
     this.updatedAt,
+    this.isShared = false,
+    this.sharedId,
+    this.sharedWithEmail,
+    this.ownerRole = 'borrower',
+    this.estadoInvitacion = 'none',
   });
 
   /// Valores permitidos para el campo 'tipo'
@@ -78,6 +98,11 @@ class DebtModel {
       updatedAt: json['updated_at'] != null
           ? DateTime.parse(json['updated_at'] as String)
           : null,
+      isShared: json['is_shared'] ?? false,
+      sharedId: json['shared_id'] as String?,
+      sharedWithEmail: json['shared_with_email'] as String?,
+      ownerRole: json['owner_role'] ?? 'borrower',
+      estadoInvitacion: json['estado_invitacion'] ?? 'none',
     );
   }
 
@@ -95,6 +120,11 @@ class DebtModel {
       'descripcion': descripcion,
       'estado': estado,
       'created_at': createdAt.toIso8601String(),
+      'is_shared': isShared,
+      'shared_id': sharedId,
+      'shared_with_email': sharedWithEmail,
+      'owner_role': ownerRole,
+      'estado_invitacion': estadoInvitacion,
       // 'updated_at': updatedAt?.toIso8601String(),
     };
   }
@@ -113,6 +143,11 @@ class DebtModel {
     String? estado,
     DateTime? createdAt,
     DateTime? updatedAt,
+    bool? isShared,
+    String? sharedId,
+    String? sharedWithEmail,
+    String? ownerRole,
+    String? estadoInvitacion,
   }) {
     return DebtModel(
       id: id ?? this.id,
@@ -127,6 +162,11 @@ class DebtModel {
       estado: estado ?? this.estado,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
+      isShared: isShared ?? this.isShared,
+      sharedId: sharedId ?? this.sharedId,
+      sharedWithEmail: sharedWithEmail ?? this.sharedWithEmail,
+      ownerRole: ownerRole ?? this.ownerRole,
+      estadoInvitacion: estadoInvitacion ?? this.estadoInvitacion,
     );
   }
 

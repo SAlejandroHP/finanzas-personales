@@ -392,6 +392,7 @@ class _AccountFormScreenState extends ConsumerState<AccountFormScreen> {
               controller: _nombreController,
               prefixIcon: Icons.title_outlined,
               enabled: !_isLoading,
+              autofocus: true,
             ),
             const SizedBox(height: 16),
 

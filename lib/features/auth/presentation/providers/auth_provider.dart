@@ -3,6 +3,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../../core/network/supabase_client.dart';
 import '../../data/repositories/auth_repository.dart';
 import '../../data/repositories/auth_repository_impl.dart';
+import '../../../../core/services/finance_service.dart';
 
 /// Provider del repositorio de autenticación
 final authRepositoryProvider = Provider<AuthRepository>((ref) {
@@ -39,7 +40,6 @@ final canUseBiometricsProvider = FutureProvider<bool>((ref) async {
     return canAuth && hasCredentials;
   } catch (e) {
     // Si hay cualquier error, retorna false de forma segura
-    print('Error verificando biométricos: $e');
     return false;
   }
 });
@@ -196,6 +196,13 @@ class AuthNotifier extends StateNotifier<AsyncValue<User?>> {
     try {
       await _authRepository.signOut();
       state = const AsyncValue.data(null);
+      
+      // Invalida todos los providers financieros para limpiar el caché del usuario anterior
+      try {
+        _ref.read(financeServiceProvider).refreshAll();
+      } catch (e) {
+        // Ignorar si el provider ya fue disposed
+      }
     } catch (e) {
       _setError(e.toString());
       state = AsyncValue.error(e, StackTrace.current);

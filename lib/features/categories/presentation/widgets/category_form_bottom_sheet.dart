@@ -510,6 +510,7 @@ class _CategoryFormBottomSheetState
                                   controller: _nombreController,
                                   hintText: 'Ej: Supermercado',
                                   enabled: !_isLoading,
+                                  autofocus: true,
                                 ),
                               ),
                             ],

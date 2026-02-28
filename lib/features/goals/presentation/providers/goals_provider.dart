@@ -3,8 +3,13 @@ import '../../data/repositories/goals_repository.dart';
 import '../../models/goal_model.dart';
 import '../../../../core/services/finance_service.dart';
 
+import '../../../auth/presentation/providers/auth_provider.dart';
+
 /// Provider del repositorio de metas
 final goalsRepositoryProvider = Provider<GoalsRepository>((ref) {
+  // Asegura la recreación del repositorio al cambiar de usuario
+  ref.watch(currentUserProvider);
+  
   final repo = GoalsRepository();
   ref.onDispose(() => repo.dispose());
   return repo;

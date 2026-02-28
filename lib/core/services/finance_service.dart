@@ -24,7 +24,7 @@ class FinanceService {
   }) async {
     // 1. Crear el modelo de transacción con el tipo 'pago_deuda'
     final transaction = TransactionModel(
-      id: const Uuid().v4(),
+      id: Uuid().v4(),
       userId: '', // Se asigna en el repositorio
       tipo: 'pago_deuda',
       monto: amount,
@@ -72,6 +72,14 @@ class FinanceService {
     await updateAfterTransaction(transaction);
   }
 
+  /// Sincroniza una deuda compartida (Lógica stub para Supabase)
+  Future<void> syncSharedDebt(String sharedId, double newAmount) async {
+    // En una implementación real, esto buscaría el registro vinculado
+    // por sharedId que NO pertenezca al usuario actual y lo actualizaría.
+    // Por ahora refrescamos para asegurar consistencia local.
+    refreshAll();
+  }
+
   /// Coordina el refresco de los providers después de una operación financiera
   Future<void> updateAfterTransaction(TransactionModel tx, {bool isUndo = false}) async {
     refreshAll();
@@ -79,26 +87,14 @@ class FinanceService {
 
   /// Invalida todos los providers relacionados usando el Ref interno seguro
   void refreshAll() {
-    // Usamos el _ref interno que es global y no se destruye con los widgets
-    _ref.invalidate(accountsListProvider);
-    _ref.invalidate(totalBalanceProvider);
-    _ref.invalidate(monthlyIncomeProvider);
-    _ref.invalidate(monthlyExpensesProvider);
-    _ref.invalidate(recentTransactionsProvider);
-    _ref.invalidate(transactionsListProvider);
-    _ref.invalidate(accountsWithBalanceProvider);
+    // NOTA: Con la nueva arquitectura de Registro Único y Supabase Realtime,
+    // la mayoría de los providers se actualizan automáticamente cuando cambian los datos.
+    // Solo invalidamos lo que no sea reactivo por sí solo.
     
-    // Invalida providers de deudas para mantener consistencia
-    try {
-      _ref.invalidate(debtsListProvider);
-      _ref.invalidate(totalDebtsProvider);
-    } catch (_) {}
-
-    // Invalida providers de metas
-    try {
-      _ref.invalidate(goalsListProvider);
-      _ref.invalidate(totalGoalsSavedProvider);
-    } catch (_) {}
+    // Si fuera necesario forzar un refresco global de la cache:
+    // _ref.invalidate(accountsListProvider);
+    // _ref.invalidate(transactionsListProvider);
+    // _ref.invalidate(debtsListProvider);
   }
 }
 

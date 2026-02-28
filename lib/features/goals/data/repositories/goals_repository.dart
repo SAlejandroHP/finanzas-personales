@@ -67,7 +67,6 @@ class GoalsRepository {
       final List<dynamic> data = response;
       return data.map((json) => GoalModel.fromJson(json)).toList();
     } catch (e) {
-      print('Error al obtener metas: $e');
       return [];
     }
   }
@@ -83,7 +82,6 @@ class GoalsRepository {
         'user_id': userId,
       });
     } catch (e) {
-      print('Error al crear meta: $e');
       rethrow;
     }
   }
@@ -96,7 +94,6 @@ class GoalsRepository {
         'updated_at': DateTime.now().toIso8601String(),
       }).eq('id', goal.id);
     } catch (e) {
-      print('Error al actualizar meta: $e');
       rethrow;
     }
   }
@@ -106,7 +103,6 @@ class GoalsRepository {
     try {
       await _supabase.from('metas').delete().eq('id', id);
     } catch (e) {
-      print('Error al eliminar meta: $e');
       rethrow;
     }
   }

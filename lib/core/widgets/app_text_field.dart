@@ -53,6 +53,9 @@ class AppTextField extends StatefulWidget {
   /// Error manual externo
   final String? errorText;
 
+  /// Si debe tomar el foco automáticamente
+  final bool autofocus;
+
   const AppTextField({
     super.key,
     required this.label,
@@ -71,6 +74,7 @@ class AppTextField extends StatefulWidget {
     this.onSaved,
     this.hintText,
     this.errorText,
+    this.autofocus = false,
   });
 
   @override
@@ -100,6 +104,7 @@ class _AppTextFieldState extends State<AppTextField> {
         TextFormField(
           controller: widget.controller,
           focusNode: _effectiveFocusNode,
+          autofocus: widget.autofocus,
           obscureText: widget.isPassword && _obscureText,
           keyboardType: widget.keyboardType,
           enabled: widget.enabled,

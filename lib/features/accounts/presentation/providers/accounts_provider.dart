@@ -7,8 +7,14 @@ import '../../../debts/presentation/providers/debts_provider.dart';
 import '../../../../core/services/finance_service.dart';
 import '../../../../features/goals/presentation/providers/goals_provider.dart';
 import '../../../../features/transactions/presentation/providers/transactions_provider.dart';
+import '../../../../features/auth/presentation/providers/auth_provider.dart';
+
 /// Provider del repositorio de cuentas
 final accountsRepositoryProvider = Provider<AccountsRepository>((ref) {
+  // Al observar currentUserProvider, el repositorio se recreará automáticamente
+  // cuando el usuario inicie o cierre sesión, limpiando cualquier estado previo.
+  ref.watch(currentUserProvider);
+  
   final repo = AccountsRepository();
   
   // Limpia la suscripción cuando el provider se destruye

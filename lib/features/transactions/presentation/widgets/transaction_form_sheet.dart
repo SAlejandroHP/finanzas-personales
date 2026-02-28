@@ -541,6 +541,7 @@ class _TransactionFormSheetState extends ConsumerState<TransactionFormSheet> {
                                     fontWeight: FontWeight.w800,
                                     color: _getTipoColor(_tipo),
                                   ),
+                                  autofocus: true,
                                   decoration: InputDecoration(
                                     hintText: '\$ 0.00',
                                     hintStyle: TextStyle(

@@ -14,6 +14,7 @@ import '../../../transactions/presentation/providers/transactions_provider.dart'
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../../../core/widgets/bank_logo.dart';
 import '../../../debts/presentation/providers/debts_provider.dart';
+import '../../../debts/models/debt_model.dart';
 import '../../../goals/presentation/providers/goals_provider.dart';
 import '../../../transactions/presentation/widgets/transaction_form_sheet.dart';
 
@@ -96,6 +97,8 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
+                      _buildPendingInvitations(context, ref, isDark),
+                      const SizedBox(height: 12),
                       _buildBalanceSummaryCard(
                         context,
                         totalBalance,
@@ -266,6 +269,170 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildPendingInvitations(BuildContext context, WidgetRef ref, bool isDark) {
+    final invitationsAsync = ref.watch(pendingInvitationsProvider);
+
+    return invitationsAsync.maybeWhen(
+      data: (invitations) {
+        if (invitations.isEmpty) return const SizedBox.shrink();
+
+        return Column(
+          children: invitations.map((inv) {
+            return Container(
+              margin: const EdgeInsets.only(bottom: 16),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(24),
+                boxShadow: [
+                  BoxShadow(
+                    color: AppColors.secondary.withOpacity(0.2),
+                    blurRadius: 20,
+                    offset: const Offset(0, 8),
+                  ),
+                ],
+              ),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(24),
+                child: Stack(
+                  children: [
+                    // Fondo decorativo
+                    Positioned(
+                      right: -20,
+                      top: -20,
+                      child: Icon(
+                        Icons.people_alt_rounded,
+                        size: 100,
+                        color: Colors.white.withOpacity(0.1),
+                      ),
+                    ),
+                    Container(
+                      padding: const EdgeInsets.all(20),
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: [
+                            AppColors.secondary,
+                            AppColors.secondary.withBlue(200).withRed(150),
+                          ],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                        ),
+                      ),
+                      child: Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: Colors.white.withOpacity(0.2),
+                              borderRadius: BorderRadius.circular(16),
+                            ),
+                            child: const Icon(Icons.handshake_rounded, color: Colors.white, size: 24),
+                          ),
+                          const SizedBox(width: 16),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Invitación recibida',
+                                  style: GoogleFonts.montserrat(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.w800,
+                                    fontSize: 14,
+                                    letterSpacing: 0.3,
+                                  ),
+                                ),
+                                const SizedBox(height: 2),
+                                Text(
+                                  '${inv.nombre} • \$${NumberFormat.decimalPattern().format(inv.montoTotal)}',
+                                  style: GoogleFonts.montserrat(
+                                    color: Colors.white.withOpacity(0.9),
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Column(
+                            children: [
+                              ElevatedButton(
+                                onPressed: () async {
+                                  try {
+                                    await ref.read(debtsNotifierProvider.notifier).acceptInvitation(inv);
+                                    if (context.mounted) {
+                                      ScaffoldMessenger.of(context).showSnackBar(
+                                        const SnackBar(content: Text('Deuda aceptada y vinculada correctamente')),
+                                      );
+                                    }
+                                  } catch (e) {
+                                    if (context.mounted) {
+                                      ScaffoldMessenger.of(context).showSnackBar(
+                                        SnackBar(content: Text('Error: $e')),
+                                      );
+                                    }
+                                  }
+                                },
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: Colors.white,
+                                  foregroundColor: AppColors.secondary,
+                                  elevation: 0,
+                                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                ),
+                                child: Text(
+                                  'Aceptar',
+                                  style: GoogleFonts.montserrat(
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w800,
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+                              GestureDetector(
+                                onTap: () async {
+                                  try {
+                                    await ref.read(debtsNotifierProvider.notifier).rejectInvitation(inv);
+                                    if (context.mounted) {
+                                      ScaffoldMessenger.of(context).showSnackBar(
+                                        const SnackBar(content: Text('Invitación rechazada')),
+                                      );
+                                    }
+                                  } catch (e) {
+                                    if (context.mounted) {
+                                      ScaffoldMessenger.of(context).showSnackBar(
+                                        SnackBar(content: Text('Error: $e')),
+                                      );
+                                    }
+                                  }
+                                },
+                                child: Text(
+                                  'Rechazar',
+                                  style: GoogleFonts.montserrat(
+                                    color: Colors.white.withOpacity(0.8),
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w700,
+                                    decoration: TextDecoration.underline,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          }).toList(),
+        );
+      },
+      orElse: () => const SizedBox.shrink(),
     );
   }
 
