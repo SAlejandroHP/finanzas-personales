@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/date_symbol_data_local.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'core/constants/app_colors.dart';
 import 'core/network/supabase_client.dart';
 import 'core/theme/app_theme.dart';
@@ -95,10 +96,16 @@ void main() async {
   
   // Inicializa Supabase
   await initSupabase();
+
+  // Inicializa SharedPreferences
+  final prefs = await SharedPreferences.getInstance();
   
   runApp(
-    const ProviderScope(
-      child: MyApp(),
+    ProviderScope(
+      overrides: [
+        sharedPreferencesProvider.overrideWithValue(prefs),
+      ],
+      child: const MyApp(),
     ),
   );
 }

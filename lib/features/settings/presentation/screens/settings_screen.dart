@@ -198,7 +198,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               ],
               selected: {themeMode},
               onSelectionChanged: (newSelection) {
-                ref.read(themeModeProvider.notifier).state = newSelection.first;
+                ref.read(themeModeProvider.notifier).setThemeMode(newSelection.first);
               },
             ),
           ),
