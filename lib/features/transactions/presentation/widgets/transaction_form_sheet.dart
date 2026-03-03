@@ -320,30 +320,43 @@ class _TransactionFormSheetState extends ConsumerState<TransactionFormSheet> {
       }
     }
 
-    // 2. Validar que no se pague más de lo que se debe (Requisito: Seguridad)
+    // 2. Frontera de Seguridad: Evitar sobrepagos en Deudas y Tarjetas de Crédito
+    DebtModel? debtTarget;
+    final debtsList = ref.read(debtsListProvider).value ?? [];
+    
     if (_tipo == 'pago_deuda' && _deudaId != null) {
-      final debtsList = ref.read(debtsListProvider).value ?? [];
-      final selectedDebt = debtsList.firstWhereOrNull((d) => d.id == _deudaId);
-      if (selectedDebt != null) {
-        double restanteReal = selectedDebt.montoRestante;
-        // Si estamos editando, sumamos lo que ya habíamos pagado
-        if (widget.transaction != null &&
-            widget.transaction!.deudaId == _deudaId &&
-            widget.transaction!.tipo == 'pago_deuda') {
-          restanteReal += widget.transaction!.monto;
-        }
+      debtTarget = debtsList.firstWhereOrNull((d) => d.id == _deudaId);
+    } else if (_tipo == 'transferencia' && _cuentaDestinoId != null) {
+      final destType = accountsList.firstWhereOrNull((a) => a.id == _cuentaDestinoId)?.tipo;
+      if (destType == 'tarjeta_credito') {
+        debtTarget = debtsList.firstWhereOrNull((d) => d.cuentaAsociadaId == _cuentaDestinoId);
+      }
+    } else if (_tipo == 'ingreso' && _cuentaOrigenId != null) {
+      final origType = accountsList.firstWhereOrNull((a) => a.id == _cuentaOrigenId)?.tipo;
+      if (origType == 'tarjeta_credito') {
+        debtTarget = debtsList.firstWhereOrNull((d) => d.cuentaAsociadaId == _cuentaOrigenId);
+      }
+    }
 
-        if (_montoNumerico > restanteReal) {
-          // Ajustamos automáticamente al saldo restante
-          _montoNumerico = restanteReal;
-          _montoController.text = _montoNumerico.toStringAsFixed(2);
-          showAppToast(
-            context,
-            message: 'Monto ajustado al saldo pendiente de la deuda',
-            type: ToastType.warning,
-          );
-          // No retornamos, dejamos que continúe con el monto ajustado
+    if (debtTarget != null) {
+      double restanteReal = debtTarget.montoRestante;
+      if (widget.transaction != null && widget.transaction!.estado == 'completa') {
+        final tx = widget.transaction!;
+        if ((tx.tipo == 'pago_deuda' && tx.deudaId == debtTarget.id) ||
+            (tx.tipo == 'transferencia' && tx.cuentaDestinoId == debtTarget.cuentaAsociadaId) ||
+            (tx.tipo == 'ingreso' && tx.cuentaOrigenId == debtTarget.cuentaAsociadaId)) {
+          restanteReal += tx.monto;
         }
+      }
+
+      if (_montoNumerico > restanteReal) {
+        _montoNumerico = restanteReal;
+        _montoController.text = _montoNumerico.toStringAsFixed(2);
+        showAppToast(
+          context,
+          message: 'Monto truncado al saldo pendiente del crédito/deuda',
+          type: ToastType.warning,
+        );
       }
     }
 
@@ -412,6 +425,9 @@ class _TransactionFormSheetState extends ConsumerState<TransactionFormSheet> {
       }
 
       if (mounted) {
+        // Corrección v7: Forzar refresco global para asegurar reactividad en Dashboard (Cero cmd+r)
+        ref.read(financeServiceProvider).refreshAll();
+        
         showAppToast(
           context,
           message: 'Transacción guardada exitosamente',
@@ -653,8 +669,7 @@ class _TransactionFormSheetState extends ConsumerState<TransactionFormSheet> {
                         ),
 
                         // Campos Condicionales
-                        if (_tipo == 'transferencia' ||
-                            _tipo == 'pago_deuda') ...[
+                        if (_tipo == 'transferencia') ...[
                           const SizedBox(height: AppColors.md),
                           _buildSelectorTile(
                             label: 'Hacia cuenta destino',
@@ -1388,6 +1403,18 @@ class _TransactionFormSheetState extends ConsumerState<TransactionFormSheet> {
     }
   }
 
+  String _formatTipoName(String tipo) {
+    switch (tipo) {
+      case 'efectivo': return 'Efectivo';
+      case 'chequera': return 'Cuenta de cheques';
+      case 'ahorro': return 'Cuenta de ahorro';
+      case 'tarjeta_credito': return 'Tarjeta de crédito';
+      case 'inversion': return 'Inversión';
+      case 'otro': return 'Otro';
+      default: return tipo;
+    }
+  }
+
   Widget _buildTypeButton(
     String type,
     String label,
@@ -1663,6 +1690,22 @@ class _TransactionFormSheetState extends ConsumerState<TransactionFormSheet> {
                                       style: GoogleFonts.montserrat(
                                         fontWeight: FontWeight.w700,
                                         fontSize: AppColors.bodyMedium,
+                                      ),
+                                    ),
+                                    Container(
+                                      margin: const EdgeInsets.only(top: 2, bottom: 2),
+                                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                      decoration: BoxDecoration(
+                                        color: isDark ? Colors.white10 : Colors.black.withValues(alpha: 0.05),
+                                        borderRadius: BorderRadius.circular(4),
+                                      ),
+                                      child: Text(
+                                        _formatTipoName(acc.tipo),
+                                        style: GoogleFonts.montserrat(
+                                          fontSize: 10,
+                                          fontWeight: FontWeight.w600,
+                                          color: isDark ? Colors.white70 : AppColors.textPrimary,
+                                        ),
                                       ),
                                     ),
                                     Text(

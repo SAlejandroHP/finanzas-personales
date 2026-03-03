@@ -64,10 +64,8 @@ class DebtsNotifier extends StateNotifier<AsyncValue<void>> {
     try {
       await _repository.acceptInvitation(invitation);
       state = const AsyncValue.data(null);
-      // Actualizar todo el estado financiero
+      // Actualizar todo el estado financiero e invitaciones
       _ref.read(financeServiceProvider).refreshAll();
-      // Invalidar invitaciones pendientes
-      _ref.invalidate(pendingInvitationsProvider);
     } catch (e, st) {
       state = AsyncValue.error(e, st);
     }

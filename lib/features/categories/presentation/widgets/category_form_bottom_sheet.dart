@@ -9,6 +9,7 @@ import '../../../../core/utils/toast_utils.dart';
 import '../../../../core/network/supabase_client.dart';
 import '../../models/category_model.dart';
 import '../providers/categories_provider.dart';
+import '../../../../core/services/finance_service.dart';
 
 /// Lista extendida de nombres de ícono Material disponibles (30+)
 const List<String> commonIconNames = [
@@ -255,10 +256,8 @@ class _CategoryFormBottomSheetState
         // Limpia la categoría seleccionada
         ref.read(selectedCategoryProvider.notifier).state = null;
         
-        // Fuerza la actualización de las listas de categorías
-        ref.invalidate(categoriesListProvider); // Invalida lista general de categorías
-        ref.invalidate(incomeCategoriesProvider);
-        ref.invalidate(expenseCategoriesProvider);
+        // Centralización v5: FinanceService orquestador único
+        ref.read(financeServiceProvider).refreshAll();
         
         Navigator.of(context).pop();
       }

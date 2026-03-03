@@ -791,36 +791,84 @@ class _DebtFormSheetState extends ConsumerState<DebtFormSheet> {
     final operators = ['+', '-', '*', '/'];
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
+        border: Border(
+          top: BorderSide(color: isDark ? Colors.white10 : Colors.black12),
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.05),
+            blurRadius: 10,
+            offset: const Offset(0, -5),
+          ),
+        ],
+      ),
       child: SafeArea(
         top: false,
         child: Row(
           children: [
-            ...operators.map((op) => Expanded(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 4),
-                child: IconButton(
-                  onPressed: () => _insertOperator(op),
-                  icon: Text(op, style: GoogleFonts.montserrat(fontSize: 24, color: AppColors.primary, fontWeight: FontWeight.w600)),
-                  style: IconButton.styleFrom(backgroundColor: isDark ? Colors.white10 : Colors.grey[100]),
+            ...operators.map(
+              (op) => Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 4),
+                  child: InkWell(
+                    onTap: () => _insertOperator(op),
+                    splashColor: Colors.transparent,
+                    highlightColor: Colors.transparent,
+                    hoverColor: Colors.transparent,
+                    borderRadius: BorderRadius.circular(8),
+                    child: Container(
+                      height: 44,
+                      alignment: Alignment.center,
+                      decoration: BoxDecoration(
+                        color: isDark
+                            ? Colors.white.withValues(alpha: 0.05)
+                            : Colors.grey[100],
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Text(
+                        op,
+                        style: GoogleFonts.montserrat(
+                          fontSize: AppColors.titleMedium,
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.primary,
+                        ),
+                      ),
+                    ),
+                  ),
                 ),
               ),
-            )),
+            ),
             const SizedBox(width: 8),
-            IconButton(
-              onPressed: () {
+            // Botón Hecho / Cerrar
+            InkWell(
+              onTap: () {
                 _montoFocusNode.unfocus();
+                // Si hay un resultado, lo aplicamos "limpio"
                 if (_calculatorResult.value != null) {
                   setState(() {
-                    _montoController.text = _moneyFormatter.format(_calculatorResult.value);
-                    _onMontoChanged();
+                    _montoController.text = _moneyFormatter.format(
+                      _calculatorResult.value,
+                    );
+                    _onMontoChanged(); // Re-evaluar
                   });
                 }
               },
-              icon: const Icon(Icons.check_rounded, color: Colors.white, size: 28),
-              style: IconButton.styleFrom(
-                backgroundColor: AppColors.primary,
-                padding: const EdgeInsets.all(12),
+              child: Container(
+                height: 44,
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                decoration: BoxDecoration(
+                  color: AppColors.primary,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: const Center(
+                  child: Icon(
+                    Icons.check_rounded,
+                    color: Colors.white,
+                    size: 24,
+                  ),
+                ),
               ),
             ),
           ],
@@ -832,9 +880,21 @@ class _DebtFormSheetState extends ConsumerState<DebtFormSheet> {
   void _insertOperator(String op) {
     final text = _montoController.text;
     final selection = _montoController.selection;
-    final newText = text.replaceRange(selection.start.clamp(0, text.length), selection.end.clamp(0, text.length), op);
+
+    // Si no hay selección válida, poner al final
+    if (!selection.isValid) {
+      _montoController.text = text + op;
+      _montoController.selection = TextSelection.collapsed(
+        offset: _montoController.text.length,
+      );
+      return;
+    }
+
+    final newText = text.replaceRange(selection.start, selection.end, op);
     _montoController.text = newText;
-    _montoController.selection = TextSelection.collapsed(offset: (selection.start + op.length).clamp(0, _montoController.text.length));
+    _montoController.selection = TextSelection.collapsed(
+      offset: selection.start + op.length,
+    );
   }
 
   String _getAccountName(String? id, AsyncValue<List<AccountModel>> accounts) {

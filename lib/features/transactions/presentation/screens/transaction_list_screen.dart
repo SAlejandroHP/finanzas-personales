@@ -10,6 +10,7 @@ import '../widgets/transaction_form_sheet.dart';
 import '../widgets/transaction_tile.dart';
 import '../widgets/transaction_filters_bar.dart';
 import '../providers/transaction_filters_provider.dart';
+import '../../../../core/services/finance_service.dart';
 
 // Función de utilidad para formatear la fecha del encabezado
 String _formatDateHeader(DateTime date) {
@@ -289,7 +290,7 @@ class _TransactionListScreenState extends ConsumerState<TransactionListScreen> {
                     ),
                     const SizedBox(height: AppColors.lg),
                     ElevatedButton(
-                      onPressed: () => ref.invalidate(transactionsListProvider),
+                      onPressed: () => ref.read(financeServiceProvider).refreshAll(),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: AppColors.primary,
                         foregroundColor: Colors.white,

@@ -149,16 +149,26 @@ class AccountCard extends StatelessWidget {
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
-                  Text(
-                    theme.label.toUpperCase(),
-                    style: GoogleFonts.montserrat(
-                      fontSize: 9,
-                      fontWeight: FontWeight.w800,
-                      color: Colors.grey,
-                      letterSpacing: 1.0,
+                  Container(
+                    margin: const EdgeInsets.only(top: 2, bottom: 8),
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                    decoration: BoxDecoration(
+                      color: isDark 
+                          ? Colors.white.withOpacity(0.08) 
+                          : Colors.black.withOpacity(0.04),
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                    child: Text(
+                      theme.label.toUpperCase(),
+                      style: GoogleFonts.montserrat(
+                        fontSize: 8.5,
+                        fontWeight: FontWeight.w700,
+                        color: isDark ? Colors.white60 : Colors.black54,
+                        letterSpacing: 0.5,
+                      ),
                     ),
                   ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 4),
                   // Saldo principal
                   FittedBox(
                     fit: BoxFit.scaleDown,

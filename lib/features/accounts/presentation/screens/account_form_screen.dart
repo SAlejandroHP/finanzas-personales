@@ -122,7 +122,7 @@ class _AccountFormScreenState extends ConsumerState<AccountFormScreen> {
     }
 
     final result = _evaluateExpressionSafely(cleanText);
-    if (result != null && result > 0) {
+    if (result != null && result >= 0) {
       _calculatorResult.value = result;
     } else {
       _calculatorResult.value = null;
@@ -136,7 +136,7 @@ class _AccountFormScreenState extends ConsumerState<AccountFormScreen> {
       final expression = parser.parse(expr);
       final contextModel = ContextModel();
       final result = expression.evaluate(EvaluationType.REAL, contextModel);
-      if (result is num && result.isFinite && result > 0) return result.toDouble();
+      if (result is num && result.isFinite && result >= 0) return result.toDouble();
       return null;
     } catch (e) {
       return null;
@@ -200,56 +200,86 @@ class _AccountFormScreenState extends ConsumerState<AccountFormScreen> {
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       decoration: BoxDecoration(
         color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
-        border: Border(top: BorderSide(color: isDark ? Colors.white10 : Colors.black12)),
+        border: Border(
+          top: BorderSide(color: isDark ? Colors.white10 : Colors.black12),
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.05),
+            blurRadius: 10,
+            offset: const Offset(0, -5),
+          ),
+        ],
       ),
       child: SafeArea(
         top: false,
         child: Row(
           children: [
-            ...operators.map((op) => Expanded(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 4),
-                child: InkWell(
-                  onTap: () => _insertOperator(op),
-                  borderRadius: BorderRadius.circular(8),
-                  child: Container(
-                    height: 44,
-                    alignment: Alignment.center,
-                    decoration: BoxDecoration(
-                      color: isDark ? Colors.white.withOpacity(0.05) : Colors.grey[100],
-                      borderRadius: BorderRadius.circular(8),
+            ...operators.map(
+              (op) => Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 4),
+                  child: InkWell(
+                    onTap: () => _insertOperator(op),
+                    splashColor: Colors.transparent,
+                    highlightColor: Colors.transparent,
+                    hoverColor: Colors.transparent,
+                    borderRadius: BorderRadius.circular(8),
+                    child: Container(
+                      height: 44,
+                      alignment: Alignment.center,
+                      decoration: BoxDecoration(
+                        color: isDark
+                            ? Colors.white.withValues(alpha: 0.05)
+                            : Colors.grey[100],
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Text(
+                        op,
+                        style: GoogleFonts.montserrat(
+                          fontSize: AppColors.titleMedium,
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.primary,
+                        ),
+                      ),
                     ),
-                    child: Text(op, style: GoogleFonts.montserrat(fontSize: AppColors.titleMedium, fontWeight: FontWeight.w600, color: AppColors.primary)),
                   ),
                 ),
               ),
-            )),
+            ),
             const SizedBox(width: 8),
-            ValueListenableBuilder<double?>(
-              valueListenable: _calculatorResult,
-              builder: (context, result, _) {
-                return InkWell(
-                  onTap: () {
-                    final focusNode = _saldoInicialFocusNode.hasFocus ? _saldoInicialFocusNode : 
-                                     _limiteCreditoFocusNode.hasFocus ? _limiteCreditoFocusNode : 
-                                     _deudaActualFocusNode;
-                    final controller = _saldoInicialFocusNode.hasFocus ? _saldoInicialController : 
-                                      _limiteCreditoFocusNode.hasFocus ? _limiteCreditoController : 
-                                      _deudaActualController;
-                    
-                    if (result != null) {
-                      controller.text = result.toStringAsFixed(2);
-                    }
-                    focusNode.unfocus();
-                  },
-                  child: Container(
-                    height: 44,
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    decoration: BoxDecoration(color: AppColors.primary, borderRadius: BorderRadius.circular(8)),
-                    child: const Center(child: Icon(Icons.check_rounded, color: Colors.white, size: 24)),
+            InkWell(
+              onTap: () {
+                final focusNode = _saldoInicialFocusNode.hasFocus ? _saldoInicialFocusNode : 
+                                 _limiteCreditoFocusNode.hasFocus ? _limiteCreditoFocusNode : 
+                                 _deudaActualFocusNode;
+                final controller = _saldoInicialFocusNode.hasFocus ? _saldoInicialController : 
+                                  _limiteCreditoFocusNode.hasFocus ? _limiteCreditoController : 
+                                  _deudaActualController;
+
+                focusNode.unfocus();
+                if (_calculatorResult.value != null) {
+                  setState(() {
+                    controller.text = _calculatorResult.value!.toStringAsFixed(2);
+                    _onMontoChanged(controller);
+                  });
+                }
+              },
+              child: Container(
+                height: 44,
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                decoration: BoxDecoration(
+                  color: AppColors.primary,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: const Center(
+                  child: Icon(
+                    Icons.check_rounded,
+                    color: Colors.white,
+                    size: 24,
                   ),
-                );
-              }
+                ),
+              ),
             ),
           ],
         ),
@@ -280,7 +310,7 @@ class _AccountFormScreenState extends ConsumerState<AccountFormScreen> {
         return;
       }
       final limiteCredito = double.tryParse(_limiteCreditoController.text);
-      if (limiteCredito == null || limiteCredito <= 0) {
+      if (limiteCredito == null || limiteCredito < 0) {
         _showError('El límite de crédito debe ser un número válido');
         return;
       }

@@ -224,9 +224,9 @@ final monthlyExpensesProvider = Provider<double>((ref) {
         t.estado == 'completa' &&
         t.fecha.year == now.year &&
         t.fecha.month == now.month &&
-        // Gastos reales: Salidas de dinero del sistema (compras o pagos a deudas externas)
-        // No incluimos transferencias internas entre cuentas propias para evitar doble contabilidad.
-        (t.tipo == 'gasto' || (t.tipo == 'pago_deuda' && t.cuentaDestinoId == null))
+        // Gastos reales: Salidas de dinero del sistema (compras o pagos a deudas externas/metas)
+        // No incluimos transferencias internas entre cuentas propias ni pagos de TC (cuentaDestinoId != null)
+        (t.tipo == 'gasto' || (t.tipo == 'pago_deuda' && t.cuentaDestinoId == null) || t.tipo == 'meta_aporte')
       ).fold(0.0, (sum, t) => sum + t.monto);
     },
     orElse: () => 0.0,
@@ -244,7 +244,8 @@ final monthlyIncomeProvider = Provider<double>((ref) {
         t.estado == 'completa' &&
         t.fecha.year == now.year &&
         t.fecha.month == now.month &&
-        t.tipo == 'ingreso'
+        t.tipo == 'ingreso' && 
+        t.tipo != 'ajuste_reconciliacion'
       ).fold(0.0, (sum, t) => sum + t.monto);
     },
     orElse: () => 0.0,
@@ -451,9 +452,9 @@ final filteredTransactionsSummaryProvider = Provider<TransactionSummary>((ref) {
             }
           } else {
             // VISTA GLOBAL: Para el resumen de la lista de movimientos
-            if (tx.tipo == 'ingreso') {
+            if (tx.tipo == 'ingreso' && tx.tipo != 'ajuste_reconciliacion') {
               income += tx.monto;
-            } else if (tx.tipo == 'gasto' || (tx.tipo == 'pago_deuda' && tx.cuentaDestinoId == null) || (tx.tipo == 'meta_aporte')) {
+            } else if (tx.tipo == 'gasto' || (tx.tipo == 'pago_deuda' && tx.cuentaDestinoId == null) || tx.tipo == 'meta_aporte') {
               expenses += tx.monto;
             }
           }

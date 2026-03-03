@@ -86,7 +86,7 @@
   - Gastos: restan cuando 'completa' (independientemente de la fecha).
   - Transferencias: neutras (resta origen + suma destino, no afectan reportes de ingreso/gasto).
   - Pago de deuda / Aporte a meta: cuentan como gasto (restan de origen cuando 'completa').
-- **Pendientes**: no afectan saldos, ingresos ni gastos (aunque la fecha sea pasada o futura) hasta que se marquen 'completa'.
+- **Pendientes**: no afectan el "Cleared Balance" ni los reportes históricos de ingresos y gastos. Sin embargo, SÍ restan del "Working Balance" visible en el Dashboard para reflejar la liquidez real y prevenir sobregiros.
 - **Tarjetas de crédito**:
   - Creación: crea cuenta + deuda asociada (monto_total = límite, monto_restante = deuda inicial)
   - Gasto: resta disponible y aumenta deuda restante

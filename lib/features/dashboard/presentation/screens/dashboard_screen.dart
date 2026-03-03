@@ -17,6 +17,7 @@ import '../../../debts/presentation/providers/debts_provider.dart';
 import '../../../debts/models/debt_model.dart';
 import '../../../goals/presentation/providers/goals_provider.dart';
 import '../../../transactions/presentation/widgets/transaction_form_sheet.dart';
+import '../../../../core/services/finance_service.dart';
 
 /// Pantalla del dashboard que muestra un resumen financiero.
 /// Permite navegar a cuentas, categorías y transacciones.
@@ -76,11 +77,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
               child: RefreshIndicator(
                 onRefresh: () async {
                   // Refresca los proveedores principales del dashboard
-                  ref.invalidate(totalBalanceProvider);
-                  ref.invalidate(accountsWithBalanceProvider);
-                  ref.invalidate(transactionsListProvider);
-                  ref.invalidate(pendingTransactionsProvider);
-                  ref.invalidate(debtsListProvider);
+                  ref.read(financeServiceProvider).refreshAll();
                   // Pequeño delay artificial para que el usuario sienta la actualización
                   await Future.delayed(const Duration(milliseconds: 1200));
                 },
@@ -769,7 +766,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
             }
 
             return SizedBox(
-              height: 140, // Altura fija para el scroll horizontal
+              height: 170, // Altura incrementada para garantizar espacio suficiente para badges y progreso
               child: ListView.separated(
                 scrollDirection: Axis.horizontal,
                 padding: const EdgeInsets.symmetric(horizontal: 4),
@@ -894,15 +891,34 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                                     ),
                                   ),
                                   const SizedBox(height: 2),
-                                  Text(
-                                    currencyFormatter.format(acc.saldoActual),
-                                    style: GoogleFonts.montserrat(
-                                      fontSize: 17,
-                                      fontWeight: FontWeight.w800,
-                                      color: isDark ? Colors.white : AppColors.textPrimary,
-                                      letterSpacing: -0.5,
+                                    Text(
+                                      currencyFormatter.format(acc.saldoActual),
+                                      style: GoogleFonts.montserrat(
+                                        fontSize: 17,
+                                        fontWeight: FontWeight.w800,
+                                        color: isDark ? Colors.white : AppColors.textPrimary,
+                                        letterSpacing: -0.5,
+                                      ),
                                     ),
-                                  ),
+                                    const SizedBox(height: 4),
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                                      decoration: BoxDecoration(
+                                        color: isDark 
+                                            ? Colors.white.withOpacity(0.08) 
+                                            : Colors.black.withOpacity(0.04),
+                                        borderRadius: BorderRadius.circular(6),
+                                      ),
+                                      child: Text(
+                                        _formatTipoName(acc.tipo).toUpperCase(),
+                                        style: GoogleFonts.montserrat(
+                                          fontSize: 8.5,
+                                          fontWeight: FontWeight.w700,
+                                          color: isDark ? Colors.white60 : Colors.black54,
+                                          letterSpacing: 0.5,
+                                        ),
+                                      ),
+                                    ),
                                   if (isTC) ...[
                                     const SizedBox(height: 8),
                                     Row(
@@ -1121,25 +1137,36 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                         Material(
                           color: Colors.transparent,
                           child: InkWell(
-                            onTap: () {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  content: Text(
-                                    'Pago marcado como realizado',
-                                    style: GoogleFonts.montserrat(fontSize: 12),
-                                  ),
-                                  backgroundColor: AppColors.primary,
-                                  behavior: SnackBarBehavior.floating,
-                                  action: SnackBarAction(
-                                    label: 'DESHACER',
-                                    textColor: Colors.white,
-                                    onPressed: () {
-                                      // Lógica futura para revertir
-                                    },
-                                  ),
-                                  duration: const Duration(seconds: 4),
-                                ),
-                              );
+                            onTap: () async {
+                              try {
+                                // 1. Marcamos como completada
+                                await ref.read(transactionsNotifierProvider.notifier).markAsComplete(tx);
+                                
+                                // 2. Forzar refresco global para reactividad inmediata (Cero cmd+r)
+                                if (context.mounted) {
+                                  ref.read(financeServiceProvider).refreshAll();
+                                }
+                                
+                                if (context.mounted) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Text(
+                                        'Pago marcado como realizado',
+                                        style: GoogleFonts.montserrat(fontSize: 12),
+                                      ),
+                                      backgroundColor: AppColors.success,
+                                      behavior: SnackBarBehavior.floating,
+                                      duration: const Duration(seconds: 2),
+                                    ),
+                                  );
+                                }
+                              } catch (e) {
+                                if (context.mounted) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
+                                  );
+                                }
+                              }
                             },
                             borderRadius: BorderRadius.circular(12),
                             child: Container(
@@ -2003,6 +2030,18 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
         ),
       ],
     );
+  }
+
+  String _formatTipoName(String tipo) {
+    switch (tipo) {
+      case 'efectivo': return 'Efectivo';
+      case 'chequera': return 'Chequera';
+      case 'ahorro': return 'Ahorro';
+      case 'tarjeta_credito': return 'T. Crédito';
+      case 'inversion': return 'Inversión';
+      case 'otro': return 'Otro';
+      default: return tipo;
+    }
   }
 
   String _formatDebtType(String tipo) {

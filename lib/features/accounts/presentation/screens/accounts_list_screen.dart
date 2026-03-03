@@ -13,6 +13,7 @@ import '../providers/currencies_provider.dart';
 import '../../../debts/presentation/providers/debts_provider.dart';
 import '../../models/bank_model.dart';
 import '../providers/banks_provider.dart';
+import '../../../../core/services/finance_service.dart';
 
 /// Pantalla que muestra la lista de cuentas del usuario en formato de rejilla creativa.
 class AccountsListScreen extends ConsumerWidget {
@@ -327,7 +328,7 @@ class AccountsListScreen extends ConsumerWidget {
           ),
           const SizedBox(height: 16),
           ElevatedButton(
-            onPressed: () => ref.invalidate(accountsWithBalanceProvider),
+            onPressed: () => ref.read(financeServiceProvider).refreshAll(),
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.primary,
               foregroundColor: Colors.white,

@@ -171,6 +171,9 @@ class TransactionsRepository {
         nextOccurrence: nextOccurrence,
       );
 
+      // Validador Anti-Hackeo (Repository-level)
+      await _validateDebtPaymentOverflow(txData);
+
       // Inserta la transacción
       await _supabase.from('transacciones').insert(txData.toJson());
 
@@ -291,6 +294,9 @@ class TransactionsRepository {
         updatedAt: DateTime.now(),
       );
 
+      // Validador Anti-Hackeo (Repository-level)
+      await _validateDebtPaymentOverflow(updatedTransaction, oldTx: oldTx);
+
       // 2. Actualizar en la base de datos
       await _supabase
           .from('transacciones')
@@ -346,24 +352,26 @@ class TransactionsRepository {
     }
   }
 
-  /// Calcula el total de gastos de un mes específico
+  /// Calcula el total de gastos de un mes específico (excluyendo transferencias/pagos_deuda neutrales)
   Future<double> getMonthlyExpenses(int year, int month) async {
     try {
       final transactions = await getTransactionsByMonth(year, month);
       return transactions
-          .where((t) => t.tipo == 'gasto')
+          .where((t) => t.estado == 'completa') // Requisito extra seguridad
+          .where((t) => t.tipo == 'gasto' || (t.tipo == 'pago_deuda' && t.cuentaDestinoId == null) || t.tipo == 'meta_aporte')
           .fold<double>(0.0, (sum, t) => sum + t.monto);
     } catch (e) {
       throw Exception('Error al calcular gastos del mes: $e');
     }
   }
 
-  /// Calcula el total de ingresos de un mes específico
+  /// Calcula el total de ingresos de un mes específico (excluyendo ajustes y neutrales)
   Future<double> getMonthlyIncome(int year, int month) async {
     try {
       final transactions = await getTransactionsByMonth(year, month);
       return transactions
-          .where((t) => t.tipo == 'ingreso')
+          .where((t) => t.estado == 'completa') // Solo transacciones confirmadas
+          .where((t) => t.tipo == 'ingreso' && t.tipo != 'ajuste_reconciliacion')
           .fold<double>(0.0, (sum, t) => sum + t.monto);
     } catch (e) {
       throw Exception('Error al calcular ingresos del mes: $e');
@@ -389,6 +397,9 @@ class TransactionsRepository {
         estado: 'completa', // Debe ser 'completa', no 'completada'
         updatedAt: DateTime.now(),
       );
+      
+      // Validador Anti-Hackeo (Repository-level)
+      await _validateDebtPaymentOverflow(updatedTransaction, oldTx: currentTx);
 
       // Actualiza el estado en la BD
       await _supabase
@@ -482,6 +493,55 @@ class TransactionsRepository {
   void dispose() {
     _realtimeSubscription?.unsubscribe();
     _transactionsController.close();
+  }
+
+  // Helper: Validador Anti-Hackeo de Pasivos
+  Future<void> _validateDebtPaymentOverflow(TransactionModel tx, {TransactionModel? oldTx}) async {
+    if (tx.estado != 'completa') return;
+
+    // Caso 1: Pago directo a Deuda
+    if (tx.tipo == 'pago_deuda' && tx.deudaId != null) {
+      final debtData = await _supabase.from('deudas').select().eq('id', tx.deudaId!).maybeSingle();
+      if (debtData != null) {
+        final debt = DebtModel.fromJson(debtData);
+        double actualRestante = debt.montoRestante;
+        
+        if (oldTx != null && oldTx.estado == 'completa' && oldTx.tipo == 'pago_deuda' && oldTx.deudaId == tx.deudaId) {
+           actualRestante += oldTx.monto;
+        }
+
+        if (tx.monto > actualRestante + 0.01) {
+          throw Exception('ALERTA DE INTEGRIDAD: El monto (${tx.monto}) supera la deuda restante permitida.');
+        }
+      }
+    }
+
+    // Caso 2: Ingreso o Transferencia a Tarjeta de Crédito (Funciona como abono a pasivo)
+    final targetAccountId = (tx.tipo == 'ingreso') ? tx.cuentaOrigenId : tx.cuentaDestinoId;
+    if (targetAccountId != null) {
+      final destAccData = await _supabase.from('cuentas').select().eq('id', targetAccountId).maybeSingle();
+      if (destAccData != null) {
+        final destAcc = AccountModel.fromJson(destAccData);
+        if (destAcc.tipo == 'tarjeta_credito') {
+          final debtData = await _supabase.from('deudas').select().eq('cuenta_asociada_id', destAcc.id).maybeSingle();
+          if (debtData != null) {
+            final debt = DebtModel.fromJson(debtData);
+            double actualRestante = debt.montoRestante;
+            
+            if (oldTx != null && oldTx.estado == 'completa') {
+               final oldTarget = (oldTx.tipo == 'ingreso') ? oldTx.cuentaOrigenId : oldTx.cuentaDestinoId;
+               if (oldTarget == targetAccountId) {
+                 actualRestante += oldTx.monto;
+               }
+            }
+
+            if (tx.monto > actualRestante + 0.01) {
+              throw Exception('ALERTA DE INTEGRIDAD: El monto (${tx.monto}) excede la deuda de la tarjeta asociada.');
+            }
+          }
+        }
+      }
+    }
   }
 
   /// Método privado para sincronizar efectos en cascada (Saldos y Deudas)

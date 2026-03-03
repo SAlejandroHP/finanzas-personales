@@ -224,7 +224,7 @@ class AccountsNotifier extends StateNotifier<AsyncValue<void>> {
       await _repository.setDefaultAccount(accountId);
       
       // Invalidamos para que los streams se refresquen
-      _ref.invalidate(accountsListProvider);
+      _ref.read(financeServiceProvider).refreshAll();
       
     } catch (e) {
       _setError(e.toString());

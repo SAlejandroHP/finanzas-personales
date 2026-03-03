@@ -10,6 +10,7 @@ import 'package:finanzas/features/debts/models/debt_model.dart';
 import 'package:finanzas/features/auth/presentation/providers/auth_provider.dart';
 import '../providers/debts_provider.dart';
 import '../widgets/debt_form_sheet.dart';
+import '../../../../core/services/finance_service.dart';
 
 // Provider local para filtro de estado
 final debtFilterProvider = StateProvider<String>((ref) => 'todas');
@@ -90,7 +91,7 @@ class DebtsListScreen extends ConsumerWidget {
                 final totalRemaining = debts.fold<double>(0.0, (s, d) => s + d.montoRestante);
 
                 return RefreshIndicator(
-                  onRefresh: () async => ref.refresh(debtsListProvider),
+                  onRefresh: () async => ref.read(financeServiceProvider).refreshAll(),
                   child: ListView(
                     padding: const EdgeInsets.fromLTRB(20, 10, 20, 100),
                     physics: const BouncingScrollPhysics(),

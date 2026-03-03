@@ -5,6 +5,8 @@ import '../../features/accounts/presentation/providers/accounts_provider.dart';
 import '../../features/transactions/presentation/providers/transactions_provider.dart';
 import '../../features/debts/presentation/providers/debts_provider.dart';
 import '../../features/goals/presentation/providers/goals_provider.dart';
+import '../../features/categories/presentation/providers/categories_provider.dart';
+import '../../features/transactions/presentation/screens/recurring_transactions_screen.dart';
 
 // FinanceService: centraliza la lógica de negocio y la coordinación entre repositories.
 // Su función principal es realizar las actualizaciones en cascada (saldos, deudas, metas) 
@@ -81,20 +83,29 @@ class FinanceService {
   }
 
   /// Coordina el refresco de los providers después de una operación financiera
-  Future<void> updateAfterTransaction(TransactionModel tx, {bool isUndo = false}) async {
-    refreshAll();
+  Future<void> updateAfterTransaction(TransactionModel tx, {bool isUndo = false, Ref? ref}) async {
+    refreshAll(ref);
   }
 
-  /// Invalida todos los providers relacionados usando el Ref interno seguro
-  void refreshAll() {
-    // NOTA: Con la nueva arquitectura de Registro Único y Supabase Realtime,
-    // la mayoría de los providers se actualizan automáticamente cuando cambian los datos.
-    // Solo invalidamos lo que no sea reactivo por sí solo.
+  /// Invalida todos los providers relacionados usando el Ref interno seguro o uno externo
+  void refreshAll([Ref? ref]) {
+    // Audit v5: Centralizamos aquí los refrescos que antes estaban dispersos.
+    // Usamos el _ref interno si no se pasa uno externo.
+    final refToUse = ref ?? _ref;
     
-    // Si fuera necesario forzar un refresco global de la cache:
-    // _ref.invalidate(accountsListProvider);
-    // _ref.invalidate(transactionsListProvider);
-    // _ref.invalidate(debtsListProvider);
+    refToUse.invalidate(accountsListProvider);
+    refToUse.invalidate(accountsWithBalanceProvider);
+    refToUse.invalidate(transactionsListProvider);
+    refToUse.invalidate(pendingTransactionsProvider); // Agregado para reactividad en dashboard
+    refToUse.invalidate(recentTransactionsProvider); // Agregado para reactividad en dashboard
+    refToUse.invalidate(debtsListProvider);
+    refToUse.invalidate(pendingInvitationsProvider);
+    refToUse.invalidate(recurringTransactionsProvider);
+    
+    // Providers de categorías (antes dispersos en CategoryForm)
+    refToUse.invalidate(categoriesListProvider);
+    refToUse.invalidate(incomeCategoriesProvider);
+    refToUse.invalidate(expenseCategoriesProvider);
   }
 }
 

@@ -8,6 +8,7 @@ import '../../data/transactions_repository.dart';
 import '../../models/transaction_model.dart';
 import '../widgets/transaction_form_sheet.dart';
 import '../../../../core/network/supabase_client.dart';
+import '../../../../core/services/finance_service.dart';
 
 final recurringTransactionsProvider = FutureProvider.autoDispose<List<TransactionModel>>((ref) async {
   final repository = TransactionsRepository(supabase: supabaseClient);
@@ -52,7 +53,7 @@ class RecurringTransactionsScreen extends ConsumerWidget {
                 child: const Icon(Icons.add_rounded, size: 20, color: AppColors.primary),
               ),
               onPressed: () => showTransactionFormSheet(context, isRecurringDefault: true)
-                  .then((_) => ref.refresh(recurringTransactionsProvider)),
+                  .then((_) => ref.read(financeServiceProvider).refreshAll()),
             ),
           ),
         ],
@@ -249,7 +250,7 @@ class _RecurringTransactionCard extends StatelessWidget {
                     if (confirm == true) {
                       try {
                         await TransactionsRepository(supabase: supabaseClient).deleteTransaction(transaction.id);
-                        ref.invalidate(recurringTransactionsProvider);
+                        ref.read(financeServiceProvider).refreshAll();
                       } catch (e) {
                         if (context.mounted) {
                           ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
@@ -275,7 +276,7 @@ class _RecurringTransactionCard extends StatelessWidget {
                 label: 'Editar Regla',
                 icon: Icons.edit_rounded,
                 onPressed: () => showTransactionFormSheet(context, transaction: transaction)
-                    .then((_) => ref.refresh(recurringTransactionsProvider)),
+                    .then((_) => ref.read(financeServiceProvider).refreshAll()),
                 variant: 'primary',
                 size: 'small',
                 height: 32,
