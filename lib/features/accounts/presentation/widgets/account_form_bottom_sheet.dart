@@ -123,7 +123,7 @@ class _AccountFormBottomSheetState extends ConsumerState<AccountFormBottomSheet>
     }
 
     final result = _evaluateExpressionSafely(cleanText);
-    if (result != null && result > 0) {
+    if (result != null && result >= 0) {
       _calculatorResult.value = result;
     } else {
       _calculatorResult.value = null;
@@ -137,7 +137,7 @@ class _AccountFormBottomSheetState extends ConsumerState<AccountFormBottomSheet>
       final expression = parser.parse(expr);
       final contextModel = ContextModel();
       final result = expression.evaluate(EvaluationType.REAL, contextModel);
-      if (result is num && result.isFinite && result > 0) return result.toDouble();
+      if (result is num && result.isFinite && result >= 0) return result.toDouble();
       return null;
     } catch (e) {
       return null;
@@ -507,7 +507,7 @@ class _AccountFormBottomSheetState extends ConsumerState<AccountFormBottomSheet>
               return 'Ingresa un monto';
             }
             final result = _evaluateExpressionSafely(value);
-            if (result == null) {
+            if (result == null || result < 0) {
               return 'Monto inválido';
             }
             return null;
