@@ -248,102 +248,106 @@ class _AccountFormBottomSheetState extends ConsumerState<AccountFormBottomSheet>
               color: isDark ? AppColors.surfaceDark : Colors.white,
               borderRadius: const BorderRadius.vertical(top: Radius.circular(AppColors.radiusXLarge)),
             ),
-            child: Column(
-              children: [
-                Center(
-                  child: Container(
-                    margin: const EdgeInsets.only(top: 12),
-                    width: 40, height: 4,
-                    decoration: BoxDecoration(color: isDark ? Colors.white24 : Colors.grey[300], borderRadius: BorderRadius.circular(2)),
+            child: Padding(
+              padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
+              child: Column(
+                children: [
+                  Center(
+                    child: Container(
+                      margin: const EdgeInsets.only(top: 12),
+                      width: 40, height: 4,
+                      decoration: BoxDecoration(color: isDark ? Colors.white24 : Colors.grey[300], borderRadius: BorderRadius.circular(2)),
+                    ),
                   ),
-                ),
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(20, 16, 12, 12),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(isEdit ? 'Editar Cuenta' : 'Nueva Cuenta', style: GoogleFonts.montserrat(fontSize: AppColors.titleMedium, fontWeight: FontWeight.w700)),
-                      IconButton(icon: const Icon(Icons.close_rounded), onPressed: () => Navigator.of(context).pop()),
-                    ],
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(20, 16, 12, 12),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(isEdit ? 'Editar Cuenta' : 'Nueva Cuenta', style: GoogleFonts.montserrat(fontSize: AppColors.titleMedium, fontWeight: FontWeight.w700)),
+                        IconButton(icon: const Icon(Icons.close_rounded), onPressed: () => Navigator.of(context).pop()),
+                      ],
+                    ),
                   ),
-                ),
-                Divider(height: 1, color: isDark ? Colors.white10 : Colors.grey[100]),
-                Expanded(
-                  child: SingleChildScrollView(
-                    controller: scrollController,
-                    padding: const EdgeInsets.all(20),
-                    child: Form(
-                      key: _formKey,
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          _buildSectionTitle('INFORMACIÓN BÁSICA', isDark),
-                          const SizedBox(height: 12),
-                          AppTextField(
-                            label: 'Nombre de la cuenta',
-                            controller: _nombreController,
-                            hintText: 'Ej: Nómina, Ahorros, etc.',
-                            prefixIcon: Icons.badge_outlined,
-                            enabled: !_isLoading,
-                            autofocus: true,
-                            onSubmitted: (_) => FocusScope.of(context).nextFocus(),
-                          ),
-                          const SizedBox(height: 24),
-                          _buildSectionTitle('TIPO DE CUENTA', isDark),
-                          const SizedBox(height: 12),
-                          _buildTipoSelector(isDark),
-                          const SizedBox(height: 24),
-                          _buildSectionTitle('CONFIGURACIÓN', isDark),
-                          const SizedBox(height: 12),
-                          Row(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Expanded(
-                                flex: 2,
-                                child: currenciesAsync.when(
-                                  loading: () => const Center(child: CircularProgressIndicator(strokeWidth: 2)),
-                                  error: (_, __) => const Icon(Icons.error_outline),
-                                  data: (currencies) => _buildCurrencyDropdown(currencies, isDark),
+                  Divider(height: 1, color: isDark ? Colors.white10 : Colors.grey[100]),
+                  Expanded(
+                    child: SingleChildScrollView(
+                      controller: scrollController,
+                      padding: const EdgeInsets.all(20),
+                      child: Form(
+                        key: _formKey,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            _buildSectionTitle('INFORMACIÓN BÁSICA', isDark),
+                            const SizedBox(height: 12),
+                            AppTextField(
+                              label: 'Nombre de la cuenta',
+                              controller: _nombreController,
+                              hintText: 'Ej: Nómina, Ahorros, etc.',
+                              prefixIcon: Icons.badge_outlined,
+                              enabled: !_isLoading,
+                              autofocus: true,
+                              onSubmitted: (_) => FocusScope.of(context).nextFocus(),
+                            ),
+                            const SizedBox(height: 24),
+                            _buildSectionTitle('TIPO DE CUENTA', isDark),
+                            const SizedBox(height: 12),
+                            _buildTipoSelector(isDark),
+                            const SizedBox(height: 24),
+                            _buildSectionTitle('CONFIGURACIÓN', isDark),
+                            const SizedBox(height: 12),
+                            Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Expanded(
+                                  flex: 2,
+                                  child: currenciesAsync.when(
+                                    loading: () => const Center(child: CircularProgressIndicator(strokeWidth: 2)),
+                                    error: (_, __) => const Icon(Icons.error_outline),
+                                    data: (currencies) => _buildCurrencyDropdown(currencies, isDark),
+                                  ),
                                 ),
-                              ),
-                              const SizedBox(width: 12),
-                              Expanded(
-                                flex: 3,
-                                child: _buildBankSelectorInRow(context, isDark),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 16),
-                          SwitchListTile.adaptive(
-                            contentPadding: EdgeInsets.zero,
-                            title: Text('Establecer como cuenta por default', style: GoogleFonts.montserrat(fontSize: 12, fontWeight: FontWeight.w600, color: isDark ? Colors.white70 : AppColors.textPrimary)),
-                            subtitle: Text('Esta cuenta se seleccionará automáticamente al crear transacciones.', style: GoogleFonts.montserrat(fontSize: 10, color: isDark ? Colors.white38 : Colors.grey[500])),
-                            activeColor: AppColors.primary,
-                            value: _isDefault,
-                            onChanged: _isLoading ? null : (val) => setState(() => _isDefault = val),
-                          ),
-                          const SizedBox(height: 24),
-                          _buildSectionTitle('DETALLE FINANCIERO', isDark),
-                          const SizedBox(height: 16),
-                          if (_selectedTipo == 'tarjeta_credito') ...[
-                            _buildMontoField(label: 'Límite de crédito', controller: _limiteCreditoController, focusNode: _limiteCreditoFocusNode, icon: Icons.speed_rounded, isDark: isDark),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  flex: 3,
+                                  child: _buildBankSelectorInRow(context, isDark),
+                                ),
+                              ],
+                            ),
                             const SizedBox(height: 16),
-                            _buildMontoField(label: 'Deuda actual', controller: _deudaActualController, focusNode: _deudaActualFocusNode, icon: Icons.credit_score_rounded, isDark: isDark),
-                            const SizedBox(height: 12),
-                            _buildInfoBox('Disponible: \$${((double.tryParse(_limiteCreditoController.text) ?? 0.0) - (double.tryParse(_deudaActualController.text) ?? 0.0)).toStringAsFixed(2)}', isDark),
-                          ] else ...[
-                            _buildMontoField(label: 'Saldo inicial', controller: _saldoInicialController, focusNode: _saldoInicialFocusNode, icon: Icons.account_balance_wallet_rounded, isDark: isDark),
-                            const SizedBox(height: 12),
-                            _buildInfoBox('Este monto se establecerá como tu saldo actual.', isDark, isHelp: true),
+                            SwitchListTile.adaptive(
+                              contentPadding: EdgeInsets.zero,
+                              title: Text('Establecer como cuenta por default', style: GoogleFonts.montserrat(fontSize: 12, fontWeight: FontWeight.w600, color: isDark ? Colors.white70 : AppColors.textPrimary)),
+                              subtitle: Text('Esta cuenta se seleccionará automáticamente al crear transacciones.', style: GoogleFonts.montserrat(fontSize: 10, color: isDark ? Colors.white38 : Colors.grey[500])),
+                              activeColor: AppColors.primary,
+                              value: _isDefault,
+                              onChanged: _isLoading ? null : (val) => setState(() => _isDefault = val),
+                            ),
+                            const SizedBox(height: 24),
+                            _buildSectionTitle('DETALLE FINANCIERO', isDark),
+                            const SizedBox(height: 16),
+                            if (_selectedTipo == 'tarjeta_credito') ...[
+                              _buildMontoField(label: 'Límite de crédito', controller: _limiteCreditoController, focusNode: _limiteCreditoFocusNode, icon: Icons.speed_rounded, isDark: isDark),
+                              const SizedBox(height: 16),
+                              _buildMontoField(label: 'Deuda actual', controller: _deudaActualController, focusNode: _deudaActualFocusNode, icon: Icons.credit_score_rounded, isDark: isDark),
+                              const SizedBox(height: 12),
+                              _buildInfoBox('Disponible: \$${((double.tryParse(_limiteCreditoController.text) ?? 0.0) - (double.tryParse(_deudaActualController.text) ?? 0.0)).toStringAsFixed(2)}', isDark),
+                            ] else ...[
+                              _buildMontoField(label: 'Saldo inicial', controller: _saldoInicialController, focusNode: _saldoInicialFocusNode, icon: Icons.account_balance_wallet_rounded, isDark: isDark),
+                              const SizedBox(height: 12),
+                              _buildInfoBox('Este monto se establecerá como tu saldo actual.', isDark, isHelp: true),
+                            ],
                           ],
-                        ],
+                        ),
                       ),
                     ),
                   ),
-                ),
-                _buildAdaptiveFooter(isDark),
-              ],
+                  _buildAdaptiveFooter(isDark),
+                ],
+              ),
             ),
+
           ),
         );
       },
