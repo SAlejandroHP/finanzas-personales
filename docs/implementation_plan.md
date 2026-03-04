@@ -35,3 +35,8 @@
 - [x] Fase de Estabilización Core completada.
 - [ ] Refactor del `DashboardScreen` completado.
 - [ ] Refactor de Tarjetas (Doble lógica - Mirroring).
+
+## Fase 8: AI Parser & Smart Onboarding
+- [~] **Tarea 8.1:** Infraestructura y Schema (En progreso)
+- [ ] **Tarea 8.2:** Integración con la UI para el desambiguador.
+

@@ -44,3 +44,9 @@ El sistema debe diferenciar entre la deuda total y la deuda exigible (la que se 
 Para alinear los saldos de la app con la realidad bancaria sin falsear los reportes, existe un tipo especial de transacción:
 - **Transacción de Ajuste:** Es un movimiento de tipo 'ajuste_reconciliacion'. Su única función es igualar el "Cleared Balance" con el saldo real del banco. 
 - **Regla de Neutralidad:** Estas transacciones modifican el saldo de la cuenta, pero son estrictamente invisibles para los reportes mensuales de "Ingresos" y "Gastos". No representan flujo de caja real, solo correcciones contables.
+
+## 7. Protocolo de Desambiguación IA
+Para asegurar el principio de "Seguridad por Diseño", la automatización mediante IA operará bajo estrictas reglas:
+- **Aislamiento de Escritura:** La IA **NUNCA** guarda información ni escribe directamente en la base de datos (Supabase).
+- **Proceso de Borrador:** El `IAService` procesará el lenguaje natural y devolverá exclusivamente un borrador en formato JSON estructurado. Este borrador debe ser validado y confirmado por el usuario en la UI antes de enviarse a través del `FinanceService` y los repositorios correspondientes.
+- **Identificadores Únicos de Cuentas:** Para evitar el riesgo crítico de cruzar cuentas (ej. descontar fondos de la cuenta equivocada cuando hay múltiples tarjetas o bancos), la base de datos contará con los campos `last_four` (últimos 4 dígitos) y `tags` (etiquetas como nombres de bancos). Estos campos serán la clave primaria semántica de la IA para referenciar el `cuenta_origen_id` exacto.

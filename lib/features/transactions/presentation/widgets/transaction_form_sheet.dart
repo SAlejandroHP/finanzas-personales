@@ -18,12 +18,14 @@ import '../providers/transactions_provider.dart';
 import '../../../debts/presentation/providers/debts_provider.dart';
 import 'package:finanzas/features/debts/models/debt_model.dart';
 import '../../../../core/services/finance_service.dart';
+import '../../../../core/services/ia_service.dart';
 
 /// Función que abre el bottom sheet para agregar/editar una transacción
 Future<void> showTransactionFormSheet(
   BuildContext context, {
   TransactionModel? transaction,
   bool isRecurringDefault = false,
+  IATransactionDraft? draft,
 }) async {
   return showModalBottomSheet(
     context: context,
@@ -34,6 +36,7 @@ Future<void> showTransactionFormSheet(
     builder: (context) => TransactionFormSheet(
       transaction: transaction,
       isRecurringDefault: isRecurringDefault,
+      draft: draft,
     ),
   );
 }
@@ -42,11 +45,13 @@ Future<void> showTransactionFormSheet(
 class TransactionFormSheet extends ConsumerStatefulWidget {
   final TransactionModel? transaction;
   final bool isRecurringDefault;
+  final IATransactionDraft? draft;
 
   const TransactionFormSheet({
     super.key,
     this.transaction,
     this.isRecurringDefault = false,
+    this.draft,
   });
 
   @override
@@ -111,6 +116,43 @@ class _TransactionFormSheetState extends ConsumerState<TransactionFormSheet> {
       _recurringRule = widget.transaction!.recurringRule ?? 'monthly_day_13';
       _autoComplete = widget.transaction!.autoComplete;
       _weekendAdjustment = widget.transaction!.weekendAdjustment;
+    } else if (widget.draft != null) {
+      final draft = widget.draft!;
+      _tipo = draft.tipo;
+      _montoNumerico = draft.monto ?? 0.0;
+      _fecha = draft.fecha ?? DateTime.now();
+      _descripcion = draft.descripcion;
+      _cuentaOrigenId = draft.cuentaOrigenId;
+
+      if (_cuentaOrigenId == null) {
+        final currentAccounts = ref.read(accountsWithBalanceProvider).value ?? [];
+        final defaultAccount = currentAccounts.firstWhereOrNull((a) => a.isDefault);
+        if (defaultAccount != null) {
+          _cuentaOrigenId = defaultAccount.id;
+        }
+      }
+
+      _cuentaDestinoId = draft.cuentaDestinoId;
+      _categoriaId = draft.categoriaId;
+      _deudaId = draft.deudaId;
+      _metaId = null;
+      final ahora = DateTime.now();
+      final hoyFin = DateTime(ahora.year, ahora.month, ahora.day, 23, 59, 59);
+      _estado = _fecha.isBefore(hoyFin) ||
+              (_fecha.day == ahora.day &&
+                  _fecha.month == ahora.month &&
+                  _fecha.year == ahora.year)
+          ? 'completa'
+          : 'pendiente';
+      _isRecurring = widget.isRecurringDefault;
+      _recurringRule = 'monthly_day_13'; // Default para nuevas
+      _autoComplete = false;
+      _weekendAdjustment = false;
+      
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        // En caso de que se necesite refrescar el UI (p. ej. monto formateado)
+        if (mounted) setState(() {});
+      });
     } else {
       _tipo = 'gasto';
       _montoNumerico = 0.0;
@@ -148,8 +190,8 @@ class _TransactionFormSheetState extends ConsumerState<TransactionFormSheet> {
     _montoFocusNode.addListener(() => setState(() {}));
     _descripcionFocusNode.addListener(() => setState(() {}));
 
-    // Cargar cuenta por default si es nueva transacción
-    if (widget.transaction == null) {
+    // Cargar cuenta por default si es nueva transacción y no la hemos obtenido
+    if (widget.transaction == null && _cuentaOrigenId == null) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         final accountsAsync = ref.read(accountsWithBalanceProvider);
         accountsAsync.whenData((accounts) {

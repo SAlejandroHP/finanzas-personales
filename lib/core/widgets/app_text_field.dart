@@ -56,6 +56,12 @@ class AppTextField extends StatefulWidget {
   /// Si debe tomar el foco automáticamente
   final bool autofocus;
 
+  /// Ícono opcional a la derecha del campo
+  final Widget? suffixIcon;
+
+  /// Longitud máxima permitida
+  final int? maxLength;
+
   const AppTextField({
     super.key,
     required this.label,
@@ -75,6 +81,8 @@ class AppTextField extends StatefulWidget {
     this.hintText,
     this.errorText,
     this.autofocus = false,
+    this.suffixIcon,
+    this.maxLength,
   });
 
   @override
@@ -109,6 +117,7 @@ class _AppTextFieldState extends State<AppTextField> {
           keyboardType: widget.keyboardType,
           enabled: widget.enabled,
           maxLines: widget.maxLines,
+          maxLength: widget.maxLength,
           onChanged: widget.onChanged,
           onFieldSubmitted: widget.onSubmitted,
           validator: widget.validator,
@@ -165,7 +174,7 @@ class _AppTextFieldState extends State<AppTextField> {
                       });
                     },
                   )
-                : null,
+                : widget.suffixIcon,
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
               borderSide: BorderSide.none,

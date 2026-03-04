@@ -5,6 +5,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'core/constants/app_colors.dart';
 import 'core/network/supabase_client.dart';
 import 'core/theme/app_theme.dart';
@@ -91,6 +92,9 @@ import 'features/goals/presentation/screens/goals_list_screen.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   
+  // Carga variables de entorno
+  await dotenv.load(fileName: ".env");
+
   // Inicializa formateo de fechas en español
   await initializeDateFormatting('es', null);
   

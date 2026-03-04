@@ -18,6 +18,7 @@ import '../../../debts/models/debt_model.dart';
 import '../../../goals/presentation/providers/goals_provider.dart';
 import '../../../transactions/presentation/widgets/transaction_form_sheet.dart';
 import '../../../../core/services/finance_service.dart';
+import '../widgets/smart_input_bar.dart';
 
 /// Pantalla del dashboard que muestra un resumen financiero.
 /// Permite navegar a cuentas, categorías y transacciones.
@@ -108,6 +109,8 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                         cardColor,
                         isDark,
                       ),
+                      const SizedBox(height: 16),
+                      const SmartInputBar(),
                       const SizedBox(height: 24),
                       _buildAccountsAndCardsSection(
                         context,

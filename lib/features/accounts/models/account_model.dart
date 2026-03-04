@@ -40,6 +40,15 @@ class AccountModel {
   /// Indica si esta cuenta es la predeterminada para nuevas transacciones
   final bool isDefault;
 
+  /// Últimos 4 dígitos de la cuenta para identificación rápida (IA)
+  final String? lastFour;
+
+  /// Etiquetas de búsqueda o apodos (IA)
+  final List<String> tags;
+
+  /// Indica si es una cuenta puramente virtual u organizativa
+  final bool isVirtual;
+
   const AccountModel({
     required this.id,
     required this.userId,
@@ -54,6 +63,9 @@ class AccountModel {
     required this.createdAt,
     this.updatedAt,
     this.isDefault = false,
+    this.lastFour,
+    this.tags = const [],
+    this.isVirtual = false,
   });
 
   /// Valores permitidos para el campo 'tipo'
@@ -84,6 +96,9 @@ class AccountModel {
           ? DateTime.parse(json['updated_at'] as String)
           : null,
       isDefault: json['is_default'] as bool? ?? false,
+      lastFour: json['last_four'] as String?,
+      tags: (json['tags'] as List<dynamic>?)?.map((e) => e.toString()).toList() ?? const [],
+      isVirtual: json['is_virtual'] as bool? ?? false,
     );
   }
 
@@ -103,6 +118,9 @@ class AccountModel {
       'created_at': createdAt.toIso8601String(),
       'updated_at': updatedAt?.toIso8601String(),
       'is_default': isDefault,
+      'last_four': lastFour,
+      'tags': tags,
+      'is_virtual': isVirtual,
     };
   }
 
@@ -121,6 +139,9 @@ class AccountModel {
     DateTime? createdAt,
     DateTime? updatedAt,
     bool? isDefault,
+    String? lastFour,
+    List<String>? tags,
+    bool? isVirtual,
   }) {
     return AccountModel(
       id: id ?? this.id,
@@ -136,6 +157,9 @@ class AccountModel {
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
       isDefault: isDefault ?? this.isDefault,
+      lastFour: lastFour ?? this.lastFour,
+      tags: tags ?? this.tags,
+      isVirtual: isVirtual ?? this.isVirtual,
     );
   }
 
@@ -161,7 +185,18 @@ class AccountModel {
         other.saldoActual == saldoActual &&
         other.createdAt == createdAt &&
         other.updatedAt == updatedAt &&
-        other.isDefault == isDefault;
+        other.isDefault == isDefault &&
+        other.lastFour == lastFour &&
+        _listaTagsIguales(other.tags, tags) &&
+        other.isVirtual == isVirtual;
+  }
+
+  bool _listaTagsIguales(List<String> list1, List<String> list2) {
+    if (list1.length != list2.length) return false;
+    for (int i = 0; i < list1.length; i++) {
+        if (list1[i] != list2[i]) return false;
+    }
+    return true;
   }
 
   @override
@@ -180,6 +215,9 @@ class AccountModel {
       createdAt,
       updatedAt,
       isDefault,
+      lastFour,
+      Object.hashAll(tags),
+      isVirtual,
     );
   }
 }

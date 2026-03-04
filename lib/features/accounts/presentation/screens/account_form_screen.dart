@@ -13,6 +13,7 @@ import '../../../../core/widgets/app_text_field.dart';
 import '../../../../core/widgets/app_toast.dart';
 import '../../../../core/network/supabase_client.dart';
 import '../../../../core/services/finance_service.dart';
+import '../../../../core/utils/card_scanner_util.dart';
 import '../../models/account_model.dart';
 import '../../models/bank_model.dart';
 import '../providers/accounts_provider.dart';
@@ -33,6 +34,8 @@ class _AccountFormScreenState extends ConsumerState<AccountFormScreen> {
   final _saldoInicialController = TextEditingController();
   final _limiteCreditoController = TextEditingController();
   final _deudaActualController = TextEditingController(text: '0');
+  final _lastFourController = TextEditingController();
+  final _tagsController = TextEditingController();
 
   final _saldoInicialFocusNode = FocusNode();
   final _limiteCreditoFocusNode = FocusNode();
@@ -75,6 +78,9 @@ class _AccountFormScreenState extends ConsumerState<AccountFormScreen> {
         setState(() {
           _selectedTipo = selectedAccount.tipo;
           _selectedMonedaId = selectedAccount.monedaId;
+          _lastFourController.text = selectedAccount.lastFour ?? '';
+          _tagsController.text = selectedAccount.tags.join(', ');
+          
           // Si es tarjeta de crédito, cargar los campos correspondientes (asumiendo que saldoInicial es el límite)
           if (_selectedTipo == 'tarjeta_credito') {
             _limiteCreditoController.text = selectedAccount.saldoInicial.toString();
@@ -105,6 +111,8 @@ class _AccountFormScreenState extends ConsumerState<AccountFormScreen> {
     _saldoInicialController.dispose();
     _limiteCreditoController.dispose();
     _deudaActualController.dispose();
+    _lastFourController.dispose();
+    _tagsController.dispose();
     _saldoInicialFocusNode.dispose();
     _limiteCreditoFocusNode.dispose();
     _deudaActualFocusNode.dispose();
@@ -346,6 +354,10 @@ class _AccountFormScreenState extends ConsumerState<AccountFormScreen> {
         saldoActual: selectedAccount != null ? selectedAccount.saldoActual : saldoFinal,
         createdAt: selectedAccount?.createdAt ?? DateTime.now(),
         updatedAt: selectedAccount != null ? DateTime.now() : null,
+        lastFour: _lastFourController.text.trim().isEmpty ? null : _lastFourController.text.trim(),
+        tags: _tagsController.text.trim().isEmpty 
+            ? [] 
+            : _tagsController.text.split(',').map((e) => e.trim()).where((e) => e.isNotEmpty).toList(),
       );
 
       if (selectedAccount != null) {
@@ -380,6 +392,31 @@ class _AccountFormScreenState extends ConsumerState<AccountFormScreen> {
       }
     } catch (e) {
       _showError('Error al guardar: $e');
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
+  }
+
+  /// Inicia el escaneo de la tarjeta para extraer los últimos 4 dígitos
+  Future<void> _handleScanCard() async {
+    setState(() => _isLoading = true);
+    
+    try {
+      final digits = await CardScannerUtil.scanLastFourDigits();
+      if (digits != null && mounted) {
+        _lastFourController.text = digits;
+        showAppToast(
+          context,
+          message: 'Dígitos extraídos: $digits',
+          type: ToastType.success,
+        );
+      } else if (mounted) {
+        _showError('No se detectaron los dígitos de la tarjeta');
+      }
+    } catch (e) {
+      _showError('Error al escanear: $e');
     } finally {
       if (mounted) {
         setState(() => _isLoading = false);
@@ -788,6 +825,39 @@ class _AccountFormScreenState extends ConsumerState<AccountFormScreen> {
                   ),
                 ],
               ),
+            const SizedBox(height: 16),
+
+            // Campos de IA y Onboarding (Last 4 y Tags)
+            Row(
+              children: [
+                Expanded(
+                  flex: 1,
+                  child: AppTextField(
+                    label: 'Últimos 4',
+                    controller: _lastFourController,
+                    keyboardType: TextInputType.number,
+                    maxLength: 4,
+                    prefixIcon: Icons.pin_outlined,
+                    hintText: '1234',
+                    suffixIcon: IconButton(
+                      icon: const Icon(Icons.camera_alt_outlined, color: AppColors.primary),
+                      onPressed: _isLoading ? null : _handleScanCard,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  flex: 2,
+                  child: AppTextField(
+                    label: 'Alias / Tags (IA)',
+                    controller: _tagsController,
+                    prefixIcon: Icons.tag_outlined,
+                    hintText: 'Nu, Crédito Principal',
+                    helperText: 'Separados por comas',
+                  ),
+                ),
+              ],
+            ),
             const SizedBox(height: 8),
             
             // Ayuda sobre el saldo (solo para cuentas normales)
