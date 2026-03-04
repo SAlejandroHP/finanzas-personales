@@ -14,6 +14,7 @@ import '../../../../core/widgets/app_toast.dart';
 import '../../../../core/network/supabase_client.dart';
 import '../../../../core/services/finance_service.dart';
 import '../../../../core/utils/card_scanner_util.dart';
+import 'card_scanner_screen.dart';
 import '../../models/account_model.dart';
 import '../../models/bank_model.dart';
 import '../providers/accounts_provider.dart';
@@ -841,7 +842,21 @@ class _AccountFormScreenState extends ConsumerState<AccountFormScreen> {
                     hintText: '1234',
                     suffixIcon: IconButton(
                       icon: const Icon(Icons.camera_alt_outlined, color: AppColors.primary),
-                      onPressed: _isLoading ? null : _handleScanCard,
+                      onPressed: _isLoading ? null : () async {
+                        // 1. Abrimos el escáner y esperamos el resultado
+                        final lastFour = await Navigator.push<String>(
+                          context,
+                          MaterialPageRoute(builder: (_) => const CardScannerScreen()),
+                        );
+
+                        // 2. Si el usuario escaneó algo exitosamente, lo ponemos en el TextField
+                        if (lastFour != null && lastFour.isNotEmpty && mounted) {
+                          setState(() {
+                            _lastFourController.text = lastFour;
+                          });
+                          showAppToast(context, message: '¡Tarjeta escaneada con éxito!', type: ToastType.success);
+                        }
+                      },
                     ),
                   ),
                 ),

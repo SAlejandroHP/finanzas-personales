@@ -16,6 +16,7 @@ import '../../models/currency_model.dart';
 import '../providers/accounts_provider.dart';
 import '../providers/banks_provider.dart';
 import '../providers/currencies_provider.dart';
+import '../screens/card_scanner_screen.dart';
 
 /// Widget bottom sheet deslizable para crear o editar una cuenta.
 class AccountFormBottomSheet extends ConsumerStatefulWidget {
@@ -32,10 +33,15 @@ class _AccountFormBottomSheetState extends ConsumerState<AccountFormBottomSheet>
   final _saldoInicialController = TextEditingController();
   final _limiteCreditoController = TextEditingController();
   final _deudaActualController = TextEditingController(text: '0');
+  final _lastFourController = TextEditingController();
+  final _tagsController = TextEditingController();
+  List<String> _tags = [];
+  ScrollController? _draggableScrollController;
 
   final _saldoInicialFocusNode = FocusNode();
   final _limiteCreditoFocusNode = FocusNode();
   final _deudaActualFocusNode = FocusNode();
+  final _tagsFocusNode = FocusNode();
   final _calculatorResult = ValueNotifier<double?>(null);
   
   // Formatter para moneda
@@ -76,6 +82,8 @@ class _AccountFormBottomSheetState extends ConsumerState<AccountFormBottomSheet>
           _selectedTipo = selectedAccount.tipo;
           _selectedMonedaId = selectedAccount.monedaId;
           _isDefault = selectedAccount.isDefault;
+          _lastFourController.text = selectedAccount.lastFour ?? '';
+          _tags = List<String>.from(selectedAccount.tags);
           if (selectedAccount.bancoId != null) {
             _selectedBank = BankModel(
               id: selectedAccount.bancoId!,
@@ -106,9 +114,12 @@ class _AccountFormBottomSheetState extends ConsumerState<AccountFormBottomSheet>
     _saldoInicialController.dispose();
     _limiteCreditoController.dispose();
     _deudaActualController.dispose();
+    _lastFourController.dispose();
+    _tagsController.dispose();
     _saldoInicialFocusNode.dispose();
     _limiteCreditoFocusNode.dispose();
     _deudaActualFocusNode.dispose();
+    _tagsFocusNode.dispose();
     _calculatorResult.dispose();
     super.dispose();
   }
@@ -166,6 +177,41 @@ class _AccountFormBottomSheetState extends ConsumerState<AccountFormBottomSheet>
     controller.selection = TextSelection.collapsed(offset: selection.start + op.length);
   }
 
+  void _addTag(String tag) {
+    if (tag.trim().isEmpty) return;
+    final cleanedTag = tag.trim();
+    if (!_tags.contains(cleanedTag)) {
+      setState(() {
+        _tags.add(cleanedTag);
+        _tagsController.clear();
+      });
+      // Mantener el foco en el campo de tags
+      _tagsFocusNode.requestFocus();
+      
+      // Hacer scroll al final para ver el nuevo tag
+      _scrollToBottom();
+    } else {
+      _tagsController.clear();
+      _tagsFocusNode.requestFocus();
+    }
+  }
+
+  void _scrollToBottom() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (_draggableScrollController != null && _draggableScrollController!.hasClients) {
+        _draggableScrollController!.jumpTo(
+          _draggableScrollController!.position.maxScrollExtent,
+        );
+      }
+    });
+  }
+
+  void _removeTag(String tag) {
+    setState(() {
+      _tags.remove(tag);
+    });
+  }
+
   Future<void> _handleSave() async {
     if (!_formKey.currentState!.validate()) return;
     if (_selectedTipo == null || _selectedMonedaId == null) {
@@ -193,6 +239,8 @@ class _AccountFormBottomSheetState extends ConsumerState<AccountFormBottomSheet>
         createdAt: selectedAccount?.createdAt ?? DateTime.now(),
         updatedAt: selectedAccount != null ? DateTime.now() : null,
         isDefault: _isDefault,
+        lastFour: _lastFourController.text.trim().isEmpty ? null : _lastFourController.text.trim(),
+        tags: _tags,
       );
 
       if (selectedAccount != null) {
@@ -241,6 +289,7 @@ class _AccountFormBottomSheetState extends ConsumerState<AccountFormBottomSheet>
       maxChildSize: 0.95,
       expand: false,
       builder: (context, scrollController) {
+        _draggableScrollController = scrollController;
         return GestureDetector(
           onTap: () => FocusScope.of(context).unfocus(),
           child: Container(
@@ -337,6 +386,70 @@ class _AccountFormBottomSheetState extends ConsumerState<AccountFormBottomSheet>
                               _buildMontoField(label: 'Saldo inicial', controller: _saldoInicialController, focusNode: _saldoInicialFocusNode, icon: Icons.account_balance_wallet_rounded, isDark: isDark),
                               const SizedBox(height: 12),
                               _buildInfoBox('Este monto se establecerá como tu saldo actual.', isDark, isHelp: true),
+                            ],
+                            const SizedBox(height: 24),
+                            _buildSectionTitle('IDENTIFICACIÓN Y TAGS (IA)', isDark),
+                            const SizedBox(height: 12),
+                            AppTextField(
+                              label: 'Últimos 4 dígitos',
+                              controller: _lastFourController,
+                              keyboardType: TextInputType.number,
+                              maxLength: 4,
+                              prefixIcon: Icons.pin_outlined,
+                              hintText: '1234',
+                              suffixIcon: IconButton(
+                                icon: const Icon(Icons.camera_alt_outlined, color: AppColors.primary),
+                                onPressed: _isLoading ? null : () async {
+                                  final lastFour = await Navigator.push<String>(
+                                    context,
+                                    MaterialPageRoute(builder: (_) => const CardScannerScreen()),
+                                  );
+                                  if (lastFour != null && lastFour.isNotEmpty && mounted) {
+                                    setState(() {
+                                      _lastFourController.text = lastFour;
+                                    });
+                                    showAppToast(context, message: '¡Tarjeta escaneada!', type: ToastType.success);
+                                  }
+                                },
+                              ),
+                            ),
+                            const SizedBox(height: 16),
+                            AppTextField(
+                              label: 'Alias / Tags (IA)',
+                              controller: _tagsController,
+                              focusNode: _tagsFocusNode,
+                              prefixIcon: Icons.tag_outlined,
+                              hintText: 'Ej: Personal, Nu, Nómina...',
+                              helperText: 'Presiona Enter para agregar un tag',
+                              onSubmitted: (value) => _addTag(value),
+                            ),
+                            if (_tags.isNotEmpty) ...[
+                              const SizedBox(height: 12),
+                              Wrap(
+                                spacing: 8,
+                                runSpacing: 4,
+                                children: _tags.map((tag) => Chip(
+                                  label: Text(
+                                    tag,
+                                    style: GoogleFonts.montserrat(
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.w600,
+                                      color: isDark ? Colors.white : AppColors.textPrimary,
+                                    ),
+                                  ),
+                                  backgroundColor: isDark 
+                                      ? AppColors.primary.withOpacity(0.2) 
+                                      : AppColors.primary.withOpacity(0.1),
+                                  deleteIcon: const Icon(Icons.close, size: 14),
+                                  onDeleted: () => _removeTag(tag),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(8),
+                                    side: BorderSide(
+                                      color: AppColors.primary.withOpacity(0.3),
+                                    ),
+                                  ),
+                                )).toList(),
+                              ),
                             ],
                           ],
                         ),

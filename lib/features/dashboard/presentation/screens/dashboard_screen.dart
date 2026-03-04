@@ -651,7 +651,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
             }
 
             return SizedBox(
-              height: 140, // Reducido verticalmente para garantizar espacio suficiente para badges y progreso
+              height: 165, // Aumentado para acomodar correctamente el nombre, saldo, tipo y barra de progreso sin overflow
               child: ListView.separated(
                 scrollDirection: Axis.horizontal,
                 padding: const EdgeInsets.symmetric(horizontal: 4),
