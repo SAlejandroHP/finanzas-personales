@@ -78,6 +78,9 @@ abstract class AppColors {
   static const Color textPrimary     = _textDark;
   static const Color textSecondary   = _textLight;
   static const Color surface         = Colors.white;
+  static const String primaryHex    = '#0A7075';
+  static const String secondaryHex  = '#FF8B6A';
+  static const String tertiaryHex   = '#D4AF37';
 
   // ===========================================================================
   // COLORES POR TEMA (Para ThemeMode / ColorScheme)

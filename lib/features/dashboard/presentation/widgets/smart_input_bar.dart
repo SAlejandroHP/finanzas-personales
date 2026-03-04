@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:speech_to_text/speech_to_text.dart' as stt;
+import 'package:google_fonts/google_fonts.dart'; // Added
 import '../../../../core/widgets/app_text_field.dart';
 import '../../../../core/widgets/app_toast.dart';
 import '../../../../core/constants/app_colors.dart';
@@ -14,6 +15,11 @@ import '../../../transactions/models/transaction_model.dart';
 import '../../../../core/services/finance_service.dart';
 import 'package:uuid/uuid.dart';
 import 'package:collection/collection.dart';
+import '../../../goals/models/goal_model.dart';
+import '../../../goals/presentation/widgets/goal_form_bottom_sheet.dart';
+import '../../../debts/models/debt_model.dart';
+import '../../../debts/presentation/widgets/debt_form_sheet.dart';
+
 class SmartInputBar extends ConsumerStatefulWidget {
   const SmartInputBar({super.key});
 
@@ -45,7 +51,6 @@ class _SmartInputBarState extends ConsumerState<SmartInputBar> {
           if (status == 'done') {
             if (_isListening) {
               setState(() => _isListening = false);
-              // Cuando se detiene automáticamente por silencio, si hay texto, lo procesamos.
               if (_controller.text.trim().isNotEmpty) {
                 _processInput();
               }
@@ -114,7 +119,6 @@ class _SmartInputBarState extends ConsumerState<SmartInputBar> {
   }
 
   Future<void> _processInput() async {
-    // Si estaba escuchando, detener
     if (_isListening) {
       await _speech.stop();
       setState(() => _isListening = false);
@@ -199,11 +203,27 @@ class _SmartInputBarState extends ConsumerState<SmartInputBar> {
           if (mounted) {
             _controller.clear();
             
+            final isDark = Theme.of(context).brightness == Brightness.dark;
             final snackBar = SnackBar(
-              content: Text('✅ Transacción guardada.' + (usedDefault ? ' Se usó tu cuenta por defecto.' : '')),
+              content: Row(
+                children: [
+                  const Icon(Icons.check_circle_rounded, color: AppColors.success),
+                  const SizedBox(width: AppColors.md),
+                  Expanded(
+                    child: Text(
+                      'Transacción guardada.' + (usedDefault ? ' (Cuenta por defecto)' : ''),
+                      style: GoogleFonts.montserrat(
+                         color: AppColors.textSecondary,
+                         fontWeight: FontWeight.w600,
+                         fontSize: AppColors.bodyMedium,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
               action: SnackBarAction(
                 label: 'Editar',
-                textColor: Colors.white,
+                textColor: AppColors.primary,
                 onPressed: () {
                   showTransactionFormSheet(
                     context,
@@ -212,13 +232,15 @@ class _SmartInputBarState extends ConsumerState<SmartInputBar> {
                 },
               ),
               behavior: SnackBarBehavior.floating,
-              backgroundColor: AppColors.success,
+              backgroundColor: isDark ? AppColors.surfaceDark : AppColors.textPrimary, 
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppColors.radiusLarge)),
+              margin: const EdgeInsets.symmetric(horizontal: AppColors.pagePadding, vertical: AppColors.xl),
               duration: const Duration(seconds: 4),
             );
             ScaffoldMessenger.of(context).showSnackBar(snackBar);
           }
         } else {
-          // Modo Manual (Fallback) si falta monto o no hay cuenta
+          // Modo Manual (Fallback)
           if (mounted) {
             _controller.clear();
             showTransactionFormSheet(
@@ -226,6 +248,49 @@ class _SmartInputBarState extends ConsumerState<SmartInputBar> {
                draft: draft,
              );
            }
+         }
+       } else if (draft.intent == 'goal') {
+         if (mounted) {
+           _controller.clear();
+           final goal = GoalModel(
+             id: const Uuid().v4(),
+             userId: '',
+             title: draft.nombreMeta ?? '',
+             targetAmount: draft.montoObjetivo ?? 0,
+             currentAmount: 0,
+             description: '',
+              deadline: draft.fechaObjetivo,
+              icon: 'savings',
+              colorHex: AppColors.primaryHex, // Note: This is stored as a string, but the constant is AppColors.primary
+              createdAt: DateTime.now(),
+            );
+           showModalBottomSheet(
+             context: context,
+             isScrollControlled: true,
+             backgroundColor: Colors.transparent,
+             builder: (context) => GoalFormBottomSheet(goal: goal),
+           );
+         }
+       } else if (draft.intent == 'debt') {
+         if (mounted) {
+           _controller.clear();
+           final debt = DebtModel(
+             id: const Uuid().v4(),
+             userId: '',
+             nombre: draft.nombreDeuda ?? '',
+             tipo: 'prestamo_personal',
+             montoTotal: draft.montoDeuda ?? 0,
+             montoRestante: draft.montoDeuda ?? 0,
+             fechaVencimiento: null,
+             estado: 'activa',
+             createdAt: DateTime.now(),
+             isShared: false,
+             ownerRole: draft.tipoDeuda == 'pasivo' ? 'borrower' : 'lender',
+           );
+           showDebtFormSheet(
+             context,
+             debt: debt,
+           );
          }
        } else {
          if (mounted) {
@@ -255,48 +320,91 @@ class _SmartInputBarState extends ConsumerState<SmartInputBar> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final backgroundColor = isDark ? AppColors.surfaceDark : Colors.black.withOpacity(0.05);
+    final textColor = isDark ? AppColors.textSecondary : AppColors.textPrimary;
+    final hintColor = isDark ? AppColors.textSecondary.withOpacity(0.5) : AppColors.textPrimary.withOpacity(0.5);
+
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8.0),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          Expanded(
-             child: AppTextField(
-               label: '',
-               hintText: _isListening ? 'Escuchando...' : 'Ej. Gasté \$500 en súper hoy o Aboné \$500 a Ismael',
-               controller: _controller,
-               onSubmitted: (_) => _processInput(),
-               enabled: !_isLoading,
-             ),
-           ),
-           const SizedBox(width: 8),
-           IconButton(
-             onPressed: _isLoading ? null : _listen,
-             icon: Icon(_isListening ? Icons.mic : Icons.mic_none),
-             color: _isListening ? AppColors.error : AppColors.primary,
-             iconSize: 28,
-             tooltip: _isListening ? 'Detener dictado' : 'Dictar transacción',
-           ),
-           _isLoading
-               ? const Padding(
-                   padding: EdgeInsets.all(12.0),
-                   child: SizedBox(
-                     width: 24,
-                     height: 24,
-                     child: CircularProgressIndicator(
-                       strokeWidth: 2,
-                     ),
-                   ),
-                 )
-               : IconButton(
-                   onPressed: _processInput,
-                   icon: const Icon(Icons.auto_awesome),
-                   color: AppColors.primary,
-                   iconSize: 28,
-                   tooltip: 'Procesar con IA',
-                 ),
-         ],
-       ),
+      child: Container(
+        decoration: BoxDecoration(
+          color: backgroundColor,
+          borderRadius: BorderRadius.circular(AppColors.radiusCircular),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.12),
+              blurRadius: AppColors.radiusMedium,
+              offset: const Offset(0, 5),
+            ),
+          ],
+        ),
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            // Botón de Micrófono transformado
+            GestureDetector(
+              onTap: _isLoading ? null : _listen,
+              child: Container(
+                width: AppColors.xl + AppColors.sm, // ~40-44 normalized
+                height: AppColors.xl + AppColors.sm,
+                decoration: BoxDecoration(
+                  color: _isListening ? AppColors.error : AppColors.primaryDark,
+                  shape: BoxShape.circle,
+                ),
+                child: _isLoading && _isListening == false
+                    ? const Padding(
+                        padding: EdgeInsets.all(AppColors.sm),
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          valueColor: AlwaysStoppedAnimation<Color>(AppColors.textSecondary),
+                        ),
+                      )
+                    : Icon(
+                        _isListening ? Icons.mic : Icons.mic_none,
+                        color: AppColors.textSecondary,
+                        size: AppColors.iconMedium,
+                      ),
+              ),
+            ),
+            const SizedBox(width: AppColors.md),
+            Expanded(
+              child: TextField(
+                controller: _controller,
+                onSubmitted: (_) => _processInput(),
+                enabled: !_isLoading,
+                style: GoogleFonts.montserrat(
+                  color: textColor,
+                  fontWeight: FontWeight.w500,
+                  fontSize: AppColors.bodyMedium,
+                ),
+                decoration: InputDecoration(
+                  hintText: _isListening ? 'Escuchando...' : '¿Qué registramos hoy?',
+                  hintStyle: GoogleFonts.montserrat(
+                    color: hintColor,
+                    fontSize: AppColors.bodyMedium,
+                  ),
+                  border: InputBorder.none,
+                  isDense: true,
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 4, vertical: 12),
+                ),
+              ),
+            ),
+            // Botón de envío (Varita mágica)
+            IconButton(
+              onPressed: _processInput,
+              icon: const Icon(Icons.auto_awesome),
+              color: AppColors.primary,
+              iconSize: AppColors.iconLarge,
+              tooltip: 'Procesar',
+              padding: EdgeInsets.zero,
+              constraints: const BoxConstraints(),
+            ),
+            const SizedBox(width: AppColors.sm),
+          ],
+        ),
+      ),
     );
   }
 }

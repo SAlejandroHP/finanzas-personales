@@ -45,12 +45,15 @@ final filteredTransactionsProvider = Provider<AsyncValue<List<TransactionModel>>
 
   return transactionsAsync.whenData((transactions) {
     final now = DateTime.now();
-    final today = DateTime(now.year, now.month, now.day);
+    final startOfMonth = DateTime(now.year, now.month, 1);
 
     var filtered = transactions.where((t) {
       final transactionDate = DateTime(t.fecha.year, t.fecha.month, t.fecha.day);
-      // Muestra futuras/hoy, o pasadas si están pendientes
-      if (transactionDate.isBefore(today) && t.estado != 'pendiente') {
+      
+      // CORRECCIÓN: Muestra transacciones de TODO EL MES ACTUAL en adelante, 
+      // o transacciones pasadas si aún están pendientes.
+      // Antes: Ocultaba transacciones de ayer si ya estaban completas.
+      if (transactionDate.isBefore(startOfMonth) && t.estado != 'pendiente') {
         return false;
       }
 
@@ -85,8 +88,8 @@ final filteredTransactionsProvider = Provider<AsyncValue<List<TransactionModel>>
       return true;
     }).toList();
 
-    // Ordena por fecha ascendente
-    filtered.sort((a, b) => a.fecha.compareTo(b.fecha));
+    // CORRECCIÓN: Ordena por fecha descendente (las más nuevas arriba)
+    filtered.sort((a, b) => b.fecha.compareTo(a.fecha));
 
     return filtered;
   });

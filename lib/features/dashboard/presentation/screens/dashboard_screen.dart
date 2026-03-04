@@ -111,7 +111,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                       ),
                       const SizedBox(height: 16),
                       const SmartInputBar(),
-                      const SizedBox(height: 24),
+                                            const SizedBox(height: 24),
                       _buildAccountsAndCardsSection(
                         context,
                         accounts,
@@ -448,195 +448,85 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     Color cardColor,
     bool isDark,
   ) {
+    // Color sólido profundo y elegante para el fondo (Gris carbón oscuro / Negro mate)
+    final Color solidBackground = isDark ? const Color(0xFF121212) : const Color(0xFF1A1C1E);
+    
     return Container(
       width: double.infinity,
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(AppColors.radiusXLarge),
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            AppColors.primary,
-            AppColors.primary.withRed(30).withGreen(100), // Un teal más profundo/vibrante
-          ],
-        ),
+        color: solidBackground,
+        borderRadius: BorderRadius.circular(28), // Bordes más pronunciados
         boxShadow: [
           BoxShadow(
-            color: AppColors.primary.withOpacity(0.35),
-            blurRadius: 20,
-            offset: const Offset(0, 10),
+            color: Colors.black.withOpacity(0.15),
+            blurRadius: 30,
+            offset: const Offset(0, 15),
+            spreadRadius: -5,
           ),
         ],
       ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(AppColors.radiusXLarge),
-        child: Stack(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 28),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Círculos decorativos para efecto Glassmorphism Premium
-            Positioned(
-              top: -30,
-              right: -30,
-              child: Container(
-                width: 140,
-                height: 140,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: Colors.white.withOpacity(0.08),
+            Text(
+              'WORKING BALANCE',
+              style: GoogleFonts.montserrat(
+                fontSize: 11,
+                fontWeight: FontWeight.w700,
+                color: Colors.white.withOpacity(0.5),
+                letterSpacing: 2.0,
+              ),
+            ),
+            const SizedBox(height: 8),
+            FittedBox(
+              fit: BoxFit.scaleDown,
+              alignment: Alignment.centerLeft,
+              child: Text(
+                balanceFormatter.format(balance),
+                style: GoogleFonts.montserrat(
+                  fontSize: 38, // Tamaño gigante
+                  fontWeight: FontWeight.w800, // Bold extremo
+                  color: Colors.white,
+                  letterSpacing: -1.5,
                 ),
               ),
             ),
-            Positioned(
-              bottom: -50,
-              left: -20,
-              child: Container(
-                width: 100,
-                height: 100,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: Colors.black.withOpacity(0.1),
-                ),
-              ),
+            const SizedBox(height: 24),
+            
+            // Línea divisoria minimalista
+            Container(
+              height: 1,
+              width: 30,
+              color: AppColors.primary.withOpacity(0.4),
             ),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'LIQUIDEZ TOTAL',
-                            style: GoogleFonts.montserrat(
-                              fontSize: 10,
-                              fontWeight: FontWeight.w700,
-                              color: Colors.white.withOpacity(0.7),
-                              letterSpacing: 1.2,
-                            ),
-                          ),
-                          const SizedBox(height: 1),
-                          Text(
-                            balanceFormatter.format(balance),
-                            style: GoogleFonts.montserrat(
-                              fontSize: 22,
-                              fontWeight: FontWeight.w800,
-                              color: Colors.white,
-                              letterSpacing: -0.8,
-                            ),
-                          ),
-                        ],
-                      ),
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.end,
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.all(8),
-                            decoration: BoxDecoration(
-                              color: Colors.white.withOpacity(0.12),
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: const Icon(
-                              Icons.account_balance_wallet_rounded, 
-                              color: Colors.white, 
-                              size: 18
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
+            const SizedBox(height: 24),
+            
+            // Subtotales con iconos minimalistas y colores sólidos
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                _buildFlowItem(
+                  'Ingresos',
+                  incomes,
+                  const Color(0xFF4ADE80), // Verde pastel sólido
+                  Icons.add_rounded,
+                ),
+                _buildFlowItem(
+                  'Gastos',
+                  expenses,
+                  const Color(0xFFF87171), // Rojo/Coral sólido
+                  Icons.remove_rounded,
+                ),
+                if (totalDebts > 0)
+                  _buildFlowItem(
+                    'Deudas',
+                    totalDebts,
+                    const Color(0xFFFB923C), // Naranja sólido
+                    Icons.account_balance_rounded,
                   ),
-                  
-                  const SizedBox(height: 12),
-
-                  // Nuevo: Disponible Real
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: Colors.white.withOpacity(0.05)),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(Icons.check_circle_outline, color: Colors.white.withOpacity(0.7), size: 14),
-                        const SizedBox(width: 6),
-                        Text(
-                          'Puesto a salvo / Disponible: ',
-                          style: GoogleFonts.montserrat(
-                            fontSize: 11,
-                            fontWeight: FontWeight.w500,
-                            color: Colors.white.withOpacity(0.8),
-                          ),
-                        ),
-                        Text(
-                          flowFormatter.format(realAvailable),
-                          style: GoogleFonts.montserrat(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w700,
-                            color: Colors.white,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-
-                  const SizedBox(height: 14),
-                  
-                  // Sección inferior (Glass bar) más compacta
-                  Container(
-                    padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
-                    decoration: BoxDecoration(
-                      color: Colors.black.withOpacity(0.12),
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    child: Row(
-                      children: [
-                        Expanded(
-                          child: _buildFlowColumn(
-                            'Ingresos',
-                            incomes,
-                            Colors.white,
-                            Icons.arrow_upward_rounded,
-                          ),
-                        ),
-                        Container(
-                          height: 20,
-                          width: 1,
-                          color: Colors.white.withOpacity(0.15),
-                        ),
-                        Expanded(
-                          child: _buildFlowColumn(
-                            'Gastos',
-                            expenses,
-                            Colors.white,
-                            Icons.arrow_downward_rounded,
-                          ),
-                        ),
-                        if (totalDebts > 0) ... [
-                          Container(
-                            height: 20,
-                            width: 1,
-                            color: Colors.white.withOpacity(0.15),
-                          ),
-                          Expanded(
-                            child: _buildFlowColumn(
-                              'Deudas',
-                              totalDebts,
-                              Colors.white.withOpacity(0.9),
-                              Icons.money_off_rounded,
-                            ),
-                          ),
-                        ],
-                      ],
-                    ),
-                  ),
-                ],
-              ),
+              ],
             ),
           ],
         ),
@@ -644,51 +534,43 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     );
   }
 
-  Widget _buildFlowColumn(
+  Widget _buildFlowItem(
     String label,
     double amount,
-    Color color,
+    Color accentColor,
     IconData icon,
   ) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Container(
-          padding: const EdgeInsets.all(6),
-          decoration: BoxDecoration(
-            color: Colors.white.withOpacity(0.12),
-            shape: BoxShape.circle,
-          ),
-          child: Icon(icon, color: color, size: 12),
-        ),
-        const SizedBox(width: 8),
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min,
+        Row(
           children: [
+            Icon(icon, color: accentColor, size: 14),
+            const SizedBox(width: 4),
             Text(
               label.toUpperCase(),
               style: GoogleFonts.montserrat(
-                fontSize: 8,
+                fontSize: 9,
                 fontWeight: FontWeight.w700,
-                color: color.withOpacity(0.7),
+                color: Colors.white.withOpacity(0.4),
                 letterSpacing: 0.5,
               ),
             ),
-            Text(
-              NumberFormat.currency(symbol: r'$', decimalDigits: 2).format(amount),
-              style: GoogleFonts.montserrat(
-                fontSize: 13,
-                fontWeight: FontWeight.w800,
-                color: color,
-                letterSpacing: -0.5,
-              ),
-            ),
           ],
+        ),
+        const SizedBox(height: 4),
+        Text(
+          NumberFormat.compactCurrency(symbol: r'$', decimalDigits: 2).format(amount),
+          style: GoogleFonts.montserrat(
+            fontSize: 16,
+            fontWeight: FontWeight.w700,
+            color: Colors.white,
+          ),
         ),
       ],
     );
   }
+
 
   Widget _buildAccountsAndCardsSection(
     BuildContext context,
@@ -769,7 +651,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
             }
 
             return SizedBox(
-              height: 170, // Altura incrementada para garantizar espacio suficiente para badges y progreso
+              height: 140, // Reducido verticalmente para garantizar espacio suficiente para badges y progreso
               child: ListView.separated(
                 scrollDirection: Axis.horizontal,
                 padding: const EdgeInsets.symmetric(horizontal: 4),
@@ -883,24 +765,24 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                                     ),
                                   const Spacer(),
                                   Text(
-                                    acc.nombre,
+                                    acc.nombre.toUpperCase(),
                                     maxLines: 1,
                                     overflow: TextOverflow.ellipsis,
                                     style: GoogleFonts.montserrat(
-                                      fontSize: 12,
+                                      fontSize: 9, // Small
                                       fontWeight: FontWeight.w600,
-                                      color: isDark ? Colors.white.withOpacity(0.6) : Colors.black54,
-                                      letterSpacing: 0.2,
+                                      color: isDark ? Colors.white54 : Colors.black54,
+                                      letterSpacing: 1.0,
                                     ),
                                   ),
-                                  const SizedBox(height: 2),
+                                  const SizedBox(height: 4),
                                     Text(
                                       currencyFormatter.format(acc.saldoActual),
                                       style: GoogleFonts.montserrat(
-                                        fontSize: 17,
+                                        fontSize: 22, // Large
                                         fontWeight: FontWeight.w800,
                                         color: isDark ? Colors.white : AppColors.textPrimary,
-                                        letterSpacing: -0.5,
+                                        letterSpacing: -1.0,
                                       ),
                                     ),
                                     const SizedBox(height: 4),
@@ -1175,13 +1057,13 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                             child: Container(
                               padding: const EdgeInsets.all(10), // Tamaño intermedio equilibrado
                               decoration: BoxDecoration(
-                                color: AppColors.primary.withOpacity(0.12),
-                                borderRadius: BorderRadius.circular(12), // Squircle suave
+                                color: AppColors.primary,
+                                borderRadius: BorderRadius.circular(10), // Más sólido, más cuadrado
                               ),
                               child: const Icon(
                                 Icons.check_rounded,
-                                size: 18, // Icono legible pero no gigante
-                                color: AppColors.primary,
+                                size: 18,
+                                color: Colors.white,
                               ),
                             ),
                           ),
@@ -1343,76 +1225,63 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
 
                       return Column(
                         children: [
-                          // Gráfica de Pie Interactiva con Total al centro
+                          // Gráfica CustomPaint (Sin dependencias fl_chart) interactiva
                           SizedBox(
                             height: 220,
                             child: Stack(
                               alignment: Alignment.center,
                               children: [
-                                PieChart(
-                                  PieChartData(
-                                    pieTouchData: PieTouchData(
-                                      touchCallback: (FlTouchEvent event, pieTouchResponse) {
-                                        setState(() {
-                                          if (!event.isInterestedForInteractions ||
-                                              pieTouchResponse == null ||
-                                              pieTouchResponse.touchedSection == null) {
-                                            touchedIndex = -1;
-                                            return;
-                                          }
-                                          touchedIndex = pieTouchResponse.touchedSection!.touchedSectionIndex;
-                                        });
-                                      },
+                                GestureDetector(
+                                  onTapUp: (details) {
+                                    // Comportamiento base: limpiar seleccion si se toca el centro
+                                    setState(() => touchedIndex = -1);
+                                  },
+                                  child: CustomPaint(
+                                    size: const Size(200, 200),
+                                    painter: DonutChartPainter(
+                                      sections: sortedEntries.asMap().entries.map((entry) {
+                                        final category = getCategory(entry.value.key);
+                                        return DonutSection(
+                                          value: entry.value.value,
+                                          color: _parseColor(category.color, entry.key),
+                                          title: category.nombre,
+                                        );
+                                      }).toList(),
+                                      total: totalExpenses,
+                                      touchedIndex: touchedIndex,
                                     ),
-                                    borderData: FlBorderData(show: false),
-                                    sectionsSpace: 4,
-                                    centerSpaceRadius: 65,
-                                    sections: sortedEntries.asMap().entries.map((entry) {
-                                      final isTouched = entry.key == touchedIndex;
-                                      final double radius = isTouched ? 35 : 28;
-                                      final category = getCategory(entry.value.key);
-                                      Color color = _parseColor(category.color);
-
-                                      return PieChartSectionData(
-                                        color: color,
-                                        value: entry.value.value,
-                                        title: '',
-                                        radius: radius,
-                                        badgeWidget: isTouched ? _buildChartBadge(category, color) : null,
-                                        badgePositionPercentageOffset: 1.25,
-                                      );
-                                    }).toList(),
                                   ),
                                 ),
                                 // Textos en el centro
-                                Column(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Text(
-                                      'Total',
-                                      style: GoogleFonts.montserrat(
-                                        fontSize: 12,
-                                        fontWeight: FontWeight.w500,
-                                        color: Colors.grey,
+                                IgnorePointer(
+                                  child: Column(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Text(
+                                        touchedIndex >= 0 ? getCategory(sortedEntries[touchedIndex].key).nombre : 'TOTAL',
+                                        style: GoogleFonts.montserrat(
+                                          fontSize: 10,
+                                          fontWeight: FontWeight.w700,
+                                          letterSpacing: 1.2,
+                                          color: Colors.grey,
+                                        ),
+                                        textAlign: TextAlign.center,
+                                        maxLines: 1,
                                       ),
-                                    ),
-                                    Text(
-                                      NumberFormat.compactCurrency(symbol: '\$').format(totalExpenses),
-                                      style: GoogleFonts.montserrat(
-                                        fontSize: 22,
-                                        fontWeight: FontWeight.bold,
-                                        color: isDark ? Colors.white : AppColors.textPrimary,
+                                      const SizedBox(height: 2),
+                                      Text(
+                                        NumberFormat.compactCurrency(symbol: '\$').format(
+                                          touchedIndex >= 0 ? sortedEntries[touchedIndex].value : totalExpenses
+                                        ),
+                                        style: GoogleFonts.montserrat(
+                                          fontSize: 26,
+                                          fontWeight: FontWeight.w800,
+                                          color: touchedIndex >= 0 ? _parseColor(getCategory(sortedEntries[touchedIndex].key).color, touchedIndex) : (isDark ? Colors.white : AppColors.textPrimary),
+                                          letterSpacing: -1.0,
+                                        ),
                                       ),
-                                    ),
-                                    Text(
-                                      'MXN',
-                                      style: GoogleFonts.montserrat(
-                                        fontSize: 10,
-                                        fontWeight: FontWeight.w600,
-                                        color: AppColors.primary,
-                                      ),
-                                    ),
-                                  ],
+                                    ],
+                                  ),
                                 ),
                               ],
                             ),
@@ -1429,7 +1298,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                               final entry = sortedEntries[index];
                               final category = getCategory(entry.key);
                               final percentage = (entry.value / totalExpenses) * 100;
-                              final color = _parseColor(category.color);
+                              final color = _parseColor(category.color, index);
                               final isSelected = touchedIndex == index;
 
                               return GestureDetector(
@@ -1617,14 +1486,41 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     );
   }
 
-  Color _parseColor(String? colorHex) {
-    if (colorHex == null || colorHex.isEmpty) return AppColors.primary;
+  Widget _buildEmptyStateDonut(bool isDark) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(vertical: 40, horizontal: 20),
+      decoration: BoxDecoration(
+        color: isDark ? AppColors.surfaceDark : Colors.white,
+        borderRadius: BorderRadius.circular(28),
+      ),
+      child: Column(
+        children: [
+          Icon(Icons.pie_chart_outline_rounded, size: 48, color: Colors.grey.withOpacity(0.3)),
+          const SizedBox(height: 16),
+          Text(
+            'Aún no hay gastos este mes',
+            style: GoogleFonts.montserrat(
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+              color: Colors.grey,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Color _parseColor(String? colorHex, int index) {
+    if (colorHex == null || colorHex.isEmpty || colorHex == '#000000') {
+      return AppColors.categoryColors[index % AppColors.categoryColors.length];
+    }
     try {
-      String colorStr = colorHex.replaceAll('#', '');
+      String colorStr = colorHex.replaceAll('#', '').trim();
       if (colorStr.length == 6) colorStr = 'FF$colorStr';
       return Color(int.parse(colorStr, radix: 16));
     } catch (_) {
-      return AppColors.primary;
+      return AppColors.categoryColors[index % AppColors.categoryColors.length];
     }
   }
 
@@ -1935,12 +1831,12 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                           width: 32,
                           height: 32,
                           decoration: BoxDecoration(
-                            color: Colors.orange.withOpacity(0.15),
-                            borderRadius: BorderRadius.circular(10), // Squircle homologado
+                            color: Colors.orange,
+                            borderRadius: BorderRadius.circular(8), // Squircle homologado
                           ),
                           child: const Icon(
                             Icons.money_off_rounded,
-                            color: Colors.orange,
+                            color: Colors.white,
                             size: 16,
                           ),
                         ),
@@ -2007,13 +1903,13 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                             child: Container(
                               padding: const EdgeInsets.all(10), // Tamaño equilibrado
                               decoration: BoxDecoration(
-                                color: Colors.orange.withOpacity(0.12),
-                                borderRadius: BorderRadius.circular(12), // Squircle suave
+                                color: Colors.orange,
+                                borderRadius: BorderRadius.circular(10), // Squircle suave
                               ),
                               child: const Icon(
                                 Icons.payments_rounded,
                                 size: 18, // Icono legible
-                                color: Colors.orange,
+                                color: Colors.white,
                               ),
                             ),
                           ),
@@ -2078,12 +1974,12 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
         width: 32,
         height: 32,
         decoration: BoxDecoration(
-          color: color.withOpacity(0.15),
-          borderRadius: BorderRadius.circular(10), // Homologado: Squircle Premium
+          color: color,
+          borderRadius: BorderRadius.circular(8), // Homologado: Squircle Premium
         ),
         child: Icon(
           icon,
-          color: color,
+          color: Colors.white,
           size: 16,
         ),
       );
@@ -2118,10 +2014,10 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
             width: 32,
             height: 32,
             decoration: BoxDecoration(
-              color: backgroundColor.withOpacity(0.15),
-              borderRadius: BorderRadius.circular(10), // Homologado: Squircle Premium
+              color: backgroundColor,
+              borderRadius: BorderRadius.circular(8), // Homologado: Squircle Premium
             ),
-            child: Icon(iconData, color: backgroundColor, size: 16),
+            child: Icon(iconData, color: Colors.white, size: 16),
           );
         } catch (e) {
           return Container(
@@ -2274,4 +2170,56 @@ class _ChartLoadingSkeleton extends StatelessWidget {
       child: Center(child: CircularProgressIndicator()),
     );
   }
+}
+
+class DonutSection {
+  final double value;
+  final Color color;
+  final String title;
+  DonutSection({required this.value, required this.color, this.title = ''});
+}
+
+class DonutChartPainter extends CustomPainter {
+  final List<DonutSection> sections;
+  final double total;
+  final int touchedIndex;
+
+  DonutChartPainter({required this.sections, required this.total, required this.touchedIndex});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final center = Offset(size.width / 2, size.height / 2);
+    // Adjusted radius calculation to accommodate varying stroke widths
+    final maxStrokeWidth = 32.0;
+    final radius = (size.width - maxStrokeWidth) / 2;
+    
+    double startAngle = -1.5708; // -90 grados en radianes
+
+    for (int i = 0; i < sections.length; i++) {
+      final section = sections[i];
+      final sweepAngle = (section.value / total) * 6.28318; // 2 * pi
+      final isTouched = i == touchedIndex;
+      final currentStrokeWidth = isTouched ? 30.0 : 20.0;
+      
+      final paint = Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = currentStrokeWidth
+        ..strokeCap = StrokeCap.round
+        ..color = isTouched ? section.color : section.color.withOpacity(touchedIndex == -1 ? 1.0 : 0.3);
+
+      canvas.drawArc(
+        Rect.fromCircle(center: center, radius: radius),
+        startAngle,
+        sweepAngle > 0.05 ? sweepAngle - 0.05 : sweepAngle, 
+        false,
+        paint,
+      );
+      
+      startAngle += sweepAngle;
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant DonutChartPainter oldDelegate) => 
+    oldDelegate.sections != sections || oldDelegate.total != total || oldDelegate.touchedIndex != touchedIndex;
 }
