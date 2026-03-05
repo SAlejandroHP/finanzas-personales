@@ -351,12 +351,12 @@ class _SmartInputBarState extends ConsumerState<SmartInputBar> {
                         padding: EdgeInsets.all(AppColors.sm),
                         child: CircularProgressIndicator(
                           strokeWidth: 2,
-                          valueColor: AlwaysStoppedAnimation<Color>(AppColors.textSecondary),
+                          valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
                         ),
                       )
                     : Icon(
                         _isListening ? Icons.mic : Icons.mic_none,
-                        color: AppColors.textSecondary,
+                        color: Colors.white,
                         size: AppColors.iconMedium,
                       ),
               ),

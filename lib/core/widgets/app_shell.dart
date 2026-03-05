@@ -91,7 +91,10 @@ class AppShell extends ConsumerWidget {
               offset: isNavbarVisible ? Offset.zero : const Offset(0, 2),
               duration: const Duration(milliseconds: 300),
               curve: Curves.easeInOut,
-              child: _buildCenterFAB(context, ref),
+              child: Transform.translate(
+                offset: const Offset(0, -5), // Ajuste con los laterales recuperados
+                child: _buildCenterFAB(context, ref),
+              ),
             ) 
           : null,
       floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
@@ -102,41 +105,44 @@ class AppShell extends ConsumerWidget {
               curve: Curves.easeInOut,
               child: Container(
                 color: Colors.transparent,
-                padding: const EdgeInsets.only(left: 20, right: 20, bottom: 5),
+                padding: const EdgeInsets.symmetric(horizontal: 20), // Recuperados laterales, sin margen inferior
                 child: SafeArea(
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(32),
-                    child: Container(
-                      height: 64,
-                      decoration: BoxDecoration(
-                        color: isDark 
-                            ? const Color(0xFF2C2C2C).withOpacity(0.95) 
-                            : const Color(0xFFF0F0F0).withOpacity(0.95),
-                        borderRadius: BorderRadius.circular(32),
-                        border: Border.all(
+                  child: Stack(
+                    alignment: Alignment.topCenter,
+                    clipBehavior: Clip.none,
+                    children: [
+                      // Fondo del Nav Island con el "hueco" central
+                      CustomPaint(
+                        painter: _NotchedIslandPainter(
                           color: isDark 
-                              ? Colors.white.withOpacity(0.1) 
-                              : Colors.black.withOpacity(0.05),
+                              ? AppColors.secondary.withOpacity(0.2) 
+                              : AppColors.secondary.withOpacity(0.5),
+                          strokeWidth: 3.5,
                         ),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withOpacity(0.1),
-                            blurRadius: 20,
-                            offset: const Offset(0, 10),
+                        child: ClipPath(
+                          clipper: _NotchedIslandClipper(),
+                          child: Container(
+                            height: 64,
+                            decoration: BoxDecoration(
+                              color: isDark 
+                                  ? AppColors.surfaceDark.withOpacity(0.95) 
+                                  : AppColors.surfaceLight.withOpacity(0.95),
+                              borderRadius: BorderRadius.circular(32), // Recuperado el radio completo
+                            ),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                              children: [
+                                _buildNavButton(context, ref, navItems[0], currentIndex == 0),
+                                _buildNavButton(context, ref, navItems[1], currentIndex == 1),
+                                const SizedBox(width: 80), // Hueco físico en el Row
+                                _buildNavButton(context, ref, navItems[2], currentIndex == 2),
+                                _buildNavButton(context, ref, navItems[3], false),
+                              ],
+                            ),
                           ),
-                        ],
+                        ),
                       ),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                        children: [
-                          _buildNavButton(context, ref, navItems[0], currentIndex == 0),
-                          _buildNavButton(context, ref, navItems[1], currentIndex == 1),
-                          const SizedBox(width: 48),
-                          _buildNavButton(context, ref, navItems[2], currentIndex == 2),
-                          _buildNavButton(context, ref, navItems[3], false),
-                        ],
-                      ),
-                    ),
+                    ],
                   ),
                 ),
               ),
@@ -250,18 +256,15 @@ class AppShell extends ConsumerWidget {
 
   /// Construye el FAB central flotante
   Widget _buildCenterFAB(BuildContext context, WidgetRef ref) {
-    return Container(
-      margin: const EdgeInsets.only(top: 54), // Bajamos el FAB aún más para que siga alineado con el nav bajado
-      child: FloatingActionButton(
-        onPressed: () => _showAddTransactionSheet(context, ref),
-        backgroundColor: AppColors.primary,
-        elevation: 4,
-        shape: const CircleBorder(),
-        child: const Icon(
-          Icons.add,
-          size: 30,
-          color: Colors.white,
-        ),
+    return FloatingActionButton(
+      onPressed: () => _showAddTransactionSheet(context, ref),
+      backgroundColor: AppColors.primary,
+      elevation: 0,
+      shape: const CircleBorder(),
+      child: const Icon(
+        Icons.add_rounded,
+        size: 32,
+        color: Colors.white,
       ),
     );
   }
@@ -273,4 +276,111 @@ class AppShell extends ConsumerWidget {
       ref.read(isCanvasOpenProvider.notifier).state = false;
     });
   }
+}
+
+/// Clipper personalizado para crear un hueco (notch) en el Nav Island
+class _NotchedIslandClipper extends CustomClipper<Path> {
+  @override
+  Path getClip(Size size) {
+    final path = Path();
+    final double radius = 32; // Radio de los bordes del container
+    final double notchRadius = 38; // Radio del hueco para el FAB
+    final double shoulderRadius = 10; // Radio de las orillas del hueco
+    final double centerX = size.width / 2;
+
+    path.moveTo(radius, 0);
+    
+    // Lado izquierdo superior hasta el hombro del notch
+    path.lineTo(centerX - notchRadius - shoulderRadius, 0);
+    
+    // Hombro izquierdo redondeado hacia adentro/abajo
+    path.quadraticBezierTo(
+      centerX - notchRadius, 
+      0, 
+      centerX - notchRadius + 4, 
+      8,
+    );
+    
+    // El hueco principal (Notch)
+    path.arcToPoint(
+      Offset(centerX + notchRadius - 4, 8),
+      radius: Radius.circular(notchRadius),
+      clockwise: false,
+    );
+
+    // Hombro derecho redondeado hacia afuera/arriba
+    path.quadraticBezierTo(
+      centerX + notchRadius, 
+      0, 
+      centerX + notchRadius + shoulderRadius, 
+      0,
+    );
+    
+    path.lineTo(size.width - radius, 0);
+    path.arcToPoint(
+      Offset(size.width, radius),
+      radius: Radius.circular(radius),
+    );
+    path.lineTo(size.width, size.height - radius);
+    path.arcToPoint(
+      Offset(size.width - radius, size.height),
+      radius: Radius.circular(radius),
+    );
+    path.lineTo(radius, size.height);
+    path.arcToPoint(
+      Offset(0, size.height - radius),
+      radius: Radius.circular(radius),
+    );
+    path.lineTo(0, radius);
+    path.arcToPoint(
+      Offset(radius, 0),
+      radius: Radius.circular(radius),
+    );
+
+    return path;
+  }
+
+  @override
+  bool shouldReclip(CustomClipper<Path> oldClipper) => false;
+}
+
+/// Painter personalizado para dibujar el borde que sigue el notch
+class _NotchedIslandPainter extends CustomPainter {
+  final Color color;
+  final double strokeWidth;
+
+  _NotchedIslandPainter({required this.color, required this.strokeWidth});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final painter = Paint()
+      ..color = color
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = strokeWidth;
+
+    final path = Path();
+    final double radius = 32;
+    final double notchRadius = 38;
+    final double shoulderRadius = 10;
+    final double centerX = size.width / 2;
+
+    path.moveTo(radius, 0);
+    path.lineTo(centerX - notchRadius - shoulderRadius, 0);
+    path.quadraticBezierTo(centerX - notchRadius, 0, centerX - notchRadius + 4, 8);
+    path.arcToPoint(Offset(centerX + notchRadius - 4, 8), radius: Radius.circular(notchRadius), clockwise: false);
+    path.quadraticBezierTo(centerX + notchRadius, 0, centerX + notchRadius + shoulderRadius, 0);
+    path.lineTo(size.width - radius, 0);
+    path.arcToPoint(Offset(size.width, radius), radius: Radius.circular(radius));
+    path.lineTo(size.width, size.height - radius);
+    path.arcToPoint(Offset(size.width - radius, size.height), radius: Radius.circular(radius));
+    path.lineTo(radius, size.height);
+    path.arcToPoint(Offset(0, size.height - radius), radius: Radius.circular(radius));
+    path.lineTo(0, radius);
+    path.arcToPoint(Offset(radius, 0), radius: Radius.circular(radius));
+
+    canvas.drawPath(path, painter);
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
