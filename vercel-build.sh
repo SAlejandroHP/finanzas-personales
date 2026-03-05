@@ -14,5 +14,10 @@ flutter doctor
 # Enable web support (if not already enabled)
 flutter config --enable-web
 
+# Generar archivo .env para el build de Vercel
+echo "Creando archivo .env..."
+touch .env
+echo "GEMINI_API_KEY=$GEMINI_API_KEY" > .env
+
 # Build the project
 flutter build web --release
