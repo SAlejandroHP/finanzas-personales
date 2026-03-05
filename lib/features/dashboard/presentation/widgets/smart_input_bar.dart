@@ -331,13 +331,6 @@ class _SmartInputBarState extends ConsumerState<SmartInputBar> {
         decoration: BoxDecoration(
           color: backgroundColor,
           borderRadius: BorderRadius.circular(AppColors.radiusCircular),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.12),
-              blurRadius: AppColors.radiusMedium,
-              offset: const Offset(0, 5),
-            ),
-          ],
         ),
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
         child: Row(

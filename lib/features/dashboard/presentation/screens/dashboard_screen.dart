@@ -448,83 +448,96 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     Color cardColor,
     bool isDark,
   ) {
-    // Color sólido profundo y elegante para el fondo (Gris carbón oscuro / Negro mate)
-    final Color solidBackground = isDark ? const Color(0xFF121212) : const Color(0xFF1A1C1E);
+    // Diseño Nishikigo 2026: Verde petróleo elegante
+    final Color cardBackground = isDark ? AppColors.surfaceDark : AppColors.primary;
     
     return Container(
       width: double.infinity,
       decoration: BoxDecoration(
-        color: solidBackground,
-        borderRadius: BorderRadius.circular(28), // Bordes más pronunciados
+        color: cardBackground,
+        borderRadius: BorderRadius.circular(AppColors.radiusLarge), // 24.0
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.15),
-            blurRadius: 30,
-            offset: const Offset(0, 15),
+            color: cardBackground.withOpacity(0.3),
+            blurRadius: 25,
+            offset: const Offset(0, 12),
             spreadRadius: -5,
           ),
         ],
       ),
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 28),
+        padding: const EdgeInsets.all(24),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              'WORKING BALANCE',
-              style: GoogleFonts.montserrat(
-                fontSize: 11,
-                fontWeight: FontWeight.w700,
-                color: Colors.white.withOpacity(0.5),
-                letterSpacing: 2.0,
-              ),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  'WORKING BALANCE',
+                  style: GoogleFonts.montserrat(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w700,
+                    color: Colors.white.withOpacity(0.6),
+                    letterSpacing: 2.0,
+                  ),
+                ),
+                Icon(
+                  Icons.account_balance_wallet_outlined,
+                  color: Colors.white.withOpacity(0.5),
+                  size: 20,
+                ),
+              ],
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: 12),
             FittedBox(
               fit: BoxFit.scaleDown,
               alignment: Alignment.centerLeft,
               child: Text(
                 balanceFormatter.format(balance),
                 style: GoogleFonts.montserrat(
-                  fontSize: 38, // Tamaño gigante
-                  fontWeight: FontWeight.w800, // Bold extremo
+                  fontSize: AppColors.displayLarge, // 32.0
+                  fontWeight: FontWeight.w800,
                   color: Colors.white,
-                  letterSpacing: -1.5,
+                  letterSpacing: -1.0,
                 ),
               ),
             ),
             const SizedBox(height: 24),
             
-            // Línea divisoria minimalista
+            // Línea de acento minimalista
             Container(
-              height: 1,
-              width: 30,
-              color: AppColors.primary.withOpacity(0.4),
+              height: 2,
+              width: 40,
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.2),
+                borderRadius: BorderRadius.circular(1),
+              ),
             ),
             const SizedBox(height: 24),
             
-            // Subtotales con iconos minimalistas y colores sólidos
+            // Subtotales con elegancia monocromática
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 _buildFlowItem(
                   'Ingresos',
                   incomes,
-                  const Color(0xFF4ADE80), // Verde pastel sólido
-                  Icons.add_rounded,
+                  Colors.white.withOpacity(0.9),
+                  Icons.arrow_upward_rounded,
                 ),
                 _buildFlowItem(
                   'Gastos',
                   expenses,
-                  const Color(0xFFF87171), // Rojo/Coral sólido
-                  Icons.remove_rounded,
+                  Colors.white.withOpacity(0.9),
+                  Icons.arrow_downward_rounded,
                 ),
                 if (totalDebts > 0)
                   _buildFlowItem(
                     'Deudas',
                     totalDebts,
-                    const Color(0xFFFB923C), // Naranja sólido
-                    Icons.account_balance_rounded,
+                    Colors.white.withOpacity(0.9),
+                    Icons.history_rounded,
                   ),
               ],
             ),
@@ -537,7 +550,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   Widget _buildFlowItem(
     String label,
     double amount,
-    Color accentColor,
+    Color textColor,
     IconData icon,
   ) {
     return Column(
@@ -545,14 +558,14 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
       children: [
         Row(
           children: [
-            Icon(icon, color: accentColor, size: 14),
+            Icon(icon, color: textColor.withOpacity(0.5), size: 14),
             const SizedBox(width: 4),
             Text(
               label.toUpperCase(),
               style: GoogleFonts.montserrat(
                 fontSize: 9,
                 fontWeight: FontWeight.w700,
-                color: Colors.white.withOpacity(0.4),
+                color: textColor.withOpacity(0.5),
                 letterSpacing: 0.5,
               ),
             ),
@@ -560,11 +573,11 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
         ),
         const SizedBox(height: 4),
         Text(
-          NumberFormat.compactCurrency(symbol: r'$', decimalDigits: 2).format(amount),
+          NumberFormat.compactCurrency(symbol: r'$', decimalDigits: 2, locale: 'es_MX').format(amount),
           style: GoogleFonts.montserrat(
             fontSize: 16,
             fontWeight: FontWeight.w700,
-            color: Colors.white,
+            color: textColor,
           ),
         ),
       ],
@@ -1934,7 +1947,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   String _formatTipoName(String tipo) {
     switch (tipo) {
       case 'efectivo': return 'Efectivo';
-      case 'chequera': return 'Chequera';
+      case 'chequera': return 'Débito';
       case 'ahorro': return 'Ahorro';
       case 'tarjeta_credito': return 'T. Crédito';
       case 'inversion': return 'Inversión';
