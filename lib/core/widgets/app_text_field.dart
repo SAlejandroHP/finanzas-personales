@@ -62,6 +62,9 @@ class AppTextField extends StatefulWidget {
   /// Longitud máxima permitida
   final int? maxLength;
 
+  /// Capitalización de texto
+  final TextCapitalization textCapitalization;
+
   const AppTextField({
     super.key,
     required this.label,
@@ -83,6 +86,7 @@ class AppTextField extends StatefulWidget {
     this.autofocus = false,
     this.suffixIcon,
     this.maxLength,
+    this.textCapitalization = TextCapitalization.none,
   });
 
   @override
@@ -118,6 +122,7 @@ class _AppTextFieldState extends State<AppTextField> {
           enabled: widget.enabled,
           maxLines: widget.maxLines,
           maxLength: widget.maxLength,
+          textCapitalization: widget.textCapitalization,
           onChanged: widget.onChanged,
           onFieldSubmitted: widget.onSubmitted,
           validator: widget.validator,

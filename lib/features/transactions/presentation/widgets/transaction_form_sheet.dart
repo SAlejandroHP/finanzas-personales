@@ -776,6 +776,7 @@ class _TransactionFormSheetState extends ConsumerState<TransactionFormSheet> {
                         TextField(
                           controller: _descripcionController,
                           focusNode: _descripcionFocusNode,
+                          textCapitalization: TextCapitalization.sentences,
                           style: GoogleFonts.montserrat(
                             fontSize: AppColors.bodyMedium,
                           ),

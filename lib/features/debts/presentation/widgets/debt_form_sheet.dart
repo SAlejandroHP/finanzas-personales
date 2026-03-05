@@ -636,6 +636,7 @@ class _DebtFormSheetState extends ConsumerState<DebtFormSheet> {
             controller: controller,
             focusNode: focusNode,
             maxLines: maxLines,
+            textCapitalization: isAmount ? TextCapitalization.none : TextCapitalization.sentences,
             style: GoogleFonts.montserrat(fontSize: 16, fontWeight: FontWeight.w500, color: isDark ? Colors.white : AppColors.textPrimary),
             keyboardType: keyboardType ?? (isAmount ? const TextInputType.numberWithOptions(decimal: true) : TextInputType.text),
             autofocus: !isAmount && label.toUpperCase() == 'NOMBRE DE LA DEUDA',

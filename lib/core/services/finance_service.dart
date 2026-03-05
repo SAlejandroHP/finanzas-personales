@@ -101,6 +101,7 @@ class FinanceService {
     refToUse.invalidate(debtsListProvider);
     refToUse.invalidate(pendingInvitationsProvider);
     refToUse.invalidate(recurringTransactionsProvider);
+    refToUse.invalidate(goalsListProvider);
     
     // Providers de categorías (antes dispersos en CategoryForm)
     refToUse.invalidate(categoriesListProvider);

@@ -4,6 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:uuid/uuid.dart';
 import 'package:intl/intl.dart';
 import '../../../../core/constants/app_colors.dart';
+import '../../../../core/services/finance_service.dart';
 import '../providers/goals_provider.dart';
 import '../../models/goal_model.dart';
 
@@ -112,6 +113,7 @@ class _GoalFormBottomSheetState extends ConsumerState<GoalFormBottomSheet> {
       } else {
         await ref.read(goalsNotifierProvider.notifier).updateGoal(goal);
       }
+      ref.read(financeServiceProvider).refreshAll();
       if (mounted) Navigator.pop(context);
     } catch (e) {
       // Manejo de error
@@ -176,6 +178,7 @@ class _GoalFormBottomSheetState extends ConsumerState<GoalFormBottomSheet> {
                   Expanded(
                     child: TextFormField(
                       controller: _titleController,
+                      textCapitalization: TextCapitalization.sentences,
                       style: GoogleFonts.montserrat(fontWeight: FontWeight.w600),
                       decoration: InputDecoration(
                         labelText: 'Nombre de la Meta',
@@ -195,6 +198,7 @@ class _GoalFormBottomSheetState extends ConsumerState<GoalFormBottomSheet> {
               TextFormField(
                 controller: _amountController,
                 keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                textInputAction: TextInputAction.done,
                 style: GoogleFonts.montserrat(fontWeight: FontWeight.w700, fontSize: 18),
                 decoration: InputDecoration(
                   labelText: 'Monto Objetivo',

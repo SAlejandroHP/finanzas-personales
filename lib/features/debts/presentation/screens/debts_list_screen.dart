@@ -437,16 +437,19 @@ class DebtsListScreen extends ConsumerWidget {
           ),
           const SizedBox(height: 8),
           Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
-                'Saldo: ${formatter.format(debt.montoRestante)} • Total: ${formatter.format(debt.montoTotal)}',
-                style: GoogleFonts.montserrat(
-                  fontSize: 10,
-                  fontWeight: FontWeight.w700,
-                  color: isDark ? Colors.white60 : Colors.black54,
+              Expanded(
+                child: Text(
+                  'Saldo: ${formatter.format(debt.montoRestante)} • Total: ${formatter.format(debt.montoTotal)}',
+                  style: GoogleFonts.montserrat(
+                    fontSize: 10,
+                    fontWeight: FontWeight.w700,
+                    color: isDark ? Colors.white60 : Colors.black54,
+                  ),
+                  overflow: TextOverflow.ellipsis,
                 ),
               ),
+              const SizedBox(width: 8),
               Text(
                 'Pagado: ${(progress * 100).toInt()}%',
                 style: GoogleFonts.montserrat(
@@ -455,7 +458,8 @@ class DebtsListScreen extends ConsumerWidget {
                   color: isDark ? Colors.white60 : Colors.black54,
                 ),
               ),
-              if (debt.fechaVencimiento != null)
+              if (debt.fechaVencimiento != null) ...[
+                const SizedBox(width: 8),
                 Text(
                   'Vence ${DateFormat('d MMM').format(debt.fechaVencimiento!)}',
                   style: GoogleFonts.montserrat(
@@ -466,6 +470,7 @@ class DebtsListScreen extends ConsumerWidget {
                         : Colors.grey[600],
                   ),
                 ),
+              ],
             ],
           ),
           if (!isGuest) ...[
@@ -521,6 +526,7 @@ class DebtsListScreen extends ConsumerWidget {
                   icon: Icons.edit_rounded,
                   onPressed: () => _showDebtForm(context, debt: debt),
                   variant: 'primary',
+                  textColor: AppColors.textPrimaryDark,
                   size: 'small',
                   height: 32,
                 ),
