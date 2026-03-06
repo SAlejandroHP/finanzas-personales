@@ -108,7 +108,7 @@ class _AppTextFieldState extends State<AppTextField> {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final fillColor = isDark ? const Color(0xFF2C2C2C) : Colors.white;
+    final fillColor = isDark ? Colors.white.withOpacity(0.05) : Colors.grey[50];
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -140,7 +140,7 @@ class _AppTextFieldState extends State<AppTextField> {
             labelStyle: GoogleFonts.montserrat(
               fontSize: AppColors.bodyMedium,
               color: widget.isError
-                  ? AppColors.secondary
+                  ? AppColors.error
                   : (isDark ? Colors.white70 : Colors.grey[600]),
             ),
             hintStyle: GoogleFonts.montserrat(
@@ -149,20 +149,21 @@ class _AppTextFieldState extends State<AppTextField> {
             ),
             floatingLabelStyle: GoogleFonts.montserrat(
               fontSize: AppColors.bodySmall,
-              color: widget.isError ? AppColors.secondary : AppColors.primary,
+              color: widget.isError ? AppColors.error : AppColors.primary,
             ),
             filled: true,
             fillColor: fillColor,
+            isDense: true,
             contentPadding: const EdgeInsets.symmetric(
               horizontal: 16,
-              vertical: 10,
+              vertical: 12,
             ),
             prefixIcon: widget.prefixIcon != null
                 ? Icon(
                     widget.prefixIcon,
                     color: widget.isError
-                        ? AppColors.secondary
-                        : (isDark ? Colors.white70 : AppColors.primary),
+                        ? AppColors.error
+                        : Colors.grey,
                     size: 20,
                   )
                 : null,
@@ -191,21 +192,21 @@ class _AppTextFieldState extends State<AppTextField> {
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
               borderSide: BorderSide(
-                color: widget.isError ? AppColors.secondary : AppColors.primary,
+                color: widget.isError ? AppColors.error : AppColors.primary,
                 width: 2,
               ),
             ),
             errorBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
               borderSide: const BorderSide(
-                color: AppColors.secondary,
+                color: AppColors.error,
                 width: 2,
               ),
             ),
             focusedErrorBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
               borderSide: const BorderSide(
-                color: AppColors.secondary,
+                color: AppColors.error,
                 width: 2,
               ),
             ),

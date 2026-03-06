@@ -17,6 +17,8 @@ import '../providers/accounts_provider.dart';
 import '../providers/banks_provider.dart';
 import '../providers/currencies_provider.dart';
 import '../screens/card_scanner_screen.dart';
+import '../../../../core/services/finance_service.dart';
+
 
 /// Widget bottom sheet deslizable para crear o editar una cuenta.
 class AccountFormBottomSheet extends ConsumerStatefulWidget {
@@ -43,6 +45,7 @@ class _AccountFormBottomSheetState extends ConsumerState<AccountFormBottomSheet>
   final _deudaActualFocusNode = FocusNode();
   final _tagsFocusNode = FocusNode();
   final _calculatorResult = ValueNotifier<double?>(null);
+  bool _isNavigating = false;
   
   // Formatter para moneda
   late final intl.NumberFormat _moneyFormatter;
@@ -213,6 +216,7 @@ class _AccountFormBottomSheetState extends ConsumerState<AccountFormBottomSheet>
   }
 
   Future<void> _handleSave() async {
+    if (_isLoading) return;
     if (!_formKey.currentState!.validate()) return;
     if (_selectedTipo == null || _selectedMonedaId == null) {
       _showError('Por favor completa los campos requeridos');
@@ -256,21 +260,23 @@ class _AccountFormBottomSheetState extends ConsumerState<AccountFormBottomSheet>
         );
       }
 
-      // Si se marcó como default, llamamos al notifier para que gestione la exclusividad
-      if (_isDefault) {
-        await ref.read(accountsNotifierProvider.notifier).setDefaultAccount(account.id);
+        if (mounted) {
+          showAppToast(context, message: 'Cuenta guardada', type: ToastType.success);
+          Navigator.of(context).pop();
+        }
+      } catch (e) {
+        _showError('Error al guardar: $e');
+      } finally {
+        if (mounted) setState(() => _isLoading = false);
       }
-
-      if (mounted) {
-        showAppToast(context, message: 'Cuenta guardada', type: ToastType.success);
-        Navigator.of(context).pop();
-      }
-    } catch (e) {
-      _showError('Error al guardar: $e');
-    } finally {
-      if (mounted) setState(() => _isLoading = false);
+      
+      // Refrescar después del pop con un pequeño retraso para asegurar que la transición terminó
+      Future.delayed(const Duration(milliseconds: 300), () {
+        if (ref.context.mounted) {
+          ref.read(financeServiceProvider).refreshAll();
+        }
+      });
     }
-  }
 
   void _showError(String message) {
     showAppToast(context, message: message, type: ToastType.error);
@@ -319,7 +325,7 @@ class _AccountFormBottomSheetState extends ConsumerState<AccountFormBottomSheet>
                     ),
                   ),
                   Divider(height: 1, color: isDark ? Colors.white10 : Colors.grey[100]),
-                  Expanded(
+                    Expanded(
                     child: SingleChildScrollView(
                       controller: scrollController,
                       padding: const EdgeInsets.all(20),
@@ -346,24 +352,13 @@ class _AccountFormBottomSheetState extends ConsumerState<AccountFormBottomSheet>
                             const SizedBox(height: 24),
                             _buildSectionTitle('CONFIGURACIÓN', isDark),
                             const SizedBox(height: 12),
-                            Row(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Expanded(
-                                  flex: 2,
-                                  child: currenciesAsync.when(
-                                    loading: () => const Center(child: CircularProgressIndicator(strokeWidth: 2)),
-                                    error: (_, __) => const Icon(Icons.error_outline),
-                                    data: (currencies) => _buildCurrencyDropdown(currencies, isDark),
-                                  ),
-                                ),
-                                const SizedBox(width: 12),
-                                Expanded(
-                                  flex: 3,
-                                  child: _buildBankSelectorInRow(context, isDark),
-                                ),
-                              ],
+                            currenciesAsync.when(
+                              loading: () => const Center(key: ValueKey('c_loading'), child: CircularProgressIndicator(strokeWidth: 2)),
+                              error: (_, __) => const Icon(key: ValueKey('c_error'), Icons.error_outline),
+                              data: (currencies) => _buildCurrencyDropdown(currencies, isDark),
                             ),
+                            const SizedBox(height: 16),
+                            _buildBankSelectorInRow(context, isDark),
                             const SizedBox(height: 16),
                             SwitchListTile.adaptive(
                               contentPadding: EdgeInsets.zero,
@@ -399,16 +394,21 @@ class _AccountFormBottomSheetState extends ConsumerState<AccountFormBottomSheet>
                               hintText: '1234',
                               suffixIcon: IconButton(
                                 icon: const Icon(Icons.camera_alt_outlined, color: AppColors.primary),
-                                onPressed: _isLoading ? null : () async {
-                                  final lastFour = await Navigator.push<String>(
-                                    context,
-                                    MaterialPageRoute(builder: (_) => const CardScannerScreen()),
-                                  );
-                                  if (lastFour != null && lastFour.isNotEmpty && mounted) {
-                                    setState(() {
-                                      _lastFourController.text = lastFour;
-                                    });
-                                    showAppToast(context, message: '¡Tarjeta escaneada!', type: ToastType.success);
+                                onPressed: (_isLoading || _isNavigating) ? null : () async {
+                                  setState(() => _isNavigating = true);
+                                  try {
+                                    final lastFour = await Navigator.push<String>(
+                                      context,
+                                      MaterialPageRoute(builder: (_) => const CardScannerScreen()),
+                                    );
+                                    if (lastFour != null && lastFour.isNotEmpty && mounted) {
+                                      setState(() {
+                                        _lastFourController.text = lastFour;
+                                      });
+                                      showAppToast(context, message: '¡Tarjeta escaneada!', type: ToastType.success);
+                                    }
+                                  } finally {
+                                    if (mounted) setState(() => _isNavigating = false);
                                   }
                                 },
                               ),
@@ -554,9 +554,13 @@ class _AccountFormBottomSheetState extends ConsumerState<AccountFormBottomSheet>
       loading: () => Container(height: 52, decoration: _getBoxDecoration(isDark), child: const Center(child: SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2)))),
       error: (_, __) => Container(height: 52, decoration: _getBoxDecoration(isDark), child: const Icon(Icons.error_outline)),
       data: (banks) => GestureDetector(
-        onTap: () => _showBankPicker(context, banks, isDark),
+        onTap: (_isLoading || _isNavigating) ? null : () async {
+          setState(() => _isNavigating = true);
+          await _showBankPicker(context, banks, isDark);
+          if (mounted) setState(() => _isNavigating = false);
+        },
         child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          padding: const EdgeInsets.all(AppColors.md),
           decoration: _getBoxDecoration(isDark),
           child: Row(
             children: [
@@ -671,16 +675,26 @@ class _AccountFormBottomSheetState extends ConsumerState<AccountFormBottomSheet>
   InputDecoration _getInputDecoration(String label, IconData icon, bool isDark) {
     return InputDecoration(
       labelText: label,
-      labelStyle: GoogleFonts.montserrat(fontSize: 12, color: isDark ? Colors.white38 : Colors.grey[500]),
+      labelStyle: GoogleFonts.montserrat(
+        fontSize: AppColors.bodyMedium,
+        color: isDark ? Colors.white38 : Colors.grey[500],
+      ),
       filled: true,
-      fillColor: isDark ? Colors.white.withOpacity(0.05) : Colors.grey[100],
-      border: OutlineInputBorder(borderRadius: BorderRadius.circular(AppColors.radiusMedium), borderSide: BorderSide.none),
-      prefixIcon: Icon(icon, size: 18, color: isDark ? Colors.white38 : Colors.grey[500]),
+      fillColor: isDark ? Colors.white.withOpacity(0.05) : Colors.grey[50],
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(AppColors.radiusMedium),
+        borderSide: BorderSide.none,
+      ),
+      contentPadding: const EdgeInsets.all(AppColors.md),
+      prefixIcon: Icon(icon, size: 18, color: Colors.grey),
     );
   }
 
   BoxDecoration _getBoxDecoration(bool isDark) {
-    return BoxDecoration(color: isDark ? Colors.white.withOpacity(0.05) : Colors.grey[100], borderRadius: BorderRadius.circular(AppColors.radiusMedium));
+    return BoxDecoration(
+      color: isDark ? Colors.white.withOpacity(0.05) : Colors.grey[50],
+      borderRadius: BorderRadius.circular(AppColors.radiusMedium),
+    );
   }
 
   Widget _buildAdaptiveFooter(bool isDark) {
@@ -689,20 +703,44 @@ class _AccountFormBottomSheetState extends ConsumerState<AccountFormBottomSheet>
     }
     if (MediaQuery.of(context).viewInsets.bottom > 0) {
       return Container(
-        padding: const EdgeInsets.all(12),
-        color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+        decoration: BoxDecoration(
+          color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
+          border: Border(
+            top: BorderSide(
+              color: isDark ? Colors.white10 : Colors.grey[100]!,
+            ),
+          ),
+        ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            TextButton(onPressed: () => FocusScope.of(context).unfocus(), child: const Text('Ocultar')),
-            ElevatedButton(onPressed: () => FocusScope.of(context).nextFocus(), child: const Text('Siguiente')),
+            AppButton(
+              label: 'Ocultar teclado',
+              variant: 'outlined',
+              height: 40,
+              onPressed: () => FocusScope.of(context).unfocus(),
+            ),
+            AppButton(
+              label: 'Siguiente',
+              variant: 'primary',
+              height: 40,
+              onPressed: () => FocusScope.of(context).nextFocus(),
+            ),
           ],
         ),
       );
     }
     return Container(
-      padding: EdgeInsets.fromLTRB(20, 16, 20, MediaQuery.of(context).padding.bottom + 16),
-      decoration: BoxDecoration(color: isDark ? AppColors.surfaceDark : Colors.white, border: Border(top: BorderSide(color: isDark ? Colors.white10 : Colors.grey[100]!))),
+      padding: EdgeInsets.fromLTRB(20, 16, 20, MediaQuery.of(context).padding.bottom + 12),
+      decoration: BoxDecoration(
+        color: isDark ? AppColors.surfaceDark : Colors.white,
+        border: Border(
+          top: BorderSide(
+            color: isDark ? Colors.white10 : Colors.grey[100]!,
+          ),
+        ),
+      ),
       child: Row(
         children: [
           Expanded(child: AppButton(label: 'Cancelar', variant: 'secondary', onPressed: () => Navigator.of(context).pop())),
@@ -764,8 +802,8 @@ class _AccountFormBottomSheetState extends ConsumerState<AccountFormBottomSheet>
     );
   }
 
-  void _showBankPicker(BuildContext context, List<BankModel> banks, bool isDark) {
-    showModalBottomSheet(
+  Future<void> _showBankPicker(BuildContext context, List<BankModel> banks, bool isDark) async {
+    await showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,

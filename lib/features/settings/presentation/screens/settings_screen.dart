@@ -334,24 +334,33 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               children: [
                 TextField(
                   controller: _nameController,
+                  textCapitalization: TextCapitalization.words,
                   style: GoogleFonts.montserrat(
-                    fontSize: AppColors.bodyLarge,
+                    fontSize: AppColors.bodyMedium,
                     fontWeight: FontWeight.w700,
                     color: isDark ? Colors.white : AppColors.textPrimary,
                   ),
                   decoration: InputDecoration(
                     hintText: 'Tu nombre',
                     hintStyle: GoogleFonts.montserrat(
-                      fontSize: AppColors.bodyLarge,
+                      fontSize: AppColors.bodyMedium,
                       color: Colors.grey.withOpacity(0.5),
                     ),
+                    filled: true,
+                    fillColor: isDark
+                        ? Colors.white.withOpacity(0.05)
+                        : Colors.grey[50],
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(
+                        AppColors.radiusMedium,
+                      ),
+                      borderSide: BorderSide.none,
+                    ),
+                    contentPadding: const EdgeInsets.all(AppColors.md),
                     suffixIcon: !_isEditingName 
                       ? Icon(Icons.edit_rounded, size: 14, color: Colors.grey.withOpacity(0.4)) 
                       : null,
-                    suffixIconConstraints: const BoxConstraints(minWidth: 20, minHeight: 20),
-                    isDense: true,
-                    contentPadding: EdgeInsets.zero,
-                    border: InputBorder.none,
+                    suffixIconConstraints: const BoxConstraints(minWidth: 40, minHeight: 40),
                   ),
                   onChanged: (val) {
                     if (!_isEditingName) setState(() => _isEditingName = true);

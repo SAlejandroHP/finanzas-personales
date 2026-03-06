@@ -26,7 +26,9 @@ void showAppToast(
       type: type,
       duration: duration,
       onDismiss: () {
-        overlayEntry.remove();
+        if (overlayEntry.mounted) {
+          overlayEntry.remove();
+        }
       },
     ),
   );
