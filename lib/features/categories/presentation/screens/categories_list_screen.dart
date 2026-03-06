@@ -67,41 +67,56 @@ class _CategoriesListScreenState extends ConsumerState<CategoriesListScreen>
 
     return Scaffold(
       backgroundColor: backgroundColor,
-      appBar: AppBar(
-        title: Text(
-          'Mis Categorías',
-          style: GoogleFonts.montserrat(
-            fontWeight: FontWeight.w800,
-            fontSize: 18,
-            color: isDark ? Colors.white : AppColors.textPrimary,
-            letterSpacing: -0.5,
-          ),
-        ),
-        centerTitle: false,
-        elevation: 0,
-        scrolledUnderElevation: 0,
-        surfaceTintColor: Colors.transparent,
-        backgroundColor: Colors.transparent,
-        actions: [
-          Padding(
-            padding: const EdgeInsets.only(right: 8),
-            child: IconButton(
-              icon: Container(
-                padding: const EdgeInsets.all(6),
-                decoration: BoxDecoration(
-                  color: AppColors.primary.withOpacity(0.15),
-                  shape: BoxShape.circle,
-                ),
-                child: const Icon(Icons.add_rounded,
-                    size: 20, color: AppColors.primary),
-              ),
-              onPressed: () => _showCategoryForm(context),
-            ),
-          ),
-        ],
-      ),
       body: Column(
         children: [
+          // Premium Header
+          SafeArea(
+            bottom: false,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                   Row(
+                    children: [
+                      IconButton(
+                        onPressed: () => Navigator.pop(context),
+                        icon: Icon(
+                          Icons.arrow_back_ios_new_rounded,
+                          color: isDark ? Colors.white : AppColors.textPrimary,
+                          size: 20,
+                        ),
+                        padding: EdgeInsets.zero,
+                        constraints: const BoxConstraints(),
+                      ),
+                      const SizedBox(width: 12),
+                      Text(
+                        'Mis Categorías',
+                        style: GoogleFonts.montserrat(
+                          fontSize: 24,
+                          fontWeight: FontWeight.w800,
+                          color: isDark ? Colors.white : AppColors.textPrimary,
+                          letterSpacing: -0.5,
+                        ),
+                      ),
+                    ],
+                  ),
+                  IconButton(
+                    icon: Container(
+                      padding: const EdgeInsets.all(6),
+                      decoration: BoxDecoration(
+                        color: AppColors.primary.withOpacity(0.15),
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(Icons.add_rounded,
+                          size: 20, color: AppColors.primary),
+                    ),
+                    onPressed: () => _showCategoryForm(context),
+                  ),
+                ],
+              ),
+            ),
+          ),
           // ── Tab Bar Premium (sincronizado con PageView) ────────────────
           Container(
             margin: const EdgeInsets.fromLTRB(

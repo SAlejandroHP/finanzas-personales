@@ -64,26 +64,44 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
 
     return Scaffold(
       backgroundColor: isDark ? const Color(0xFF121212) : AppColors.backgroundColor,
-      appBar: AppBar(
-        title: Text(
-          'Configuración',
-          style: GoogleFonts.montserrat(
-            fontWeight: FontWeight.w800,
-            fontSize: 18,
-            color: isDark ? Colors.white : AppColors.textPrimary,
-            letterSpacing: -0.5,
-          ),
-        ),
-        elevation: 0,
-        scrolledUnderElevation: 0,
-        surfaceTintColor: Colors.transparent,
-        backgroundColor: Colors.transparent,
-        centerTitle: false,
-      ),
-      body: ListView(
-        physics: const BouncingScrollPhysics(),
-        padding: const EdgeInsets.symmetric(vertical: 0, horizontal: 4),
+      body: Column(
         children: [
+          // Premium Header
+          SafeArea(
+            bottom: false,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+              child: Row(
+                children: [
+                  IconButton(
+                    onPressed: () => Navigator.pop(context),
+                    icon: Icon(
+                      Icons.arrow_back_ios_new_rounded,
+                      color: isDark ? Colors.white : AppColors.textPrimary,
+                      size: 20,
+                    ),
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(),
+                  ),
+                  const SizedBox(width: 12),
+                  Text(
+                    'Configuración',
+                    style: GoogleFonts.montserrat(
+                      fontSize: 24,
+                      fontWeight: FontWeight.w800,
+                      color: isDark ? Colors.white : AppColors.textPrimary,
+                      letterSpacing: -0.5,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          Expanded(
+            child: ListView(
+              physics: const BouncingScrollPhysics(),
+              padding: const EdgeInsets.symmetric(vertical: 0, horizontal: 4),
+              children: [
           // SECCIÓN: PERFIL / CUENTA
           if (user != null) ...[
             _buildSectionHeader(context, 'Cuenta'),
@@ -235,6 +253,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           const SizedBox(height: 20),
         ],
       ),
+    ),
+  ],
+),
     );
   }
 

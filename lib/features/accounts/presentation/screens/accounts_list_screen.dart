@@ -29,39 +29,57 @@ class AccountsListScreen extends ConsumerWidget {
 
     return Scaffold(
       backgroundColor: backgroundColor,
-      appBar: AppBar(
-        title: Text(
-          'Mis Cuentas',
-          style: GoogleFonts.montserrat(
-            fontWeight: FontWeight.w800,
-            fontSize: 18,
-            color: isDark ? Colors.white : AppColors.textPrimary,
-            letterSpacing: -0.5,
-          ),
-        ),
-        centerTitle: false,
-        elevation: 0,
-        scrolledUnderElevation: 0,
-        surfaceTintColor: Colors.transparent,
-        backgroundColor: Colors.transparent,
-        actions: [
-          Padding(
-            padding: const EdgeInsets.only(right: 8),
-            child: IconButton(
-              icon: Container(
-                padding: const EdgeInsets.all(6),
-                decoration: BoxDecoration(
-                  color: AppColors.primary.withOpacity(0.15),
-                  shape: BoxShape.circle,
-                ),
-                child: const Icon(Icons.add_rounded, size: 20, color: AppColors.primary),
+      body: Column(
+        children: [
+          // Premium Header
+          SafeArea(
+            bottom: false,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Row(
+                    children: [
+                      IconButton(
+                        onPressed: () => Navigator.pop(context),
+                        icon: Icon(
+                          Icons.arrow_back_ios_new_rounded,
+                          color: isDark ? Colors.white : AppColors.textPrimary,
+                          size: 20,
+                        ),
+                        padding: EdgeInsets.zero,
+                        constraints: const BoxConstraints(),
+                      ),
+                      const SizedBox(width: 12),
+                      Text(
+                        'Mis Cuentas',
+                        style: GoogleFonts.montserrat(
+                          fontSize: 24,
+                          fontWeight: FontWeight.w800,
+                          color: isDark ? Colors.white : AppColors.textPrimary,
+                          letterSpacing: -0.5,
+                        ),
+                      ),
+                    ],
+                  ),
+                  IconButton(
+                    icon: Container(
+                      padding: const EdgeInsets.all(6),
+                      decoration: BoxDecoration(
+                        color: AppColors.primary.withOpacity(0.15),
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(Icons.add_rounded, size: 20, color: AppColors.primary),
+                    ),
+                    onPressed: () => _showAccountForm(context, ref),
+                  ),
+                ],
               ),
-              onPressed: () => _showAccountForm(context, ref),
             ),
           ),
-        ],
-      ),
-      body: accountsAsync.when(
+          Expanded(
+            child: accountsAsync.when(
         data: (accounts) {
           if (accounts.isEmpty) {
             return _buildEmptyState(context, isDark);
@@ -122,7 +140,9 @@ class AccountsListScreen extends ConsumerWidget {
         loading: () => const Center(child: LoadingIndicator()),
         error: (error, stack) => _buildErrorState(context, ref, error.toString(), isDark),
       ),
-
+    ),
+  ],
+),
     );
   }
 
