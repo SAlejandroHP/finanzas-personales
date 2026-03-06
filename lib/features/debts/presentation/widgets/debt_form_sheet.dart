@@ -8,6 +8,7 @@ import 'package:collection/collection.dart';
 
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/widgets/app_button.dart';
+import '../../../../core/widgets/app_text_field.dart';
 import '../../../../core/widgets/app_toast.dart';
 import '../../../accounts/presentation/providers/accounts_provider.dart';
 import '../../../accounts/models/account_model.dart';
@@ -354,10 +355,10 @@ class _DebtFormSheetState extends ConsumerState<DebtFormSheet> {
                                 builder: (context, result, _) {
                                   if (result == null) return const SizedBox(height: 20);
                                   return Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
                                     decoration: BoxDecoration(
                                       color: AppColors.secondary.withOpacity(0.1),
-                                      borderRadius: BorderRadius.circular(8),
+                                      borderRadius: BorderRadius.circular(12),
                                     ),
                                     child: Text(
                                       '= ${_moneyFormatter.format(result)}',
@@ -374,23 +375,23 @@ class _DebtFormSheetState extends ConsumerState<DebtFormSheet> {
                           ),
                         ),
                         const SizedBox(height: 32),
-                        _buildSectionHeader('INFORMACIÓN BÁSICA'),
-                        const SizedBox(height: 16),
-                        _buildTextField(
+                        _buildSectionHeader('INFORMACIÓN BÁSICA', isDark),
+                        const SizedBox(height: 12),
+                        AppTextField(
+                          label: 'Nombre de la deuda',
                           controller: _nombreController,
                           focusNode: _nombreFocusNode,
-                          label: 'Nombre de la deuda',
-                          hint: 'Ej: Préstamo Banco, Deuda Familiar...',
-                          icon: Icons.edit_note_rounded,
-                          isDark: isDark,
+                          prefixIcon: Icons.edit_note_rounded,
+                          hintText: 'Ej: Préstamo Banco, Deuda Familiar...',
+                          textCapitalization: TextCapitalization.sentences,
                         ),
                         const SizedBox(height: 16),
                         _buildTypePills(isDark),
                         const SizedBox(height: 24),
-                        _buildSectionHeader('DETALLES Y VENCIMIENTO'),
-                        const SizedBox(height: 16),
+                        _buildSectionHeader('DETALLES Y VENCIMIENTO', isDark),
+                        const SizedBox(height: 12),
                         _buildSelectorTile(
-                          label: 'Fecha de vencimiento',
+                          label: 'FECHA DE VENCIMIENTO',
                           value: _fechaVencimiento != null 
                               ? intl.DateFormat('dd MMM, yyyy', 'es').format(_fechaVencimiento!)
                               : 'Opcional',
@@ -400,34 +401,30 @@ class _DebtFormSheetState extends ConsumerState<DebtFormSheet> {
                         ),
                         const SizedBox(height: 16),
                         _buildSelectorTile(
-                          label: '¿Dónde recibes el dinero?',
+                          label: '¿DÓNDE RECIBES EL DINERO?',
                           value: _getAccountName(_cuentaAsociadaId, accounts),
                           icon: Icons.account_balance_wallet_rounded,
                           onTap: () => _showAccountSelector(context, accounts),
                           isDark: isDark,
                         ),
-                        _buildTextField(
+                        const SizedBox(height: 16),
+                        AppTextField(
+                          label: 'Notas / Descripción',
                           controller: _descripcionController,
                           focusNode: _descripcionFocusNode,
-                          label: 'Notas / Descripción',
-                          hint: 'Opcional...',
-                          icon: Icons.description_outlined,
-                          isDark: isDark,
+                          prefixIcon: Icons.description_outlined,
+                          hintText: 'Opcional...',
                           maxLines: 2,
+                          textCapitalization: TextCapitalization.sentences,
                         ),
                         const SizedBox(height: 24),
-                         _buildSectionHeader('OPCIONES COMPARTIDAS'),
-                        const SizedBox(height: 16),
+                         _buildSectionHeader('OPCIONES COMPARTIDAS', isDark),
+                        const SizedBox(height: 12),
                         Container(
                           padding: const EdgeInsets.all(16),
                           decoration: BoxDecoration(
                             color: isDark ? Colors.white.withOpacity(0.05) : Colors.grey[50],
-                            borderRadius: BorderRadius.circular(16),
-                            border: Border.all(
-                              color: _isShared 
-                                  ? AppColors.primary.withOpacity(0.3) 
-                                  : Colors.transparent,
-                            ),
+                            borderRadius: BorderRadius.circular(AppColors.radiusMedium),
                           ),
                           child: Column(
                             children: [
@@ -436,6 +433,7 @@ class _DebtFormSheetState extends ConsumerState<DebtFormSheet> {
                                   Icon(
                                     Icons.people_alt_rounded,
                                     color: _isShared ? AppColors.primary : Colors.grey,
+                                    size: 20,
                                   ),
                                   const SizedBox(width: 12),
                                   Expanded(
@@ -443,16 +441,17 @@ class _DebtFormSheetState extends ConsumerState<DebtFormSheet> {
                                       crossAxisAlignment: CrossAxisAlignment.start,
                                       children: [
                                         Text(
-                                          'Compartir deuda/préstamo',
+                                          'Compartir deuda',
                                           style: GoogleFonts.montserrat(
                                             fontWeight: FontWeight.w700,
                                             fontSize: 14,
+                                            color: isDark ? Colors.white : AppColors.textPrimary,
                                           ),
                                         ),
                                         Text(
                                           'Rastreo conjunto con otra persona',
                                           style: GoogleFonts.montserrat(
-                                            fontSize: 12,
+                                            fontSize: 11,
                                             color: Colors.grey,
                                           ),
                                         ),
@@ -467,26 +466,22 @@ class _DebtFormSheetState extends ConsumerState<DebtFormSheet> {
                                 ],
                               ),
                               if (_isShared) ...[
-                                const Divider(height: 24),
-                                Row(
-                                  children: [
-                                    Expanded(
-                                      child: _buildRoleSelector(
-                                        label: 'Yo soy el...',
-                                        value: _ownerRole,
-                                        isDark: isDark,
-                                      ),
-                                    ),
-                                  ],
+                                const Padding(
+                                  padding: EdgeInsets.symmetric(vertical: 12),
+                                  child: Divider(height: 1, color: Colors.white10),
+                                ),
+                                _buildRoleSelector(
+                                  label: 'Yo soy el...',
+                                  value: _ownerRole,
+                                  isDark: isDark,
                                 ),
                                 const SizedBox(height: 16),
-                                _buildTextField(
+                                AppTextField(
+                                  label: 'Email del contacto',
                                   controller: _emailController,
                                   focusNode: _emailFocusNode,
-                                  label: 'Email del contacto',
-                                  hint: 'ejemplo@correo.com',
-                                  icon: Icons.alternate_email_rounded,
-                                  isDark: isDark,
+                                  prefixIcon: Icons.alternate_email_rounded,
+                                  hintText: 'ejemplo@correo.com',
                                   keyboardType: TextInputType.emailAddress,
                                 ),
                               ],
@@ -495,13 +490,13 @@ class _DebtFormSheetState extends ConsumerState<DebtFormSheet> {
                         ),
                         if (widget.debt != null) ...[
                           const SizedBox(height: 24),
-                          _buildSectionHeader('CONTROL DE SALDO'),
-                          const SizedBox(height: 16),
+                          _buildSectionHeader('CONTROL DE SALDO', isDark),
+                          const SizedBox(height: 12),
                           Container(
                             padding: const EdgeInsets.all(16),
                             decoration: BoxDecoration(
                               color: Colors.amber.withOpacity(0.05),
-                              borderRadius: BorderRadius.circular(16),
+                              borderRadius: BorderRadius.circular(AppColors.radiusMedium),
                               border: Border.all(color: Colors.amber.withOpacity(0.2)),
                             ),
                             child: Column(
@@ -514,14 +509,15 @@ class _DebtFormSheetState extends ConsumerState<DebtFormSheet> {
                                     Text(
                                       'Ajuste manual de saldo',
                                       style: GoogleFonts.montserrat(
-                                        fontWeight: FontWeight.w700,
-                                        fontSize: 13,
+                                        fontWeight: FontWeight.w800,
+                                        fontSize: 11,
                                         color: Colors.amber[800],
+                                        letterSpacing: 0.5,
                                       ),
                                     ),
                                   ],
                                 ),
-                                const SizedBox(height: 12),
+                                const SizedBox(height: 16),
                                 Row(
                                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                   children: [
@@ -529,36 +525,53 @@ class _DebtFormSheetState extends ConsumerState<DebtFormSheet> {
                                       crossAxisAlignment: CrossAxisAlignment.start,
                                       children: [
                                         Text(
-                                          'Saldo actual (Restante)',
-                                          style: GoogleFonts.montserrat(fontSize: 11, color: Colors.grey),
+                                          'SALDO RESTANTE',
+                                          style: GoogleFonts.montserrat(fontSize: 10, fontWeight: FontWeight.w600, color: Colors.grey),
                                         ),
+                                        const SizedBox(height: 2),
                                         Text(
                                           _moneyFormatter.format(_montoRestanteActual),
                                           style: GoogleFonts.montserrat(
-                                            fontWeight: FontWeight.w700,
-                                            fontSize: 16,
+                                            fontWeight: FontWeight.w800,
+                                            fontSize: 20,
+                                            color: isDark ? Colors.white : AppColors.textPrimary,
                                           ),
                                         ),
                                       ],
                                     ),
-                                    Row(
-                                      children: [
-                                        IconButton(
-                                          onPressed: () => _adjustRestante(-100),
-                                          icon: const Icon(Icons.remove_circle_outline),
-                                          color: Colors.redAccent,
-                                        ),
-                                        IconButton(
-                                          onPressed: () => _adjustRestante(100),
-                                          icon: const Icon(Icons.add_circle_outline),
-                                          color: Colors.green,
-                                        ),
-                                        IconButton(
-                                          onPressed: _showManualRestanteDialog,
-                                          icon: const Icon(Icons.edit_rounded),
-                                          color: AppColors.primary,
-                                        ),
-                                      ],
+                                    Container(
+                                      decoration: BoxDecoration(
+                                        color: isDark ? Colors.white.withOpacity(0.05) : Colors.white,
+                                        borderRadius: BorderRadius.circular(12),
+                                        boxShadow: [
+                                          BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 4, offset: const Offset(0, 2)),
+                                        ],
+                                      ),
+                                      child: Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          IconButton(
+                                            onPressed: () => _adjustRestante(-100),
+                                            icon: const Icon(Icons.remove_circle_outline, size: 20),
+                                            color: Colors.redAccent,
+                                            visualDensity: VisualDensity.compact,
+                                          ),
+                                          IconButton(
+                                            onPressed: () => _adjustRestante(100),
+                                            icon: const Icon(Icons.add_circle_outline, size: 20),
+                                            color: Colors.green,
+                                            visualDensity: VisualDensity.compact,
+                                          ),
+                                          const SizedBox(width: 4),
+                                          Container(width: 1, height: 24, color: isDark ? Colors.white10 : Colors.grey[200]),
+                                          IconButton(
+                                            onPressed: _showManualRestanteDialog,
+                                            icon: const Icon(Icons.edit_rounded, size: 18),
+                                            color: AppColors.primary,
+                                            visualDensity: VisualDensity.compact,
+                                          ),
+                                        ],
+                                      ),
                                     ),
                                   ],
                                 ),
@@ -566,7 +579,7 @@ class _DebtFormSheetState extends ConsumerState<DebtFormSheet> {
                             ),
                           ),
                         ],
-                        const SizedBox(height: 120),
+                        const SizedBox(height: 40),
                       ],
                     ),
                   ),
@@ -580,94 +593,17 @@ class _DebtFormSheetState extends ConsumerState<DebtFormSheet> {
     );
   }
 
-  Widget _buildSectionHeader(String title) {
+  Widget _buildSectionHeader(String title, bool isDark) {
     return Padding(
       padding: const EdgeInsets.only(left: 4),
       child: Text(
         title,
         style: GoogleFonts.montserrat(
-          fontSize: 11,
+          fontSize: 10,
           fontWeight: FontWeight.w800,
-          letterSpacing: 1.5,
-          color: Colors.grey.withOpacity(0.8),
+          letterSpacing: 1.2,
+          color: isDark ? Colors.white38 : Colors.grey[500],
         ),
-      ),
-    );
-  }
-
-  Widget _buildTextField({
-    required TextEditingController controller,
-    required FocusNode focusNode,
-    required String label,
-    required String hint,
-    required IconData icon,
-    required bool isDark,
-    int maxLines = 1,
-    bool isAmount = false,
-    TextInputType? keyboardType,
-  }) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: isDark ? Colors.white.withOpacity(0.05) : Colors.grey[50],
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: isDark ? Colors.white10 : Colors.black.withOpacity(0.05)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Icon(icon, color: isDark ? Colors.white38 : Colors.grey[400], size: 20),
-              const SizedBox(width: 12),
-              Text(
-                label.toUpperCase(),
-                style: GoogleFonts.montserrat(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w600,
-                  letterSpacing: 0.8,
-                  color: Colors.grey.withOpacity(0.8),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          TextField(
-            controller: controller,
-            focusNode: focusNode,
-            maxLines: maxLines,
-            textCapitalization: isAmount ? TextCapitalization.none : TextCapitalization.sentences,
-            style: GoogleFonts.montserrat(fontSize: 16, fontWeight: FontWeight.w500, color: isDark ? Colors.white : AppColors.textPrimary),
-            keyboardType: keyboardType ?? (isAmount ? const TextInputType.numberWithOptions(decimal: true) : TextInputType.text),
-            autofocus: !isAmount && label.toUpperCase() == 'NOMBRE DE LA DEUDA',
-            decoration: InputDecoration(
-              hintText: hint,
-              hintStyle: GoogleFonts.montserrat(color: isDark ? Colors.white24 : Colors.grey[400]),
-              border: InputBorder.none,
-              isDense: true,
-              contentPadding: EdgeInsets.zero,
-            ),
-          ),
-          // Homologación: Muestra el resultado de la calculadora si existe
-          if (isAmount)
-            ValueListenableBuilder<double?>(
-              valueListenable: _calculatorResult,
-              builder: (context, value, child) {
-                if (value == null) return const SizedBox.shrink();
-                return Padding(
-                  padding: const EdgeInsets.only(top: 8.0),
-                  child: Text(
-                    '= ${_moneyFormatter.format(value)}',
-                    style: GoogleFonts.montserrat(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.primary,
-                    ),
-                  ),
-                );
-              },
-            ),
-        ],
       ),
     );
   }
@@ -679,38 +615,50 @@ class _DebtFormSheetState extends ConsumerState<DebtFormSheet> {
       {'id': 'servicio', 'name': 'Servicio', 'icon': Icons.receipt_long_outlined},
       {'id': 'otro', 'name': 'Otro', 'icon': Icons.more_horiz_outlined},
     ];
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      physics: const BouncingScrollPhysics(),
-      child: Row(
-        children: types.map((t) {
+    return SizedBox(
+      height: 44,
+      child: ListView.separated(
+        scrollDirection: Axis.horizontal,
+        physics: const BouncingScrollPhysics(),
+        itemCount: types.length,
+        separatorBuilder: (_, __) => const SizedBox(width: 8),
+        itemBuilder: (context, index) {
+          final t = types[index];
           final isSelected = _tipo == t['id'];
           return GestureDetector(
             onTap: () => setState(() => _tipo = t['id'] as String),
-            child: Container(
-              margin: const EdgeInsets.only(right: 12),
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 200),
+              padding: const EdgeInsets.symmetric(horizontal: 16),
               decoration: BoxDecoration(
-                color: isSelected ? AppColors.primary : (isDark ? Colors.white10 : Colors.grey[100]),
+                color: isSelected ? AppColors.primary.withOpacity(0.1) : (isDark ? Colors.white.withValues(alpha: 0.05) : Colors.grey[50]),
                 borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: isSelected ? AppColors.primary : (isDark ? Colors.white10 : Colors.grey[200]!),
+                  width: 1.5,
+                ),
               ),
               child: Row(
                 children: [
-                  Icon(t['icon'] as IconData, color: isSelected ? Colors.white : Colors.grey, size: 18),
+                  Icon(
+                    t['icon'] as IconData, 
+                    color: isSelected ? AppColors.primary : Colors.grey, 
+                    size: 16,
+                  ),
                   const SizedBox(width: 8),
                   Text(
                     t['name'] as String,
                     style: GoogleFonts.montserrat(
                       fontSize: 12,
-                      fontWeight: FontWeight.w700,
-                      color: isSelected ? Colors.white : Colors.grey,
+                      fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
+                      color: isSelected ? AppColors.primary : Colors.grey,
                     ),
                   ),
                 ],
               ),
             ),
           );
-        }).toList(),
+        },
       ),
     );
   }
@@ -721,32 +669,32 @@ class _DebtFormSheetState extends ConsumerState<DebtFormSheet> {
     required IconData icon,
     required VoidCallback onTap,
     required bool isDark,
-    Widget? trailing, // Añadido para consistencia
+    Widget? trailing,
   }) {
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(16),
+      borderRadius: BorderRadius.circular(AppColors.radiusMedium),
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        padding: const EdgeInsets.all(AppColors.md),
         decoration: BoxDecoration(
-          color: isDark ? Colors.white.withOpacity(0.05) : Colors.grey[50],
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: isDark ? Colors.white10 : Colors.black.withOpacity(0.05)),
+          color: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.grey[50],
+          borderRadius: BorderRadius.circular(AppColors.radiusMedium),
+          border: Border.all(color: isDark ? Colors.white10 : Colors.grey[200]!, width: 1),
         ),
         child: Row(
           children: [
-            Icon(icon, color: isDark ? Colors.white70 : AppColors.textPrimary.withOpacity(0.8), size: 22),
-            const SizedBox(width: 16),
+            Icon(icon, color: isDark ? Colors.white70 : AppColors.textPrimary.withValues(alpha: 0.8), size: 18),
+            const SizedBox(width: 12),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Text(
-                    label,
+                    label.toUpperCase(),
                     style: GoogleFonts.montserrat(
-                      fontSize: 11,
-                      fontWeight: FontWeight.w600,
+                      fontSize: 10,
+                      fontWeight: FontWeight.w700,
                       letterSpacing: 0.5,
                       color: Colors.grey,
                     ),
@@ -757,7 +705,7 @@ class _DebtFormSheetState extends ConsumerState<DebtFormSheet> {
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: GoogleFonts.montserrat(
-                      fontSize: 15,
+                      fontSize: 14,
                       fontWeight: FontWeight.w500,
                       color: isDark ? Colors.white : AppColors.textPrimary,
                     ),
@@ -767,7 +715,7 @@ class _DebtFormSheetState extends ConsumerState<DebtFormSheet> {
             ),
             if (trailing != null) trailing,
             const SizedBox(width: 8),
-            Icon(Icons.chevron_right_rounded, color: Colors.grey[400]),
+            Icon(Icons.chevron_right_rounded, color: Colors.grey[400], size: 20),
           ],
         ),
       ),
@@ -778,8 +726,48 @@ class _DebtFormSheetState extends ConsumerState<DebtFormSheet> {
     if (_montoFocusNode.hasFocus) {
       return _buildCalculatorToolbar(isDark);
     }
+
+    if (MediaQuery.of(context).viewInsets.bottom > 0) {
+      return Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+        decoration: BoxDecoration(
+          color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
+          border: Border(
+            top: BorderSide(
+              color: isDark ? Colors.white10 : Colors.grey[100]!,
+            ),
+          ),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            AppButton(
+              label: 'Ocultar teclado',
+              variant: 'outlined',
+              height: 40,
+              onPressed: () => FocusScope.of(context).unfocus(),
+            ),
+            AppButton(
+              label: 'Siguiente',
+              variant: 'primary',
+              height: 40,
+              onPressed: () => FocusScope.of(context).nextFocus(),
+            ),
+          ],
+        ),
+      );
+    }
+
     return Container(
-      padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
+      padding: EdgeInsets.fromLTRB(20, 16, 20, MediaQuery.of(context).padding.bottom + 12),
+      decoration: BoxDecoration(
+        color: isDark ? AppColors.surfaceDark : Colors.white,
+        border: Border(
+          top: BorderSide(
+            color: isDark ? Colors.white10 : Colors.grey[100]!,
+          ),
+        ),
+      ),
       child: AppButton(
         label: widget.debt != null ? 'Actualizar Deuda' : 'Registrar Deuda',
         onPressed: _saveDebt,

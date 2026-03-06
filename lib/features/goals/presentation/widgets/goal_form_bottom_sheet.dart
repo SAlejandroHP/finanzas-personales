@@ -5,6 +5,9 @@ import 'package:uuid/uuid.dart';
 import 'package:intl/intl.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/services/finance_service.dart';
+import '../../../../core/widgets/app_button.dart';
+import '../../../../core/widgets/app_text_field.dart';
+import '../../../../core/widgets/app_toast.dart';
 import '../providers/goals_provider.dart';
 import '../../models/goal_model.dart';
 
@@ -22,6 +25,9 @@ class _GoalFormBottomSheetState extends ConsumerState<GoalFormBottomSheet> {
   late TextEditingController _titleController;
   late TextEditingController _amountController;
   late TextEditingController _descriptionController;
+  final _titleFocusNode = FocusNode();
+  final _amountFocusNode = FocusNode();
+  final _descriptionFocusNode = FocusNode();
   DateTime? _selectedDeadline;
   String _selectedIcon = 'savings';
   String _selectedColorHex = '#0A7075';
@@ -48,6 +54,9 @@ class _GoalFormBottomSheetState extends ConsumerState<GoalFormBottomSheet> {
     _titleController.dispose();
     _amountController.dispose();
     _descriptionController.dispose();
+    _titleFocusNode.dispose();
+    _amountFocusNode.dispose();
+    _descriptionFocusNode.dispose();
     super.dispose();
   }
 
@@ -113,8 +122,18 @@ class _GoalFormBottomSheetState extends ConsumerState<GoalFormBottomSheet> {
       } else {
         await ref.read(goalsNotifierProvider.notifier).updateGoal(goal);
       }
-      ref.read(financeServiceProvider).refreshAll();
-      if (mounted) Navigator.pop(context);
+      
+      if (mounted) {
+        showAppToast(context, message: 'Meta guardada', type: ToastType.success);
+        Navigator.pop(context);
+      }
+      
+      // Refrescar después del pop
+      Future.delayed(const Duration(milliseconds: 300), () {
+        if (ref.context.mounted) {
+          ref.read(financeServiceProvider).refreshAll();
+        }
+      });
     } catch (e) {
       // Manejo de error
     }
@@ -123,187 +142,309 @@ class _GoalFormBottomSheetState extends ConsumerState<GoalFormBottomSheet> {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final bottomInset = MediaQuery.of(context).viewInsets.bottom;
+    final surfaceColor = isDark ? AppColors.surfaceDark : Colors.white;
     
     return Container(
-      padding: EdgeInsets.only(
-        left: 20, right: 20, top: 12, 
-        bottom: 20 + bottomInset,
-      ),
       decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+        color: surfaceColor,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(AppColors.radiusXLarge)),
       ),
-      child: Form(
-        key: _formKey,
-        child: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Center(
-                child: Container(
-                  width: 40, height: 4, 
-                  decoration: BoxDecoration(color: Colors.grey[300], borderRadius: BorderRadius.circular(2)),
-                ),
+      child: Padding(
+        padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Handle
+            Container(
+              margin: const EdgeInsets.only(top: 12, bottom: 8),
+              width: 40, height: 4, 
+              decoration: BoxDecoration(
+                color: isDark ? Colors.white24 : Colors.black12, 
+                borderRadius: BorderRadius.circular(2),
               ),
-              const SizedBox(height: 16),
-              Text(
-                widget.goal == null ? 'Nueva Meta' : 'Editar Meta',
-                style: GoogleFonts.montserrat(fontSize: 20, fontWeight: FontWeight.w700),
-              ),
-              const SizedBox(height: 24),
-              
-              // Icono y Título
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
+            ),
+            
+            // Header con botón cerrar
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  GestureDetector(
-                    onTap: _showIconPicker,
-                    child: Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: Color(int.parse(_selectedColorHex.replaceFirst('#', '0xFF'))).withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(color: Color(int.parse(_selectedColorHex.replaceFirst('#', '0xFF'))).withOpacity(0.3)),
-                      ),
-                      child: Icon(
-                        _getIconData(_selectedIcon),
-                        color: Color(int.parse(_selectedColorHex.replaceFirst('#', '0xFF'))),
-                        size: 32,
-                      ),
+                  Text(
+                    widget.goal == null ? 'Nueva Meta' : 'Editar Meta',
+                    style: GoogleFonts.montserrat(
+                      fontSize: 20, 
+                      fontWeight: FontWeight.w700,
+                      color: isDark ? Colors.white : AppColors.textPrimary,
                     ),
                   ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: TextFormField(
-                      controller: _titleController,
-                      textCapitalization: TextCapitalization.sentences,
-                      style: GoogleFonts.montserrat(fontWeight: FontWeight.w600),
-                      decoration: InputDecoration(
-                        labelText: 'Nombre de la Meta',
-                        hintText: 'Ej: Viaje a Japón, Auto nuevo...',
-                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                        filled: true,
-                        fillColor: isDark ? Colors.white.withOpacity(0.05) : Colors.grey[100],
-                      ),
-                      autofocus: true,
-                      validator: (v) => v == null || v.isEmpty ? 'Requerido' : null,
+                  IconButton(
+                    icon: const Icon(Icons.close_rounded),
+                    onPressed: () => Navigator.pop(context),
+                    style: IconButton.styleFrom(
+                      backgroundColor: isDark ? Colors.white10 : Colors.grey[100],
                     ),
                   ),
                 ],
               ),
-              const SizedBox(height: 16),
-              
-              TextFormField(
-                controller: _amountController,
-                keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                textInputAction: TextInputAction.done,
-                style: GoogleFonts.montserrat(fontWeight: FontWeight.w700, fontSize: 18),
-                decoration: InputDecoration(
-                  labelText: 'Monto Objetivo',
-                  prefixIcon: const Icon(Icons.attach_money),
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                  filled: true,
-                  fillColor: isDark ? Colors.white.withOpacity(0.05) : Colors.grey[100],
-                ),
-                validator: (v) => v == null || v.isEmpty ? 'Ingresa un monto' : null,
-              ),
-              const SizedBox(height: 16),
+            ),
 
-              // Fecha Límite
-              GestureDetector(
-                onTap: _selectDeadline,
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-                  decoration: BoxDecoration(
-                    color: isDark ? Colors.white.withOpacity(0.05) : Colors.grey[100],
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: Colors.grey.withOpacity(0.3)),
-                  ),
-                  child: Row(
+            Flexible(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+                child: Form(
+                  key: _formKey,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Icon(Icons.calendar_today_outlined, color: AppColors.primary, size: 20),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Text(
-                          _selectedDeadline == null ? '¿Tienes una fecha límite?' : 'Lograr antes de: ${DateFormat('dd MMMM yyyy').format(_selectedDeadline!)}',
-                          style: GoogleFonts.montserrat(
-                            fontSize: 14,
-                            fontWeight: _selectedDeadline != null ? FontWeight.w600 : FontWeight.w400,
-                            color: _selectedDeadline != null ? AppColors.textPrimary : AppColors.description,
+                      _buildSectionHeader('IDENTIDAD DE LA META', isDark),
+                      const SizedBox(height: 12),
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          GestureDetector(
+                            onTap: _showIconPicker,
+                            child: Container(
+                              height: 56, width: 56,
+                              decoration: BoxDecoration(
+                                color: Color(int.parse(_selectedColorHex.replaceFirst('#', '0xFF'))).withOpacity(0.12),
+                                borderRadius: BorderRadius.circular(AppColors.radiusMedium),
+                                border: Border.all(
+                                  color: Color(int.parse(_selectedColorHex.replaceFirst('#', '0xFF'))).withOpacity(0.3),
+                                  width: 1.5,
+                                ),
+                              ),
+                              child: Icon(
+                                _getIconData(_selectedIcon),
+                                color: Color(int.parse(_selectedColorHex.replaceFirst('#', '0xFF'))),
+                                size: 28,
+                              ),
+                            ),
                           ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: AppTextField(
+                              label: 'NOMBRE DE LA META',
+                              controller: _titleController,
+                              focusNode: _titleFocusNode,
+                              hintText: 'Ej: Viaje a Japón, Auto nuevo...',
+                              textCapitalization: TextCapitalization.sentences,
+                              validator: (v) => v == null || v.isEmpty ? 'Requerido' : null,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 16),
+                      
+                      AppTextField(
+                        label: 'MONTO OBJETIVO',
+                        controller: _amountController,
+                        focusNode: _amountFocusNode,
+                        prefixIcon: Icons.attach_money_rounded,
+                        keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                        hintText: '0.00',
+                        validator: (v) => v == null || v.isEmpty ? 'Ingresa un monto' : null,
+                      ),
+                      const SizedBox(height: 24),
+
+                      _buildSectionHeader('DETALLES Y TIEMPO', isDark),
+                      const SizedBox(height: 12),
+                      _buildSelectorTile(
+                        label: 'LOGRAR ANTES DE',
+                        value: _selectedDeadline == null 
+                            ? 'Opcional' 
+                            : DateFormat('dd MMMM yyyy', 'es').format(_selectedDeadline!),
+                        icon: Icons.calendar_today_rounded,
+                        onTap: _selectDeadline,
+                        isDark: isDark,
+                        trailing: _selectedDeadline != null 
+                          ? IconButton(
+                              icon: const Icon(Icons.close_rounded, size: 18),
+                              onPressed: () => setState(() => _selectedDeadline = null),
+                              visualDensity: VisualDensity.compact,
+                            )
+                          : null,
+                      ),
+                      const SizedBox(height: 16),
+                      AppTextField(
+                        label: 'DESCRIPCIÓN',
+                        controller: _descriptionController,
+                        focusNode: _descriptionFocusNode,
+                        prefixIcon: Icons.description_outlined,
+                        hintText: '¿Por qué quieres lograr esta meta?',
+                        maxLines: 2,
+                        textCapitalization: TextCapitalization.sentences,
+                      ),
+                      const SizedBox(height: 24),
+
+                      _buildSectionHeader('COLOR REPRESENTATIVO', isDark),
+                      const SizedBox(height: 12),
+                      SizedBox(
+                        height: 48,
+                        child: ListView.separated(
+                          scrollDirection: Axis.horizontal,
+                          physics: const BouncingScrollPhysics(),
+                          itemCount: AppColors.categoryColors.length,
+                          separatorBuilder: (_, __) => const SizedBox(width: 12),
+                          itemBuilder: (context, index) {
+                            final color = AppColors.categoryColors[index];
+                            final hex = '#${color.value.toRadixString(16).substring(2).toUpperCase()}';
+                            final isSelected = _selectedColorHex == hex;
+                            return GestureDetector(
+                              onTap: () => setState(() => _selectedColorHex = hex),
+                              child: AnimatedContainer(
+                                duration: const Duration(milliseconds: 200),
+                                width: 44,
+                                decoration: BoxDecoration(
+                                  color: color,
+                                  shape: BoxShape.circle,
+                                  border: Border.all(
+                                    color: isSelected ? (isDark ? Colors.white : Colors.black) : Colors.transparent,
+                                    width: 3,
+                                  ),
+                                  boxShadow: isSelected ? [
+                                    BoxShadow(color: color.withOpacity(0.4), blurRadius: 10, spreadRadius: 2)
+                                  ] : null,
+                                ),
+                                child: isSelected ? Icon(Icons.check_rounded, color: color.computeLuminance() > 0.5 ? Colors.black : Colors.white, size: 20) : null,
+                              ),
+                            );
+                          },
                         ),
                       ),
-                      if (_selectedDeadline != null)
-                        IconButton(
-                          icon: const Icon(Icons.close, size: 18),
-                          onPressed: () => setState(() => _selectedDeadline = null),
-                        ),
+                      const SizedBox(height: 32),
                     ],
                   ),
                 ),
               ),
-              const SizedBox(height: 16),
+            ),
+            _buildAdaptiveFooter(isDark),
+          ],
+        ),
+      ),
+    );
+  }
 
-              // Color Picker (Simple)
-              Text(
-                'Color representativo',
-                style: GoogleFonts.montserrat(fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.description),
-              ),
-              const SizedBox(height: 8),
-              SizedBox(
-                height: 44,
-                child: ListView.separated(
-                  scrollDirection: Axis.horizontal,
-                  itemCount: AppColors.categoryColors.length,
-                  separatorBuilder: (_, __) => const SizedBox(width: 10),
-                  itemBuilder: (context, index) {
-                    final color = AppColors.categoryColors[index];
-                    final hex = '#${color.value.toRadixString(16).substring(2).toUpperCase()}';
-                    final isSelected = _selectedColorHex == hex;
-                    return GestureDetector(
-                      onTap: () => setState(() => _selectedColorHex = hex),
-                      child: Container(
-                        width: 44,
-                        decoration: BoxDecoration(
-                          color: color,
-                          shape: BoxShape.circle,
-                          border: isSelected ? Border.all(color: Colors.black, width: 3) : null,
-                          boxShadow: [
-                            if (isSelected)
-                              BoxShadow(color: color.withOpacity(0.4), blurRadius: 8, spreadRadius: 2),
-                          ],
-                        ),
-                        child: isSelected ? const Icon(Icons.check, color: Colors.white) : null,
-                      ),
-                    );
-                  },
-                ),
-              ),
-              const SizedBox(height: 24),
-              
-              // Botón Guardar
-              SizedBox(
-                width: double.infinity,
-                height: 54,
-                child: ElevatedButton(
-                  onPressed: _save,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primary,
-                    foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                    elevation: 4,
+  Widget _buildSectionHeader(String title, bool isDark) {
+    return Padding(
+      padding: const EdgeInsets.only(left: 4),
+      child: Text(
+        title,
+        style: GoogleFonts.montserrat(
+          fontSize: 10,
+          fontWeight: FontWeight.w800,
+          letterSpacing: 1.2,
+          color: isDark ? Colors.white38 : Colors.grey[500],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSelectorTile({
+    required String label,
+    required String value,
+    required IconData icon,
+    required VoidCallback onTap,
+    required bool isDark,
+    Widget? trailing,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(AppColors.radiusMedium),
+      child: Container(
+        padding: const EdgeInsets.all(AppColors.md),
+        decoration: BoxDecoration(
+          color: isDark ? Colors.white.withOpacity(0.05) : Colors.grey[50],
+          borderRadius: BorderRadius.circular(AppColors.radiusMedium),
+          border: Border.all(color: isDark ? Colors.white10 : Colors.grey[200]!, width: 1),
+        ),
+        child: Row(
+          children: [
+            Icon(icon, color: isDark ? Colors.white70 : AppColors.textPrimary.withOpacity(0.8), size: 18),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    label.toUpperCase(),
+                    style: GoogleFonts.montserrat(
+                      fontSize: 10,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: 0.5,
+                      color: Colors.grey,
+                    ),
                   ),
-                  child: Text(
-                    widget.goal == null ? 'CREAR META' : 'ACTUALIZAR META',
-                    style: GoogleFonts.montserrat(fontWeight: FontWeight.w800, fontSize: 16, letterSpacing: 1.1),
+                  const SizedBox(height: 2),
+                  Text(
+                    value,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: GoogleFonts.montserrat(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
+                      color: isDark ? Colors.white : AppColors.textPrimary,
+                    ),
                   ),
-                ),
+                ],
               ),
-            ],
+            ),
+            if (trailing != null) trailing,
+            const SizedBox(width: 8),
+            Icon(Icons.chevron_right_rounded, color: Colors.grey[400], size: 20),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildAdaptiveFooter(bool isDark) {
+    if (MediaQuery.of(context).viewInsets.bottom > 0) {
+      return Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+        decoration: BoxDecoration(
+          color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
+          border: Border(
+            top: BorderSide(
+              color: isDark ? Colors.white10 : Colors.grey[100]!,
+            ),
           ),
         ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            AppButton(
+              label: 'Ocultar teclado',
+              variant: 'outlined',
+              height: 40,
+              onPressed: () => FocusScope.of(context).unfocus(),
+            ),
+            AppButton(
+              label: 'Siguiente',
+              variant: 'primary',
+              height: 40,
+              onPressed: () => FocusScope.of(context).nextFocus(),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return Container(
+      padding: EdgeInsets.fromLTRB(20, 16, 20, MediaQuery.of(context).padding.bottom + 12),
+      decoration: BoxDecoration(
+        color: isDark ? AppColors.surfaceDark : Colors.white,
+        border: Border(
+          top: BorderSide(
+            color: isDark ? Colors.white10 : Colors.grey[100]!,
+          ),
+        ),
+      ),
+      child: AppButton(
+        label: widget.goal != null ? 'ACTUALIZAR META' : 'CREAR META',
+        onPressed: _save,
+        isFullWidth: true,
       ),
     );
   }
