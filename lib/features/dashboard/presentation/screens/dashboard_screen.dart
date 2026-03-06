@@ -232,41 +232,79 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   /// Construye un pequeño widget con la fecha e icono de calendario
   Widget _buildDateClock(BuildContext context, bool isDark, String date) {
     return InkWell(
-      onTap: () async {
+      onTap: () {
         final DateTime now = DateTime.now();
-        final DateTime? picked = await showDatePicker(
+        showDialog(
           context: context,
-          initialDate: now,
-          firstDate: now.subtract(const Duration(days: 365 * 2)),
-          lastDate: now.add(const Duration(days: 365 * 2)),
-          builder: (context, child) {
+          builder: (context) {
             return Theme(
               data: Theme.of(context).copyWith(
                 colorScheme: isDark
                     ? ColorScheme.dark(
-                        primary: AppColors.primary, // Ocean Blue / Blue Light theme
+                        primary: AppColors.primary,
                         onPrimary: Colors.white,
                         surface: const Color(0xFF1E1E1E), // Slate Dark
                         onSurface: Colors.white,
                       )
                     : ColorScheme.light(
-                        primary: AppColors.primary, 
+                        primary: AppColors.primary,
                         onPrimary: Colors.white,
                         surface: Colors.white,
                         onSurface: AppColors.textPrimary,
                       ),
-                dialogBackgroundColor: isDark ? const Color(0xFF1E1E1E) : Colors.white,
                 textButtonTheme: TextButtonThemeData(
                   style: TextButton.styleFrom(
-                    foregroundColor: AppColors.secondary, // Lima Vibrante / Gold Bright accent
+                    foregroundColor: AppColors.secondary,
                   ),
                 ),
               ),
-              child: child!,
+              child: Dialog(
+                backgroundColor: isDark ? const Color(0xFF1E1E1E) : Colors.white,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const SizedBox(height: 20),
+                    Text(
+                      'CALENDARIO',
+                      style: GoogleFonts.montserrat(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: 1.5,
+                        color: isDark ? Colors.white60 : Colors.black54,
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    CalendarDatePicker(
+                      initialDate: now,
+                      firstDate: now.subtract(const Duration(days: 365 * 2)),
+                      lastDate: now.add(const Duration(days: 365 * 2)),
+                      onDateChanged: (_) {}, // No hace nada por ahora
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(0, 0, 16, 16),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.end,
+                        children: [
+                          TextButton(
+                            onPressed: () => Navigator.of(context).pop(),
+                            child: Text(
+                              'CERRAR',
+                              style: GoogleFonts.montserrat(
+                                fontWeight: FontWeight.w700,
+                                fontSize: 13,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
             );
           },
         );
-        // El onDatePicked no hace nada productivo en el state actual, pero muestra el calendario con Theme como se requirió.
       },
       borderRadius: BorderRadius.circular(AppColors.radiusLarge),
       child: Container(
