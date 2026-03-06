@@ -34,7 +34,7 @@ class AccountCard extends StatelessWidget {
         return const _AccountTypeTheme(
           icon: Icons.account_balance_outlined,
           color: Colors.blue,
-          label: 'Chequera',
+          label: 'Cta débito',
         );
       case 'ahorro':
         return const _AccountTypeTheme(

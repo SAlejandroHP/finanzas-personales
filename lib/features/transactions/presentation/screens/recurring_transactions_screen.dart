@@ -2,8 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
-import '../../../../core/constants/app_colors.dart';
 import '../../../../core/widgets/app_button.dart';
+import '../../../../core/widgets/app_toast.dart';
+import '../../../../core/constants/app_colors.dart';
 import '../../data/transactions_repository.dart';
 import '../../models/transaction_model.dart';
 import '../widgets/transaction_form_sheet.dart';
@@ -253,7 +254,7 @@ class _RecurringTransactionCard extends StatelessWidget {
                         ref.read(financeServiceProvider).refreshAll();
                       } catch (e) {
                         if (context.mounted) {
-                          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
+                          showAppToast(context, message: 'Error: $e', type: ToastType.error);
                         }
                       }
                     }

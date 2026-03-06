@@ -8,6 +8,7 @@ import '../../../../core/providers/ui_provider.dart';
 import '../../../../core/network/supabase_client.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../../transactions/presentation/screens/recurring_transactions_screen.dart';
+import '../../../../core/widgets/app_toast.dart';
 
 /// Pantalla de configuración de la aplicación.
 /// Organizada de forma funcional con secciones de gestión, apariencia y cuenta.
@@ -45,15 +46,11 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         _isEditingName = false;
       });
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Nombre actualizado correctamente')),
-        );
+        showAppToast(context, message: 'Nombre actualizado correctamente', type: ToastType.success);
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: ${e.toString()}')),
-        );
+        showAppToast(context, message: 'Error: ${e.toString()}', type: ToastType.error);
       }
     }
   }

@@ -75,6 +75,7 @@ abstract class AppColors {
   // ===========================================================================
   // 4. CAPA DE COMPATIBILIDAD (Legacy Support)
   // ===========================================================================
+  static const Color white          = Color(0xFFFFFFFF);
   static const Color backgroundColor = backgroundLight;
   static const Color surface         = surfaceLight;
   static const Color textPrimary     = textPrimaryLight;

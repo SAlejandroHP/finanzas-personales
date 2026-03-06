@@ -202,42 +202,11 @@ class _SmartInputBarState extends ConsumerState<SmartInputBar> {
 
           if (mounted) {
             _controller.clear();
-            
-            final isDark = Theme.of(context).brightness == Brightness.dark;
-            final snackBar = SnackBar(
-              content: Row(
-                children: [
-                  const Icon(Icons.check_circle_rounded, color: AppColors.success),
-                  const SizedBox(width: AppColors.md),
-                  Expanded(
-                    child: Text(
-                      'Transacción guardada.' + (usedDefault ? ' (Cuenta por defecto)' : ''),
-                      style: GoogleFonts.montserrat(
-                         color: AppColors.textSecondary,
-                         fontWeight: FontWeight.w600,
-                         fontSize: AppColors.bodyMedium,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-              action: SnackBarAction(
-                label: 'Editar',
-                textColor: AppColors.primary,
-                onPressed: () {
-                  showTransactionFormSheet(
-                    context,
-                    draft: draft,
-                  );
-                },
-              ),
-              behavior: SnackBarBehavior.floating,
-              backgroundColor: isDark ? AppColors.surfaceDark : AppColors.textPrimary, 
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppColors.radiusLarge)),
-              margin: const EdgeInsets.symmetric(horizontal: AppColors.pagePadding, vertical: AppColors.xl),
-              duration: const Duration(seconds: 4),
+            showAppToast(
+              context,
+              message: 'Transacción guardada.' + (usedDefault ? ' (Cuenta por defecto)' : ''),
+              type: ToastType.success,
             );
-            ScaffoldMessenger.of(context).showSnackBar(snackBar);
           }
         } else {
           // Modo Manual (Fallback)

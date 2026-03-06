@@ -58,11 +58,11 @@ class AppButton extends StatelessWidget {
     switch (variant) {
       case 'primary':
         bgColor = backgroundColor ?? AppColors.primary;
-        textColorFinal = textColor ?? AppColors.textSecondary;
+        textColorFinal = textColor ?? AppColors.white;
         break;
       case 'secondary':
         bgColor = backgroundColor ?? AppColors.secondary;
-        textColorFinal = textColor ?? AppColors.textSecondary;
+        textColorFinal = textColor ?? AppColors.white;
         break;
       case 'outlined':
         bgColor = Colors.transparent;
@@ -70,7 +70,7 @@ class AppButton extends StatelessWidget {
         break;
       default:
         bgColor = AppColors.primary;
-        textColorFinal = AppColors.textSecondary;
+        textColorFinal = AppColors.white;
     }
 
     // Determina el tamaño

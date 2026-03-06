@@ -1081,7 +1081,7 @@ class _AccountFormScreenState extends ConsumerState<AccountFormScreen> {
       case 'efectivo':
         return 'Efectivo';
       case 'chequera':
-        return 'Cuenta de cheques';
+        return 'Cta débito';
       case 'ahorro':
         return 'Cuenta de ahorro';
       case 'tarjeta_credito':

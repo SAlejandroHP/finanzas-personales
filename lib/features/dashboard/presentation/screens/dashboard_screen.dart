@@ -19,6 +19,7 @@ import '../../../goals/presentation/providers/goals_provider.dart';
 import '../../../transactions/presentation/widgets/transaction_form_sheet.dart';
 import '../../../../core/services/finance_service.dart';
 import '../widgets/smart_input_bar.dart';
+import '../../../../core/widgets/app_toast.dart';
 
 /// Pantalla del dashboard que muestra un resumen financiero.
 /// Permite navegar a cuentas, categorías y transacciones.
@@ -363,15 +364,11 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                                   try {
                                     await ref.read(debtsNotifierProvider.notifier).acceptInvitation(inv);
                                     if (context.mounted) {
-                                      ScaffoldMessenger.of(context).showSnackBar(
-                                        const SnackBar(content: Text('Deuda aceptada y vinculada correctamente')),
-                                      );
+                                      showAppToast(context, message: 'Deuda aceptada y vinculada correctamente', type: ToastType.success);
                                     }
                                   } catch (e) {
                                     if (context.mounted) {
-                                      ScaffoldMessenger.of(context).showSnackBar(
-                                        SnackBar(content: Text('Error: $e')),
-                                      );
+                                      showAppToast(context, message: 'Error: $e', type: ToastType.error);
                                     }
                                   }
                                 },
@@ -398,15 +395,11 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                                   try {
                                     await ref.read(debtsNotifierProvider.notifier).rejectInvitation(inv);
                                     if (context.mounted) {
-                                      ScaffoldMessenger.of(context).showSnackBar(
-                                        const SnackBar(content: Text('Invitación rechazada')),
-                                      );
+                                      showAppToast(context, message: 'Invitación rechazada', type: ToastType.info);
                                     }
                                   } catch (e) {
                                     if (context.mounted) {
-                                      ScaffoldMessenger.of(context).showSnackBar(
-                                        SnackBar(content: Text('Error: $e')),
-                                      );
+                                      showAppToast(context, message: 'Error: $e', type: ToastType.error);
                                     }
                                   }
                                 },
@@ -1046,23 +1039,11 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                                 }
                                 
                                 if (context.mounted) {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(
-                                      content: Text(
-                                        'Pago marcado como realizado',
-                                        style: GoogleFonts.montserrat(fontSize: 12),
-                                      ),
-                                      backgroundColor: AppColors.success,
-                                      behavior: SnackBarBehavior.floating,
-                                      duration: const Duration(seconds: 2),
-                                    ),
-                                  );
+                                  showAppToast(context, message: 'Pago marcado como realizado', type: ToastType.success);
                                 }
                               } catch (e) {
                                 if (context.mounted) {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
-                                  );
+                                  showAppToast(context, message: 'Error: $e', type: ToastType.error);
                                 }
                               }
                             },

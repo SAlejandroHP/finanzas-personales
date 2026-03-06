@@ -1449,7 +1449,7 @@ class _TransactionFormSheetState extends ConsumerState<TransactionFormSheet> {
   String _formatTipoName(String tipo) {
     switch (tipo) {
       case 'efectivo': return 'Efectivo';
-      case 'chequera': return 'Cuenta de cheques';
+      case 'chequera': return 'Cta débito';
       case 'ahorro': return 'Cuenta de ahorro';
       case 'tarjeta_credito': return 'Tarjeta de crédito';
       case 'inversion': return 'Inversión';
@@ -2094,6 +2094,8 @@ class _CategorySelectorModal extends StatefulWidget {
 class _CategorySelectorModalState extends State<_CategorySelectorModal> {
   late TextEditingController _searchController;
   late List<CategoryModel> _filteredCategories;
+  // Punto 4 — FocusNode dedicado para auto-focus con requestFocus() garantizado
+  final FocusNode _categorySearchFocusNode = FocusNode();
 
   @override
   void initState() {
@@ -2101,10 +2103,18 @@ class _CategorySelectorModalState extends State<_CategorySelectorModal> {
     _searchController = TextEditingController();
     _filteredCategories = widget.categories;
     _searchController.addListener(_onSearchChanged);
+    // Solicitar foco en el siguiente frame para que el teclado se despliegue
+    // automáticamente al mostrar el selector, con el cursor listo para escribir.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        _categorySearchFocusNode.requestFocus();
+      }
+    });
   }
 
   @override
   void dispose() {
+    _categorySearchFocusNode.dispose();
     _searchController.dispose();
     super.dispose();
   }
@@ -2162,7 +2172,7 @@ class _CategorySelectorModalState extends State<_CategorySelectorModal> {
           const SizedBox(height: 16),
           TextField(
             controller: _searchController,
-            autofocus: true, // Mejora UX: abre el teclado automáticamente al elegir categoría
+            focusNode: _categorySearchFocusNode, // Punto 4: FocusNode inyectado
             style: GoogleFonts.montserrat(
               fontSize: AppColors.bodyMedium,
               color: isDark ? Colors.white : AppColors.textPrimary,

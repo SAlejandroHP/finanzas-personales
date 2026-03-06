@@ -348,7 +348,7 @@ class AccountsListScreen extends ConsumerWidget {
       useRootNavigator: true,
       backgroundColor: Colors.transparent,
       barrierColor: Colors.black.withOpacity(0.5),
-      builder: (context) => const AccountFormBottomSheet(),
+      builder: (context) => AccountFormBottomSheet(), // No const: evita reutilización de instancia que causa Duplicate GlobalKey
     ).then((_) {
       ref.read(selectedAccountProvider.notifier).state = null;
     });

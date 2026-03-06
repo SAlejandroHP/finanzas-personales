@@ -336,7 +336,7 @@ class _AccountFormBottomSheetState extends ConsumerState<AccountFormBottomSheet>
                               hintText: 'Ej: Nómina, Ahorros, etc.',
                               prefixIcon: Icons.badge_outlined,
                               enabled: !_isLoading,
-                              autofocus: true,
+                              // autofocus removido: causa crash en iOS/DraggableScrollableSheet
                               onSubmitted: (_) => FocusScope.of(context).nextFocus(),
                             ),
                             const SizedBox(height: 24),
