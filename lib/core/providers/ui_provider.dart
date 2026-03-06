@@ -52,3 +52,7 @@ final themeModeProvider = StateNotifierProvider<ThemeNotifier, AppThemeMode>((re
 
 /// Provider para controlar la visibilidad de la barra de navegación (Scroll-to-hide)
 final isNavbarVisibleProvider = StateProvider<bool>((ref) => true);
+
+/// Provider que es `true` cuando el SmartInputBar tiene texto escrito.
+/// Se usa para ocultar el FAB mientras el usuario escribe en la IA.
+final smartInputHasTextProvider = StateProvider<bool>((ref) => false);

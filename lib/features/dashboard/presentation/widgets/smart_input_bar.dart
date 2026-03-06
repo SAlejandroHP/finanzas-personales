@@ -19,6 +19,7 @@ import '../../../goals/models/goal_model.dart';
 import '../../../goals/presentation/widgets/goal_form_bottom_sheet.dart';
 import '../../../debts/models/debt_model.dart';
 import '../../../debts/presentation/widgets/debt_form_sheet.dart';
+import '../../../../core/providers/ui_provider.dart';
 
 class SmartInputBar extends ConsumerStatefulWidget {
   const SmartInputBar({super.key});
@@ -42,6 +43,19 @@ class _SmartInputBarState extends ConsumerState<SmartInputBar> {
     _iaService = IAService();
     _speech = stt.SpeechToText();
     _initSpeech();
+    // Escucha cambios en el texto para notificar al FAB sobre ocultarse
+    _controller.addListener(_onTextChanged);
+  }
+
+  /// Actualiza el provider global cuando el campo de texto cambia
+  void _onTextChanged() {
+    final hasText = _controller.text.isNotEmpty;
+    // Usa Future.microtask para evitar llamar setState durante el build
+    Future.microtask(() {
+      if (mounted) {
+        ref.read(smartInputHasTextProvider.notifier).state = hasText;
+      }
+    });
   }
 
   Future<void> _initSpeech() async {
@@ -114,7 +128,14 @@ class _SmartInputBarState extends ConsumerState<SmartInputBar> {
 
   @override
   void dispose() {
+    _controller.removeListener(_onTextChanged);
     _controller.dispose();
+    // Limpia el estado del provider al desmontar
+    Future.microtask(() {
+      if (mounted) {
+        ref.read(smartInputHasTextProvider.notifier).state = false;
+      }
+    });
     super.dispose();
   }
 
@@ -160,14 +181,21 @@ class _SmartInputBarState extends ConsumerState<SmartInputBar> {
         if (draft.monto != null && draft.monto! > 0 && finalAccountId != null) {
           final ahora = DateTime.now();
           final draftFecha = draft.fecha ?? ahora;
-          
-          final hoyFin = DateTime(ahora.year, ahora.month, ahora.day, 23, 59, 59);
-          final estadoFinal = draftFecha.isBefore(hoyFin) ||
-                (draftFecha.day == ahora.day &&
-                 draftFecha.month == ahora.month &&
-                 draftFecha.year == ahora.year)
-              ? 'completa'
-              : 'pendiente';
+
+          // Prioriza el estado determinado por la IA (Punto 3: fechas futuras).
+          // Si la IA no lo proporcionó, calcula localmente.
+          final String estadoFinal;
+          if (draft.estadoIA != null && draft.estadoIA!.isNotEmpty) {
+            estadoFinal = draft.estadoIA!; // "completa" o "programada"
+          } else {
+            final hoyFin = DateTime(ahora.year, ahora.month, ahora.day, 23, 59, 59);
+            estadoFinal = (draftFecha.isBefore(hoyFin) ||
+                    (draftFecha.day == ahora.day &&
+                     draftFecha.month == ahora.month &&
+                     draftFecha.year == ahora.year))
+                ? 'completa'
+                : 'programada';
+          }
 
           if (draft.tipo == 'pago_deuda' && draft.deudaId != null) {
             await ref.read(financeServiceProvider).processDebtPayment(
@@ -233,8 +261,11 @@ class _SmartInputBarState extends ConsumerState<SmartInputBar> {
               colorHex: AppColors.primaryHex, // Note: This is stored as a string, but the constant is AppColors.primary
               createdAt: DateTime.now(),
             );
+           // useRootNavigator: true asegura que el sheet se renderice
+           // por ENCIMA del BottomNavigationBar (Punto 17b - Fix Z-Index)
            showModalBottomSheet(
              context: context,
+             useRootNavigator: true,
              isScrollControlled: true,
              backgroundColor: Colors.transparent,
              builder: (context) => GoalFormBottomSheet(goal: goal),

@@ -51,6 +51,9 @@ class AppShell extends ConsumerWidget {
       currentIndex = 2;
     }
     final isCanvasOpen = ref.watch(isCanvasOpenProvider);
+    // Oculta el FAB cuando el SmartInputBar tiene texto (Punto 2)
+    final smartInputHasText = ref.watch(smartInputHasTextProvider);
+    final bool showFab = !isCanvasOpen && !smartInputHasText;
 
     // Ítems de navegación reorganizados por relevancia
     final navItems = [
@@ -85,18 +88,24 @@ class AppShell extends ConsumerWidget {
     return Scaffold(
       extendBody: true,
       body: child,
-      // Quitamos el FAB del slot tradicional para integrarlo o posicionarlo mejor
-      floatingActionButton: !isCanvasOpen 
-          ? AnimatedSlide(
-              offset: isNavbarVisible ? Offset.zero : const Offset(0, 2),
-              duration: const Duration(milliseconds: 300),
-              curve: Curves.easeInOut,
-              child: Transform.translate(
-                offset: const Offset(0, -5), // Ajuste con los laterales recuperados
-                child: _buildCenterFAB(context, ref),
-              ),
-            ) 
-          : null,
+      floatingActionButton: AnimatedScale(
+        scale: showFab ? 1.0 : 0.0,
+        duration: const Duration(milliseconds: 220),
+        curve: Curves.easeInOut,
+        child: AnimatedOpacity(
+          opacity: showFab ? 1.0 : 0.0,
+          duration: const Duration(milliseconds: 180),
+          child: AnimatedSlide(
+            offset: isNavbarVisible ? Offset.zero : const Offset(0, 2),
+            duration: const Duration(milliseconds: 300),
+            curve: Curves.easeInOut,
+            child: Transform.translate(
+              offset: const Offset(0, -5),
+              child: _buildCenterFAB(context, ref),
+            ),
+          ),
+        ),
+      ),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
       bottomNavigationBar: !isCanvasOpen
           ? AnimatedSlide(

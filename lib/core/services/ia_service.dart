@@ -29,6 +29,8 @@ REGLAS ESTRICTAS DE EXTRACCIÓN Y SEGURIDAD:
    - "cuenta_origen_id": UUID de la cuenta sugerida (extraída de la lista de cuentas proveída) o null si no estás seguro.
    - "cuenta_destino_id": UUID de la cuenta destino (solo en transferencias) o null.
    - "fecha": YYYY-MM-DD (Obligatorio. Si usa fechas relativas como "ayer" o "el 15", calcúlala basado en la FECHA ACTUAL DEL SISTEMA).
+   - "es_futura": booleano (true/false). REGLA CRÍTICA: Si la fecha asignada es POSTERIOR a la FECHA ACTUAL DEL SISTEMA, este campo DEBE ser `true`. Si la fecha es hoy o pasada, DEBE ser `false`.
+   - "estado": "completa" | "programada". REGLA CRÍTICA: Si "es_futura" es `true`, el estado DEBE ser "programada". Si "es_futura" es `false`, el estado DEBE ser "completa". Ejemplos: "Tengo que pagar 500 el 13 de marzo" → es_futura: true, estado: "programada". "Pagué 200 ayer" → es_futura: false, estado: "completa".
    - "categoria_id": UUID de la categoría si aplica (extraída de la lista de categorías) o null.
    - "deuda_id": UUID de la deuda (extraída de la lista de deudas) o null. Solo si el tipo es "pago_deuda".
 
@@ -36,6 +38,11 @@ REGLAS ESTRICTAS DE EXTRACCIÓN Y SEGURIDAD:
    - "monto_objetivo": número decimal positivo o null (si se menciona el monto a ahorrar en total).
    - "fecha_objetivo": YYYY-MM-DD o null (Calculada basándote en la fecha actual si es relativa).
    - "nombre_meta": texto corto (Ej. "Viaje a Europa", "Laptop nueva").
+
+   REGLA ANTI-DUPLICACIÓN DE MONTOS EN METAS:
+   - Si el usuario describe una distribución de un monto total (Ej: "Aparta 1000 pesos, 500 para Juan y 500 para Pedro"), el campo "monto_objetivo" DEBE ser el TOTAL GLOBAL (1000), NO la suma de las partes.
+   - Si el usuario quiere CLARAMENTE crear registros SEPARADOS (Ej: "Meta de 500 para niño 1 y otra meta de 500 para niño 2"), responde con un array "registros_multiples" de objetos goal. Pero si el intent es uno solo, "monto_objetivo" es el total, NUNCA la suma errónea de partes.
+   - NUNCA inventes un total sumando sub-montos si el usuario ya dio el total explícitamente.
 
 # CAMPOS EXCLUSIVOS SI EL INTENT ES "debt":
    - "monto_deuda": número decimal positivo o null.
@@ -63,6 +70,11 @@ class IATransactionDraft {
   final DateTime? fecha;
   final String? categoriaId;
   final String? deudaId;
+  /// Estado explícito retornado por la IA ("completa" o "programada").
+  /// Si la IA detecta una fecha futura, este campo será "programada".
+  final String? estadoIA;
+  /// Si la IA detectó que la fecha es futura.
+  final bool esFutura;
   
   // Para intent "goal"
   final double? montoObjetivo;
@@ -85,6 +97,8 @@ class IATransactionDraft {
     this.fecha,
     this.categoriaId,
     this.deudaId,
+    this.estadoIA,
+    this.esFutura = false,
     this.montoObjetivo,
     this.fechaObjetivo,
     this.nombreMeta,
@@ -115,6 +129,8 @@ class IATransactionDraft {
       fecha: parsedDate,
       categoriaId: json['categoria_id'] as String?,
       deudaId: json['deuda_id'] as String?,
+      estadoIA: json['estado'] as String?,
+      esFutura: json['es_futura'] as bool? ?? false,
       montoObjetivo: (json['monto_objetivo'] as num?)?.toDouble(),
       fechaObjetivo: parsedFechaObjetivo,
       nombreMeta: json['nombre_meta'] as String?,
