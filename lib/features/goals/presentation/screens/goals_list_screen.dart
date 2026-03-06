@@ -60,39 +60,79 @@ class GoalsListScreen extends ConsumerWidget {
           Container(
             width: double.infinity,
             margin: const EdgeInsets.all(AppColors.pagePadding),
-            padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
-              gradient: AppColors.tealGradient,
-              borderRadius: BorderRadius.circular(AppColors.radiusLarge),
-              boxShadow: [
-                BoxShadow(
-                  color: AppColors.primary.withOpacity(0.3),
-                  blurRadius: 15,
-                  offset: const Offset(0, 8),
-                ),
-              ],
+              color: AppColors.goals.withOpacity(0.8),
+              borderRadius: BorderRadius.circular(24),
             ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Total Ahorrado en Metas',
-                  style: GoogleFonts.montserrat(
-                    color: Colors.white.withOpacity(0.8),
-                    fontSize: 14,
-                    fontWeight: FontWeight.w500,
+            child: Padding(
+              padding: const EdgeInsets.all(20),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'TOTAL AHORRADO EN METAS',
+                    style: GoogleFonts.montserrat(
+                      fontSize: 10,
+                      fontWeight: FontWeight.w800,
+                      color: Colors.white.withOpacity(0.8),
+                      letterSpacing: 1.2,
+                    ),
                   ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  currencyFormatter.format(totalSaved),
-                  style: GoogleFonts.montserrat(
-                    color: Colors.white,
-                    fontSize: 28,
-                    fontWeight: FontWeight.w800,
+                  const SizedBox(height: 4),
+                  Text(
+                    currencyFormatter.format(totalSaved),
+                    style: GoogleFonts.montserrat(
+                      fontSize: 24,
+                      fontWeight: FontWeight.w800,
+                      color: Colors.white,
+                      letterSpacing: -0.5,
+                    ),
                   ),
-                ),
-              ],
+                  const SizedBox(height: 20),
+                  // Barra inferior con indicadores (Estilo Dashboard/Cuentas)
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Colors.black.withOpacity(0.12),
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: goalsAsync.when(
+                            data: (goals) => _buildCompactIndicator(
+                              'Metas',
+                              '${goals.length}',
+                              Colors.white,
+                              Icons.flag_rounded,
+                            ),
+                            loading: () => const SizedBox(),
+                            error: (_, __) => const SizedBox(),
+                          ),
+                        ),
+                        Container(height: 20, width: 1, color: Colors.white.withOpacity(0.15)),
+                        Expanded(
+                          child: goalsAsync.when(
+                            data: (goals) {
+                              final avgProgress = goals.isEmpty 
+                                  ? 0.0 
+                                  : goals.fold<double>(0, (sum, g) => sum + g.progress) / goals.length;
+                              return _buildCompactIndicator(
+                                'Progreso',
+                                '${(avgProgress * 100).toInt()}%',
+                                Colors.white.withOpacity(0.8),
+                                Icons.trending_up_rounded,
+                              );
+                            },
+                            loading: () => const SizedBox(),
+                            error: (_, __) => const SizedBox(),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
           
@@ -122,6 +162,39 @@ class GoalsListScreen extends ConsumerWidget {
           const SizedBox(height: 80), // Espacio para el nav bar flotante
         ],
       ),
+    );
+  }
+
+  Widget _buildCompactIndicator(String label, String amount, Color color, IconData icon) {
+    return Column(
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(icon, size: 10, color: color.withOpacity(0.8)),
+            const SizedBox(width: 4),
+            Text(
+              label.toUpperCase(),
+              style: GoogleFonts.montserrat(
+                fontSize: 8,
+                fontWeight: FontWeight.w800,
+                color: color.withOpacity(0.7),
+                letterSpacing: 0.5,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 2),
+        Text(
+          amount,
+          style: GoogleFonts.montserrat(
+            fontSize: 14,
+            fontWeight: FontWeight.w700,
+            color: color,
+            letterSpacing: -0.2,
+          ),
+        ),
+      ],
     );
   }
 

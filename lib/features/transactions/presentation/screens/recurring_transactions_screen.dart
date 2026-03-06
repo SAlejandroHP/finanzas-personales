@@ -30,7 +30,7 @@ class RecurringTransactionsScreen extends ConsumerWidget {
       backgroundColor: isDark ? const Color(0xFF121212) : AppColors.backgroundColor,
       appBar: AppBar(
         title: Text(
-          'Reglas Recurrentes',
+          'T. Recurrentes',
           style: GoogleFonts.montserrat(
             fontWeight: FontWeight.w800,
             fontSize: 18,
@@ -106,73 +106,67 @@ class RecurringTransactionsScreen extends ConsumerWidget {
             children: [
               Container(
                 margin: const EdgeInsets.fromLTRB(AppColors.pagePadding, 8, AppColors.pagePadding, 16),
-                padding: const EdgeInsets.all(20),
+                width: double.infinity,
                 decoration: BoxDecoration(
-                  color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
-                  borderRadius: BorderRadius.circular(22),
-                  boxShadow: [
-                    if (!isDark)
-                      BoxShadow(
-                        color: AppColors.primary.withOpacity(0.08),
-                        blurRadius: 15,
-                        offset: const Offset(0, 5),
-                      ),
-                  ],
-                  border: Border.all(
-                    color: isDark ? Colors.white.withOpacity(0.05) : AppColors.primary.withOpacity(0.1),
-                  ),
+                  color: AppColors.recurringTransactions.withOpacity(0.8),
+                  borderRadius: BorderRadius.circular(24),
                 ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceAround,
-                  children: [
-                    Column(
-                      children: [
-                        Text(
-                          'Total al mes',
-                          style: GoogleFonts.montserrat(
-                            fontSize: 10,
-                            fontWeight: FontWeight.w700,
-                            color: Colors.grey,
-                          ),
+                child: Padding(
+                  padding: const EdgeInsets.all(20),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'TOTAL ESTIMADO AL MES',
+                        style: GoogleFonts.montserrat(
+                          fontSize: 10,
+                          fontWeight: FontWeight.w800,
+                          color: Colors.white.withOpacity(0.8),
+                          letterSpacing: 1.2,
                         ),
-                        const SizedBox(height: 4),
-                        Text(
-                          NumberFormat.currency(locale: 'es_MX', symbol: '\$').format(monthlyTotal),
-                          style: GoogleFonts.montserrat(
-                            fontSize: 18,
-                            fontWeight: FontWeight.w800,
-                            color: isDark ? Colors.white : AppColors.textPrimary,
-                          ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        NumberFormat.currency(locale: 'es_MX', symbol: '\$').format(monthlyTotal),
+                        style: GoogleFonts.montserrat(
+                          fontSize: 24,
+                          fontWeight: FontWeight.w800,
+                          color: Colors.white,
+                          letterSpacing: -0.5,
                         ),
-                      ],
-                    ),
-                    Container(
-                      width: 1,
-                      height: 30,
-                      color: isDark ? Colors.white24 : Colors.grey.withOpacity(0.2),
-                    ),
-                    Column(
-                      children: [
-                        Text(
-                          'Por quincena',
-                          style: GoogleFonts.montserrat(
-                            fontSize: 10,
-                            fontWeight: FontWeight.w700,
-                            color: Colors.grey,
-                          ),
+                      ),
+                      const SizedBox(height: 20),
+                      // Barra inferior con indicadores (Estilo Dashboard/Cuentas)
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: Colors.black.withOpacity(0.12),
+                          borderRadius: BorderRadius.circular(16),
                         ),
-                        const SizedBox(height: 4),
-                        Text(
-                          NumberFormat.currency(locale: 'es_MX', symbol: '\$').format(quincenalTotal),
-                          style: GoogleFonts.montserrat(
-                            fontSize: 18,
-                            fontWeight: FontWeight.w800,
-                            color: isDark ? Colors.white : AppColors.textPrimary,
-                          ),
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: _buildCompactIndicator(
+                                'Mensual',
+                                NumberFormat.currency(locale: 'es_MX', symbol: '\$').format(monthlyTotal),
+                                Colors.white,
+                                Icons.calendar_month_rounded,
+                              ),
+                            ),
+                            Container(height: 20, width: 1, color: Colors.white.withOpacity(0.15)),
+                            Expanded(
+                              child: _buildCompactIndicator(
+                                'Quincenal',
+                                NumberFormat.currency(locale: 'es_MX', symbol: '\$').format(quincenalTotal),
+                                Colors.white.withOpacity(0.8),
+                                Icons.event_repeat_rounded,
+                              ),
+                            ),
+                          ],
                         ),
-                      ],
-                    ),
-                  ],
+                      ),
+                    ],
+                  ),
                 ),
               ),
               Expanded(
@@ -193,6 +187,39 @@ class RecurringTransactionsScreen extends ConsumerWidget {
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (err, stack) => Center(child: Text('Error: $err')),
       ),
+    );
+  }
+
+  Widget _buildCompactIndicator(String label, String amount, Color color, IconData icon) {
+    return Column(
+      children: [
+        Row(
+           mainAxisAlignment: MainAxisAlignment.center,
+           children: [
+             Icon(icon, size: 10, color: color.withOpacity(0.8)),
+             const SizedBox(width: 4),
+             Text(
+               label.toUpperCase(),
+               style: GoogleFonts.montserrat(
+                 fontSize: 8,
+                 fontWeight: FontWeight.w800,
+                 color: color.withOpacity(0.7),
+                 letterSpacing: 0.5,
+               ),
+             ),
+           ],
+        ),
+        const SizedBox(height: 2),
+        Text(
+          amount,
+          style: GoogleFonts.montserrat(
+            fontSize: 14,
+            fontWeight: FontWeight.w700,
+            color: color,
+            letterSpacing: -0.2,
+          ),
+        ),
+      ],
     );
   }
 }
@@ -392,47 +419,41 @@ class _RecurringTransactionCard extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              SizedBox(
+              AppButton(
+                label: 'Eliminar',
+                icon: Icons.delete_outline_rounded,
+                variant: 'outlined',
+                size: 'small',
                 height: 32,
-                child: TextButton.icon(
-                  onPressed: () async {
-                    // Confirmar eliminación
-                    final confirm = await showDialog<bool>(
-                      context: context,
-                      builder: (context) => AlertDialog(
-                        title: const Text('Eliminar regla'),
-                        content: const Text('¿Estás seguro de eliminar esta regla recurrente?'),
-                        actions: [
-                          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancelar')),
-                          TextButton(onPressed: () => Navigator.pop(context, true), child: const Text('Eliminar', style: const TextStyle(color: Colors.red))),
-                        ],
-                      ),
-                    );
-                    
-                    if (confirm == true) {
-                      try {
-                        await TransactionsRepository(supabase: supabaseClient).deleteTransaction(transaction.id);
-                        ref.read(financeServiceProvider).refreshAll();
-                      } catch (e) {
-                        if (context.mounted) {
-                          showAppToast(context, message: 'Error: $e', type: ToastType.error);
-                        }
+                textColor: AppColors.error,
+                onPressed: () async {
+                  // Confirmar eliminación
+                  final confirm = await showDialog<bool>(
+                    context: context,
+                    builder: (context) => AlertDialog(
+                      title: const Text('Eliminar regla'),
+                      content: const Text('¿Estás seguro de eliminar esta regla recurrente?'),
+                      actions: [
+                        TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancelar')),
+                        TextButton(
+                          onPressed: () => Navigator.pop(context, true),
+                          child: const Text('Eliminar', style: TextStyle(color: Colors.red)),
+                        ),
+                      ],
+                    ),
+                  );
+
+                  if (confirm == true) {
+                    try {
+                      await TransactionsRepository(supabase: supabaseClient).deleteTransaction(transaction.id);
+                      ref.read(financeServiceProvider).refreshAll();
+                    } catch (e) {
+                      if (context.mounted) {
+                        showAppToast(context, message: 'Error: $e', type: ToastType.error);
                       }
                     }
-                  },
-                  icon: Icon(Icons.delete_outline_rounded, size: 14, color: Colors.red[300]),
-                  label: Text(
-                    'Eliminar',
-                    style: GoogleFonts.montserrat(
-                      fontSize: 11, 
-                      fontWeight: FontWeight.w700,
-                      color: Colors.red[300],
-                    ),
-                  ),
-                  style: TextButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(horizontal: 8),
-                  ),
-                ),
+                  }
+                },
               ),
               AppButton(
                 label: 'Editar Regla',

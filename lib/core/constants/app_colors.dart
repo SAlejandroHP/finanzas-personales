@@ -36,10 +36,17 @@ abstract class AppColors {
   static const Color textSecondaryDark  = _limeVibrant;
 
   // Semánticos
-  static const Color success = _limeVibrant; // El lima ya es color de éxito natural
-  static const Color error   = Color(0xFFFB7185); // Rosa/Rojo moderno
-  static const Color warning = _goldBright;
-  static const Color info    = _oceanBlue;
+  static const Color success               = _limeVibrant;       // El lima ya es color de éxito natural
+  static const Color error                 = Color(0xFFFB7185);  // Rosa/Rojo moderno
+  static const Color warning               = _goldBright;
+  static const Color info                  = _oceanBlue;
+
+  static const Color goals                 = Color(0xFF50C878);
+  static const Color debts                 = Color(0xFFA38068);
+  static const Color transactions          = Color(0xFF00457C);
+  static const Color recurringTransactions = Color(0xFF0073D1);
+  static const Color categories            = Color(0xFF58427C);
+  static const Color myAccounts            = Color(0xFF00457C);
 
   // ===========================================================================
   // 3. HOMOGENEIDAD MATEMÁTICA Y TIPOGRÁFICA

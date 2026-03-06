@@ -135,40 +135,13 @@ class AccountsListScreen extends ConsumerWidget {
       margin: const EdgeInsets.symmetric(horizontal: AppColors.pagePadding, vertical: 12),
       width: double.infinity,
       decoration: BoxDecoration(
+        color: AppColors.myAccounts.withOpacity(0.8),
         borderRadius: BorderRadius.circular(24),
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            AppColors.primary,
-            AppColors.primary.withRed(30).withGreen(100), // Teal vibrante
-          ],
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.primary.withOpacity(0.3),
-            blurRadius: 20,
-            offset: const Offset(0, 8),
-          ),
-        ],
       ),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(24),
         child: Stack(
           children: [
-            // Decoración Glassmorphism
-            Positioned(
-              top: -20,
-              right: -20,
-              child: Container(
-                width: 100,
-                height: 100,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: Colors.white.withOpacity(0.1),
-                ),
-              ),
-            ),
             Padding(
               padding: const EdgeInsets.all(20),
               child: Column(

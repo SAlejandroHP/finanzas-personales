@@ -149,8 +149,8 @@ class _TransactionListScreenState extends ConsumerState<TransactionListScreen> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    _buildTabDot(0, 'Balance', isDark),
-                    _buildTabDot(1, 'Compromisos', isDark),
+                    _buildTabDot(0, 'Transacciones Generales', isDark),
+                    _buildTabDot(1, 'Transacciones Pendientes', isDark),
                   ],
                 ),
                 const SizedBox(height: 8),
@@ -185,7 +185,7 @@ class _TransactionListScreenState extends ConsumerState<TransactionListScreen> {
                       Column(
                         children: [
                           _buildCommitmentSummaryCard(
-                            title: 'Compromisos (Pendiente)',
+                            title: 'Balance',
                             total: summary.pendingTotal,
                             income: summary.pendingIncome,
                             expenses: summary.pendingExpenses,

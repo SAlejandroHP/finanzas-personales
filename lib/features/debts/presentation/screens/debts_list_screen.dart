@@ -165,67 +165,100 @@ class DebtsListScreen extends ConsumerWidget {
 
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: AppColors.primary,
+        color: AppColors.debts.withOpacity(0.8),
         borderRadius: BorderRadius.circular(24),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.primary.withOpacity(0.3),
-            blurRadius: 15,
-            offset: const Offset(0, 8),
-          ),
-        ],
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                'Saldo Pendiente',
-                style: GoogleFonts.montserrat(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
-                  color: Colors.white.withOpacity(0.8),
-                ),
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'DEUDAS PENDIENTES',
+              style: GoogleFonts.montserrat(
+                fontSize: 10,
+                fontWeight: FontWeight.w800,
+                color: Colors.white.withOpacity(0.8),
+                letterSpacing: 1.2,
               ),
-              Icon(Icons.credit_card_rounded, color: Colors.white.withOpacity(0.4), size: 24),
-            ],
-          ),
-          const SizedBox(height: 8),
-          Text(
-            currencyFormatter.format(remaining),
-            style: GoogleFonts.montserrat(
-              fontSize: 32,
-              fontWeight: FontWeight.w800,
-              color: Colors.white,
-              letterSpacing: -1,
             ),
-          ),
-          const SizedBox(height: 16),
-          // Mini barra de progreso general
-          ClipRRect(
-            borderRadius: BorderRadius.circular(5),
-            child: LinearProgressIndicator(
-              value: progress,
-              backgroundColor: Colors.white.withOpacity(0.1),
-              valueColor: const AlwaysStoppedAnimation<Color>(Colors.white),
-              minHeight: 6,
+            const SizedBox(height: 4),
+            Text(
+              currencyFormatter.format(remaining),
+              style: GoogleFonts.montserrat(
+                fontSize: 24,
+                fontWeight: FontWeight.w800,
+                color: Colors.white,
+                letterSpacing: -0.5,
+              ),
             ),
-          ),
-          const SizedBox(height: 12),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              _buildSummaryMiniDetail('Total original', currencyFormatter.format(total)),
-              _buildSummaryMiniDetail('Pagado', currencyFormatter.format(paid)),
-              _buildSummaryMiniDetail('Progreso', '${(progress * 100).toInt()}%'),
-            ],
-          ),
-        ],
+            const SizedBox(height: 20),
+            // Barra inferior con indicadores (Estilo Dashboard/Cuentas)
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.black.withOpacity(0.12),
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: _buildCompactIndicator(
+                      'Pagado',
+                      currencyFormatter.format(paid),
+                      Colors.white,
+                      Icons.check_circle_outline_rounded,
+                    ),
+                  ),
+                  Container(height: 20, width: 1, color: Colors.white.withOpacity(0.15)),
+                  Expanded(
+                    child: _buildCompactIndicator(
+                      'Progreso',
+                      '${(progress * 100).toInt()}%',
+                      Colors.white.withOpacity(0.8),
+                      Icons.speed_rounded,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
+    );
+  }
+
+  Widget _buildCompactIndicator(String label, String amount, Color color, IconData icon) {
+    return Column(
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(icon, size: 10, color: color.withOpacity(0.8)),
+            const SizedBox(width: 4),
+            Text(
+              label.toUpperCase(),
+              style: GoogleFonts.montserrat(
+                fontSize: 8,
+                fontWeight: FontWeight.w800,
+                color: color.withOpacity(0.7),
+                letterSpacing: 0.5,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 2),
+        Text(
+          amount,
+          style: GoogleFonts.montserrat(
+            fontSize: 14,
+            fontWeight: FontWeight.w700,
+            color: color,
+            letterSpacing: -0.2,
+          ),
+        ),
+      ],
     );
   }
 
@@ -258,7 +291,7 @@ class DebtsListScreen extends ConsumerWidget {
       scrollDirection: Axis.horizontal,
       child: Row(
         children: [
-          _buildTab(ref, 'todas', 'Cualquiera', currentFilter == 'todas', isDark),
+          _buildTab(ref, 'todas', 'Todas', currentFilter == 'todas', isDark),
           _buildTab(ref, 'activa', 'Activas', currentFilter == 'activa', isDark),
           _buildTab(ref, 'pagada', 'Pagadas', currentFilter == 'pagada', isDark),
           _buildTab(ref, 'vencida', 'Vencidas', currentFilter == 'vencida', isDark),
@@ -514,43 +547,29 @@ class DebtsListScreen extends ConsumerWidget {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                SizedBox(
-                  height: 32,
-                  child: Row(
-                    children: [
-                      TextButton.icon(
-                        onPressed: () => _confirmDelete(context, ref, debt),
-                        icon: Icon(Icons.delete_outline_rounded, size: 14, color: Colors.red[300]),
-                        label: Text(
-                          'Eliminar',
-                          style: GoogleFonts.montserrat(
-                            fontSize: 11, 
-                            fontWeight: FontWeight.w700,
-                            color: Colors.red[300],
-                          ),
-                        ),
-                        style: TextButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(horizontal: 8),
-                        ),
+                Row(
+                  children: [
+                    AppButton(
+                      label: 'Eliminar',
+                      icon: Icons.delete_outline_rounded,
+                      onPressed: () => _confirmDelete(context, ref, debt),
+                      variant: 'outlined',
+                      textColor: AppColors.error,
+                      size: 'small',
+                      height: 32,
+                    ),
+                    if (debt.isShared) ...[
+                      const SizedBox(width: 8),
+                      AppButton(
+                        label: 'Desvincular',
+                        icon: Icons.link_off_rounded,
+                        onPressed: () => _confirmUnlink(context, ref, debt),
+                        variant: 'warning',
+                        size: 'small',
+                        height: 32,
                       ),
-                      if (debt.isShared)
-                        TextButton.icon(
-                          onPressed: () => _confirmUnlink(context, ref, debt),
-                          icon: const Icon(Icons.link_off_rounded, size: 14, color: Colors.orange),
-                          label: Text(
-                            'Desvincular',
-                            style: GoogleFonts.montserrat(
-                              fontSize: 11, 
-                              fontWeight: FontWeight.w700,
-                              color: Colors.orange,
-                            ),
-                          ),
-                          style: TextButton.styleFrom(
-                            padding: const EdgeInsets.symmetric(horizontal: 8),
-                          ),
-                        ),
                     ],
-                  ),
+                  ],
                 ),
                 AppButton(
                   label: 'Editar Deuda',

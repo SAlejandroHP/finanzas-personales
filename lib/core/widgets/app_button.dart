@@ -68,6 +68,14 @@ class AppButton extends StatelessWidget {
         bgColor = Colors.transparent;
         textColorFinal = textColor ?? AppColors.primary;
         break;
+      case 'error':
+        bgColor = backgroundColor ?? AppColors.error;
+        textColorFinal = textColor ?? AppColors.white;
+        break;
+      case 'warning':
+        bgColor = backgroundColor ?? AppColors.warning;
+        textColorFinal = textColor ?? AppColors.white;
+        break;
       default:
         bgColor = AppColors.primary;
         textColorFinal = AppColors.white;
