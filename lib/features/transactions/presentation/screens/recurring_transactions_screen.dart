@@ -10,6 +10,8 @@ import '../../models/transaction_model.dart';
 import '../widgets/transaction_form_sheet.dart';
 import '../../../../core/network/supabase_client.dart';
 import '../../../../core/services/finance_service.dart';
+import '../../../categories/presentation/providers/categories_provider.dart';
+import 'package:collection/collection.dart';
 
 final recurringTransactionsProvider = FutureProvider.autoDispose<List<TransactionModel>>((ref) async {
   final repository = TransactionsRepository(supabase: supabaseClient);
@@ -86,15 +88,106 @@ class RecurringTransactionsScreen extends ConsumerWidget {
             );
           }
           
-          return ListView.separated(
-            padding: const EdgeInsets.fromLTRB(AppColors.pagePadding, 8, AppColors.pagePadding, 120),
-            physics: const BouncingScrollPhysics(),
-            itemCount: transactions.length,
-            separatorBuilder: (_, __) => const SizedBox(height: 12),
-            itemBuilder: (context, index) {
-              final tx = transactions[index];
-              return _RecurringTransactionCard(transaction: tx, isDark: isDark, ref: ref);
-            },
+          double monthlyTotal = 0.0;
+          for (final tx in transactions) {
+            if (tx.tipo == 'gasto' || tx.tipo == 'pago_deuda' || tx.tipo == 'meta_aporte') {
+              double multiplier = 0;
+              if (tx.recurringRule == 'weekly') multiplier = 4.3333;
+              else if (tx.recurringRule == 'biweekly') multiplier = 2.1666;
+              else if (tx.recurringRule == 'quincenal') multiplier = 2;
+              else if (tx.recurringRule == 'bimonthly') multiplier = 0.5;
+              else if (tx.recurringRule?.startsWith('monthly') ?? false) multiplier = 1;
+              monthlyTotal += (tx.monto * multiplier);
+            }
+          }
+          final quincenalTotal = monthlyTotal / 2;
+          
+          return Column(
+            children: [
+              Container(
+                margin: const EdgeInsets.fromLTRB(AppColors.pagePadding, 8, AppColors.pagePadding, 16),
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
+                  borderRadius: BorderRadius.circular(22),
+                  boxShadow: [
+                    if (!isDark)
+                      BoxShadow(
+                        color: AppColors.primary.withOpacity(0.08),
+                        blurRadius: 15,
+                        offset: const Offset(0, 5),
+                      ),
+                  ],
+                  border: Border.all(
+                    color: isDark ? Colors.white.withOpacity(0.05) : AppColors.primary.withOpacity(0.1),
+                  ),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceAround,
+                  children: [
+                    Column(
+                      children: [
+                        Text(
+                          'Total al mes',
+                          style: GoogleFonts.montserrat(
+                            fontSize: 10,
+                            fontWeight: FontWeight.w700,
+                            color: Colors.grey,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          NumberFormat.currency(locale: 'es_MX', symbol: '\$').format(monthlyTotal),
+                          style: GoogleFonts.montserrat(
+                            fontSize: 18,
+                            fontWeight: FontWeight.w800,
+                            color: isDark ? Colors.white : AppColors.textPrimary,
+                          ),
+                        ),
+                      ],
+                    ),
+                    Container(
+                      width: 1,
+                      height: 30,
+                      color: isDark ? Colors.white24 : Colors.grey.withOpacity(0.2),
+                    ),
+                    Column(
+                      children: [
+                        Text(
+                          'Por quincena',
+                          style: GoogleFonts.montserrat(
+                            fontSize: 10,
+                            fontWeight: FontWeight.w700,
+                            color: Colors.grey,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          NumberFormat.currency(locale: 'es_MX', symbol: '\$').format(quincenalTotal),
+                          style: GoogleFonts.montserrat(
+                            fontSize: 18,
+                            fontWeight: FontWeight.w800,
+                            color: isDark ? Colors.white : AppColors.textPrimary,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+              Expanded(
+                child: ListView.separated(
+                  padding: const EdgeInsets.fromLTRB(AppColors.pagePadding, 0, AppColors.pagePadding, 120),
+                  physics: const BouncingScrollPhysics(),
+                  itemCount: transactions.length,
+                  separatorBuilder: (_, __) => const SizedBox(height: 12),
+                  itemBuilder: (context, index) {
+                    final tx = transactions[index];
+                    return _RecurringTransactionCard(transaction: tx, isDark: isDark, ref: ref);
+                  },
+                ),
+              ),
+            ],
           );
         },
         loading: () => const Center(child: CircularProgressIndicator()),
@@ -136,9 +229,77 @@ class _RecurringTransactionCard extends StatelessWidget {
     }
   }
 
+  IconData _getIcon(String? iconName) {
+    final iconMap = {
+      'label_outline': Icons.label_outline,
+      'restaurant_outlined': Icons.restaurant_outlined,
+      'shopping_cart_outlined': Icons.shopping_cart_outlined,
+      'directions_car_outlined': Icons.directions_car_outlined,
+      'home_outlined': Icons.home_outlined,
+      'checkroom_outlined': Icons.checkroom_outlined,
+      'sports_esports_outlined': Icons.sports_esports_outlined,
+      'fitness_center_outlined': Icons.fitness_center_outlined,
+      'flight_outlined': Icons.flight_outlined,
+      'medical_services_outlined': Icons.medical_services_outlined,
+      'school_outlined': Icons.school_outlined,
+      'work_outline': Icons.work_outline,
+      'account_balance_wallet_outlined': Icons.account_balance_wallet_outlined,
+      'payments_outlined': Icons.payments_outlined,
+      'credit_card_outlined': Icons.credit_card_outlined,
+      'trending_up': Icons.trending_up,
+      'card_giftcard_outlined': Icons.card_giftcard_outlined,
+      'sports_bar_outlined': Icons.sports_bar_outlined,
+      'fastfood_outlined': Icons.fastfood_outlined,
+      'book_outlined': Icons.book_outlined,
+      'content_cut_outlined': Icons.content_cut_outlined,
+      'pets_outlined': Icons.pets_outlined,
+      'local_florist_outlined': Icons.local_florist_outlined,
+      'sports_soccer_outlined': Icons.sports_soccer_outlined,
+      'umbrella_outlined': Icons.umbrella_outlined,
+      'water_drop_outlined': Icons.water_drop_outlined,
+      'directions_bus_outlined': Icons.directions_bus_outlined,
+      'directions_bike_outlined': Icons.directions_bike_outlined,
+      'train_outlined': Icons.train_outlined,
+      'photo_camera_outlined': Icons.photo_camera_outlined,
+      'music_note_outlined': Icons.music_note_outlined,
+      'movie_outlined': Icons.movie_outlined,
+      'local_cafe_outlined': Icons.local_cafe_outlined,
+      'local_pizza_outlined': Icons.local_pizza_outlined,
+      'icecream_outlined': Icons.icecream_outlined,
+      'laptop_outlined': Icons.laptop_outlined,
+      'smartphone_outlined': Icons.smartphone_outlined,
+      'headset_outlined': Icons.headset_outlined,
+      'lightbulb_outline': Icons.lightbulb_outline,
+    };
+    return iconMap[iconName] ?? Icons.label_outline;
+  }
+
+  Color _getColorFromHex(String? hexColor) {
+    if (hexColor == null || hexColor.isEmpty) return Colors.grey;
+    try {
+      final hexString = hexColor.replaceFirst('#', '');
+      return Color(int.parse('FF$hexString', radix: 16));
+    } catch (_) {
+      return Colors.grey;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    final color = transaction.tipo == 'ingreso' ? Colors.green : Colors.redAccent;
+    final categoriesAsync = ref.watch(categoriesListProvider);
+    
+    Color color = transaction.tipo == 'ingreso' ? Colors.green : Colors.redAccent;
+    IconData categoryIcon = Icons.repeat_rounded;
+    
+    categoriesAsync.whenData((categories) {
+      if (transaction.categoriaId != null) {
+        final cat = categories.firstWhereOrNull((c) => c.id == transaction.categoriaId);
+        if (cat != null) {
+          color = _getColorFromHex(cat.color);
+          categoryIcon = _getIcon(cat.icono);
+        }
+      }
+    });
     
     return Container(
       padding: const EdgeInsets.all(14),
@@ -165,7 +326,7 @@ class _RecurringTransactionCard extends StatelessWidget {
                   borderRadius: BorderRadius.circular(10), // Squircle homologado
                 ),
                 child: Icon(
-                  Icons.repeat_rounded,
+                  categoryIcon,
                   color: color,
                   size: 20,
                 ),

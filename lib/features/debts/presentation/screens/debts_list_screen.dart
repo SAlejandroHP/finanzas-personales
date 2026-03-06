@@ -14,6 +14,7 @@ import '../../../../core/services/finance_service.dart';
 
 // Provider local para filtro de estado
 final debtFilterProvider = StateProvider<String>((ref) => 'todas');
+final showArchivedDebtsProvider = StateProvider<bool>((ref) => false);
 
 class DebtsListScreen extends ConsumerWidget {
   const DebtsListScreen({Key? key}) : super(key: key);
@@ -81,10 +82,15 @@ class DebtsListScreen extends ConsumerWidget {
                   return _buildEmptyState(isDark);
                 }
 
+                final showArchived = ref.watch(showArchivedDebtsProvider);
+                final archivedDebts = debts.where((d) => d.montoRestante <= 0 || d.estado == 'pagada').toList();
+                final activeDebts = debts.where((d) => d.montoRestante > 0 && d.estado != 'pagada').toList();
+                final baseDebts = showArchived ? archivedDebts : activeDebts;
+
                 // Filtrar según el estado
                 final filteredDebts = currentFilter == 'todas'
-                    ? debts
-                    : debts.where((d) => d.estado == currentFilter).toList();
+                    ? baseDebts
+                    : baseDebts.where((d) => d.estado == currentFilter).toList();
 
                 // Calcular totales para el summary
                 final totalDebt = debts.fold<double>(0.0, (s, d) => s + d.montoTotal);
@@ -114,6 +120,31 @@ class DebtsListScreen extends ConsumerWidget {
                         ...filteredDebts.map((debt) => 
                           _buildDebtCard(context, ref, debt, currencyFormatter, isDark)
                         ),
+                      if (archivedDebts.isNotEmpty) ...[
+                        const SizedBox(height: 24),
+                        Center(
+                          child: TextButton.icon(
+                            onPressed: () {
+                              ref.read(showArchivedDebtsProvider.notifier).state = !showArchived;
+                              // El prompt indica "Asegura el refreshAll(ref) al cambiar el estado de archivado"
+                              ref.read(financeServiceProvider).refreshAll();
+                            },
+                            icon: Icon(
+                              showArchived ? Icons.visibility_off_rounded : Icons.visibility_rounded,
+                              size: 16,
+                              color: Colors.grey,
+                            ),
+                            label: Text(
+                              showArchived ? 'Ocultar archivadas' : 'Ver archivadas (${archivedDebts.length})',
+                              style: GoogleFonts.montserrat(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w600,
+                                color: Colors.grey,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
                     ],
                   ),
                 );

@@ -231,44 +231,83 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
 
   /// Construye un pequeño widget con la fecha e icono de calendario
   Widget _buildDateClock(BuildContext context, bool isDark, String date) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-      decoration: BoxDecoration(
-        color: isDark ? Colors.white.withOpacity(0.05) : Colors.white,
-        borderRadius: BorderRadius.circular(AppColors.radiusLarge),
-        border: Border.all(
-          color: isDark 
-              ? Colors.white.withOpacity(0.05) 
-              : Colors.black.withOpacity(0.05),
+    return InkWell(
+      onTap: () async {
+        final DateTime now = DateTime.now();
+        final DateTime? picked = await showDatePicker(
+          context: context,
+          initialDate: now,
+          firstDate: now.subtract(const Duration(days: 365 * 2)),
+          lastDate: now.add(const Duration(days: 365 * 2)),
+          builder: (context, child) {
+            return Theme(
+              data: Theme.of(context).copyWith(
+                colorScheme: isDark
+                    ? ColorScheme.dark(
+                        primary: AppColors.primary, // Ocean Blue / Blue Light theme
+                        onPrimary: Colors.white,
+                        surface: const Color(0xFF1E1E1E), // Slate Dark
+                        onSurface: Colors.white,
+                      )
+                    : ColorScheme.light(
+                        primary: AppColors.primary, 
+                        onPrimary: Colors.white,
+                        surface: Colors.white,
+                        onSurface: AppColors.textPrimary,
+                      ),
+                dialogBackgroundColor: isDark ? const Color(0xFF1E1E1E) : Colors.white,
+                textButtonTheme: TextButtonThemeData(
+                  style: TextButton.styleFrom(
+                    foregroundColor: AppColors.secondary, // Lima Vibrante / Gold Bright accent
+                  ),
+                ),
+              ),
+              child: child!,
+            );
+          },
+        );
+        // El onDatePicked no hace nada productivo en el state actual, pero muestra el calendario con Theme como se requirió.
+      },
+      borderRadius: BorderRadius.circular(AppColors.radiusLarge),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+        decoration: BoxDecoration(
+          color: isDark ? Colors.white.withOpacity(0.05) : Colors.white,
+          borderRadius: BorderRadius.circular(AppColors.radiusLarge),
+          border: Border.all(
+            color: isDark 
+                ? Colors.white.withOpacity(0.05) 
+                : Colors.black.withOpacity(0.05),
+          ),
+          boxShadow: [
+            if (!isDark)
+              BoxShadow(
+                color: Colors.black.withOpacity(0.03),
+                blurRadius: 5,
+                offset: const Offset(0, 2),
+              ),
+          ],
         ),
-        boxShadow: [
-          if (!isDark)
-            BoxShadow(
-              color: Colors.black.withOpacity(0.03),
-              blurRadius: 5,
-              offset: const Offset(0, 2),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              Icons.calendar_today_rounded,
+              size: 14,
+              color: isDark ? Colors.white38 : Colors.grey[600],
             ),
-        ],
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(
-            Icons.calendar_today_rounded,
-            size: 14,
-            color: isDark ? Colors.white38 : Colors.grey[600],
-          ),
-          const SizedBox(width: 6),
-          Text(
-            date.toUpperCase(),
-            style: GoogleFonts.montserrat(
-              fontSize: 10,
-              fontWeight: FontWeight.w700,
-              color: isDark ? Colors.white60 : Colors.black54,
-              letterSpacing: 0.5,
+            const SizedBox(width: 6),
+            Text(
+              date.toUpperCase(),
+              style: GoogleFonts.montserrat(
+                fontSize: 10,
+                fontWeight: FontWeight.w700,
+                color: isDark ? Colors.white60 : Colors.black54,
+                letterSpacing: 0.5,
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

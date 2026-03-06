@@ -39,6 +39,7 @@ class TransactionListScreen extends ConsumerStatefulWidget {
 class _TransactionListScreenState extends ConsumerState<TransactionListScreen> {
   final PageController _pageController = PageController();
   int _currentPage = 0;
+  bool _showArchived = false;
 
   @override
   void dispose() {
@@ -108,71 +109,31 @@ class _TransactionListScreenState extends ConsumerState<TransactionListScreen> {
           Expanded(
             child: transactionsAsync.when(
               data: (allTransactions) {
-          // Filtrado dinámico según la pestaña del carrusel (UX: Enfoque en compromisos)
-          final transactions = _currentPage == 0 
-              ? allTransactions 
-              : allTransactions.where((t) => t.estado == 'pendiente').toList();
+          final now = DateTime.now();
+          final today = DateTime(now.year, now.month, now.day);
+          
+          final archivedTransactions = allTransactions.where((t) {
+            return t.fecha.isBefore(today.add(const Duration(days: 1))) && 
+                   (t.estado == 'completada' || t.estado == 'pagada');
+          }).toList();
+          
+          final activeTransactions = allTransactions.where((t) {
+            return !(t.fecha.isBefore(today.add(const Duration(days: 1))) && 
+                    (t.estado == 'completada' || t.estado == 'pagada'));
+          }).toList();
+          
+          final displayedTransactions = _showArchived ? allTransactions : activeTransactions;
+          final pendingTransactions = displayedTransactions.where((t) => t.estado == 'pendiente').toList();
+          final summary = ref.watch(filteredTransactionsSummaryProvider);
+          final hasPending = summary.pendingIncome != 0 || summary.pendingExpenses != 0;
 
-          if (transactions.isEmpty) {
+          if (allTransactions.isEmpty && !hasPending) {
             final hasFilters = _hasAnyFilter(ref.watch(transactionFiltersProvider));
             return Column(
               children: [
                 const TransactionFiltersBar(),
-                _buildSummaryCarousel(context, ref, isDark),
                 Expanded(
-                  child: Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.all(24),
-                          decoration: BoxDecoration(
-                            color: isDark ? Colors.white.withOpacity(0.05) : AppColors.primary.withOpacity(0.05),
-                            shape: BoxShape.circle,
-                          ),
-                          child: Icon(
-                            hasFilters ? Icons.search_off_rounded : Icons.receipt_long_rounded,
-                            size: 64,
-                            color: AppColors.primary.withOpacity(0.5),
-                          ),
-                        ),
-                        const SizedBox(height: AppColors.lg),
-                        Text(
-                          hasFilters 
-                              ? 'Sin resultados' 
-                              : (_currentPage == 1 ? 'Sin compromisos' : 'Sin transacciones'),
-                          style: GoogleFonts.montserrat(
-                            fontWeight: FontWeight.w700,
-                            fontSize: AppColors.titleSmall,
-                            color: isDark ? Colors.white : AppColors.textPrimary,
-                          ),
-                        ),
-                        const SizedBox(height: AppColors.sm),
-                        Text(
-                          hasFilters 
-                              ? 'Prueba ajustando los filtros' 
-                              : (_currentPage == 1 
-                                  ? 'No tienes pagos pendientes en este periodo' 
-                                  : 'Comienza a registrar tus movimientos'),
-                          style: GoogleFonts.montserrat(
-                            color: isDark ? Colors.white70 : AppColors.textPrimary.withOpacity(0.6),
-                            fontSize: AppColors.bodyMedium,
-                          ),
-                        ),
-                        if (hasFilters) ...[
-                          const SizedBox(height: AppColors.lg),
-                          TextButton.icon(
-                            onPressed: () => ref.read(transactionFiltersProvider.notifier).state = TransactionFilters(),
-                            icon: const Icon(Icons.refresh_rounded, size: 18),
-                            label: const Text('Limpiar filtros'),
-                            style: TextButton.styleFrom(
-                              foregroundColor: AppColors.primary,
-                            ),
-                          ),
-                        ],
-                      ],
-                    ),
-                  ),
+                  child: _buildEmptyStateBox(context, hasFilters, isDark),
                 ),
               ],
             );
@@ -181,65 +142,60 @@ class _TransactionListScreenState extends ConsumerState<TransactionListScreen> {
           return Column(
             children: [
               const TransactionFiltersBar(), // Fijo arriba
-              _buildSummaryCarousel(context, ref, isDark), // Ahora FIJO para evitar resets y mejorar UX
-              Expanded(
-                child: ListView.builder(
-                  padding: const EdgeInsets.only(top: 8, bottom: 120),
-                  physics: const BouncingScrollPhysics(),
-                  itemCount: transactions.length,
-                  itemBuilder: (context, index) {
-                    final transaction = transactions[index];
-                    final showHeader = index == 0 ||
-                        transactions[index - 1].fecha.day != transaction.fecha.day ||
-                        transactions[index - 1].fecha.month != transaction.fecha.month ||
-                        transactions[index - 1].fecha.year != transaction.fecha.year;
+              
+              // Indicadores (Tabs) fijos arriba del PageView
+              if (hasPending) ...[
+                const SizedBox(height: 8),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    _buildTabDot(0, 'Balance', isDark),
+                    _buildTabDot(1, 'Compromisos', isDark),
+                  ],
+                ),
+                const SizedBox(height: 8),
+              ],
 
-                    if (showHeader) {
-                      return Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Padding(
-                            padding: const EdgeInsets.only(left: 20, top: 20, bottom: 8),
-                            child: Text(
-                              _formatDateHeader(transaction.fecha),
-                              style: GoogleFonts.montserrat(
-                                fontWeight: FontWeight.w600,
-                                fontSize: AppColors.bodyMedium,
-                                color: isDark ? Colors.white70 : AppColors.textPrimary.withOpacity(0.7),
-                              ),
-                            ),
-                          ),
-                          TransactionTile(
-                            transaction: transaction,
-                            currencySymbol: '\$',
-                            onEdit: () {
-                              showTransactionFormSheet(
-                                context,
-                                transaction: transaction,
-                              );
-                            },
-                            onDelete: () {
-                              _showDeleteDialog(context, ref, transaction.id);
-                            },
-                          ),
-                        ],
-                      );
-                    }
+              Expanded(
+                child: PageView(
+                  controller: _pageController,
+                  onPageChanged: (index) => setState(() => _currentPage = index),
+                  children: [
+                    // --- PESTAÑA 1: Balance del Periodo y Todas las transacciones ---
+                    Column(
+                      children: [
+                        _buildModernSummaryCard(
+                          title: 'Balance del Periodo',
+                          total: summary.total,
+                          income: summary.income,
+                          expenses: summary.expenses,
+                          isDark: isDark,
+                          gradient: [
+                            AppColors.primary,
+                            AppColors.primary.withRed(30).withGreen(100),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                        Expanded(child: _buildTransactionList(displayedTransactions, isDark, ref, archivedCount: archivedTransactions.length)),
+                      ],
+                    ),
                     
-                    return TransactionTile(
-                      transaction: transaction,
-                      currencySymbol: '\$',
-                      onEdit: () {
-                        showTransactionFormSheet(
-                          context,
-                          transaction: transaction,
-                        );
-                      },
-                      onDelete: () {
-                        _showDeleteDialog(context, ref, transaction.id);
-                      },
-                    );
-                  },
+                    // --- PESTAÑA 2: Compromisos y Pendientes ---
+                    if (hasPending)
+                      Column(
+                        children: [
+                          _buildCommitmentSummaryCard(
+                            title: 'Compromisos (Pendiente)',
+                            total: summary.pendingTotal,
+                            income: summary.pendingIncome,
+                            expenses: summary.pendingExpenses,
+                            isDark: isDark,
+                          ),
+                          const SizedBox(height: 8),
+                          Expanded(child: _buildTransactionList(pendingTransactions, isDark, ref, isPendingList: true)),
+                        ],
+                      ),
+                  ],
                 ),
               ),
             ],
@@ -313,61 +269,198 @@ class _TransactionListScreenState extends ConsumerState<TransactionListScreen> {
     );
   }
 
-  Widget _buildSummaryCarousel(BuildContext context, WidgetRef ref, bool isDark) {
-    final summary = ref.watch(filteredTransactionsSummaryProvider);
-    final hasPending = summary.pendingIncome != 0 || summary.pendingExpenses != 0;
-    
-    return Column(
-      children: [
-        SizedBox(
-          height: 110,
-          child: PageView(
-            controller: _pageController,
-            onPageChanged: (index) => setState(() => _currentPage = index),
-            children: [
-              // PESTAÑA 1: Balance del Periodo (Diseño Original Gradiente)
-              _buildModernSummaryCard(
-                title: 'Balance del Periodo',
-                total: summary.total,
-                income: summary.income,
-                expenses: summary.expenses,
-                isDark: isDark,
-                gradient: [
-                  AppColors.primary,
-                  AppColors.primary.withRed(30).withGreen(100),
-                ],
+  Widget _buildEmptyStateBox(BuildContext context, bool hasFilters, bool isDark) {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(24),
+            decoration: BoxDecoration(
+              color: isDark ? Colors.white.withOpacity(0.05) : AppColors.primary.withOpacity(0.05),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(
+              hasFilters ? Icons.search_off_rounded : Icons.receipt_long_rounded,
+              size: 64,
+              color: AppColors.primary.withOpacity(0.5),
+            ),
+          ),
+          const SizedBox(height: AppColors.lg),
+          Text(
+            hasFilters 
+                ? 'Sin resultados' 
+                : (_currentPage == 1 ? 'Sin compromisos' : 'Sin transacciones'),
+            style: GoogleFonts.montserrat(
+              fontWeight: FontWeight.w700,
+              fontSize: AppColors.titleSmall,
+              color: isDark ? Colors.white : AppColors.textPrimary,
+            ),
+          ),
+          const SizedBox(height: AppColors.sm),
+          Text(
+            hasFilters 
+                ? 'Prueba ajustando los filtros' 
+                : (_currentPage == 1 
+                    ? 'No tienes pagos pendientes en este periodo' 
+                    : 'Comienza a registrar tus movimientos'),
+            style: GoogleFonts.montserrat(
+              color: isDark ? Colors.white70 : AppColors.textPrimary.withOpacity(0.6),
+              fontSize: AppColors.bodyMedium,
+            ),
+          ),
+          if (hasFilters) ...[
+            const SizedBox(height: AppColors.lg),
+            TextButton.icon(
+              onPressed: () => ref.read(transactionFiltersProvider.notifier).state = TransactionFilters(),
+              icon: const Icon(Icons.refresh_rounded, size: 18),
+              label: const Text('Limpiar filtros'),
+              style: TextButton.styleFrom(
+                foregroundColor: AppColors.primary,
               ),
-              // PESTAÑA 2: Compromisos (Diseño Minimalista Columnar)
-              if (hasPending)
-                _buildCommitmentSummaryCard(
-                  title: 'Compromisos (Pendiente)',
-                  total: summary.pendingTotal,
-                  income: summary.pendingIncome,
-                  expenses: summary.pendingExpenses,
-                  isDark: isDark,
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTransactionList(List<TransactionModel> transactions, bool isDark, WidgetRef ref, {bool isPendingList = false, int archivedCount = 0}) {
+    if (transactions.isEmpty && archivedCount == 0) {
+      return _buildEmptyStateBox(context, false, isDark);
+    }
+    
+    return ListView.builder(
+      padding: const EdgeInsets.only(top: 8, bottom: 120),
+      physics: const BouncingScrollPhysics(),
+      itemCount: transactions.length + (archivedCount > 0 ? 1 : 0),
+      itemBuilder: (context, index) {
+        if (index == transactions.length) {
+          return Center(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 24),
+              child: TextButton.icon(
+                onPressed: () {
+                  setState(() => _showArchived = !_showArchived);
+                  ref.read(financeServiceProvider).refreshAll();
+                },
+                icon: Icon(
+                  _showArchived ? Icons.visibility_off_rounded : Icons.visibility_rounded,
+                  size: 16,
+                  color: Colors.grey,
                 ),
+                label: Text(
+                  _showArchived ? 'Ocultar archivadas' : 'Ver archivadas ($archivedCount)',
+                  style: GoogleFonts.montserrat(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.grey,
+                  ),
+                ),
+              ),
+            ),
+          );
+        }
+
+        final transaction = transactions[index];
+        final showHeader = index == 0 ||
+            transactions[index - 1].fecha.day != transaction.fecha.day ||
+            transactions[index - 1].fecha.month != transaction.fecha.month ||
+            transactions[index - 1].fecha.year != transaction.fecha.year;
+
+        if (showHeader) {
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Padding(
+                padding: const EdgeInsets.only(left: 20, top: 12, bottom: 4),
+                child: Text(
+                  _formatDateHeader(transaction.fecha),
+                  style: GoogleFonts.montserrat(
+                    fontWeight: FontWeight.w700,
+                    fontSize: 12,
+                    color: isDark ? Colors.white54 : AppColors.textPrimary.withOpacity(0.5),
+                    letterSpacing: 1.0,
+                  ),
+                ),
+              ),
+              TransactionTile(
+                transaction: transaction,
+                currencySymbol: '\$',
+                onEdit: () {
+                  showTransactionFormSheet(
+                    context,
+                    transaction: transaction,
+                  );
+                },
+                onDelete: () {
+                  _showDeleteDialog(context, ref, transaction.id);
+                },
+              ),
             ],
+          );
+        }
+        
+        return TransactionTile(
+          transaction: transaction,
+          currencySymbol: '\$',
+          onEdit: () {
+            showTransactionFormSheet(
+              context,
+              transaction: transaction,
+            );
+          },
+          onDelete: () {
+            _showDeleteDialog(context, ref, transaction.id);
+          },
+        );
+      },
+    );
+  }
+
+  Widget _buildTabDot(int index, String label, bool isDark) {
+    final isSelected = _currentPage == index;
+    return GestureDetector(
+      onTap: () {
+        _pageController.animateToPage(index, duration: const Duration(milliseconds: 300), curve: Curves.easeInOut);
+      },
+      child: Container(
+        margin: const EdgeInsets.symmetric(horizontal: 4),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        decoration: BoxDecoration(
+          color: isSelected ? AppColors.primary.withOpacity(0.15) : Colors.transparent,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: isSelected ? AppColors.primary.withOpacity(0.5) : Colors.transparent,
           ),
         ),
-        if (hasPending) ...[
-          const SizedBox(height: 4),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: List.generate(2, (index) => Container(
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
               width: 6,
               height: 6,
-              margin: const EdgeInsets.symmetric(horizontal: 3),
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: _currentPage == index 
+                color: isSelected 
                     ? AppColors.primary 
-                    : (isDark ? Colors.white24 : Colors.grey.withOpacity(0.3)),
+                    : (isDark ? Colors.white24 : Colors.grey.withOpacity(0.4)),
               ),
-            )),
-          ),
-        ],
-        const SizedBox(height: 8),
-      ],
+            ),
+            if (isSelected) ...[
+              const SizedBox(width: 6),
+              Text(
+                label,
+                style: GoogleFonts.montserrat(
+                  fontSize: 10,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.primary,
+                ),
+              ),
+            ]
+          ],
+        ),
+      ),
     );
   }
 

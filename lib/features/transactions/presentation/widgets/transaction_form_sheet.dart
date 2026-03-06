@@ -17,6 +17,8 @@ import '../../models/transaction_model.dart';
 import '../providers/transactions_provider.dart';
 import '../../../debts/presentation/providers/debts_provider.dart';
 import 'package:finanzas/features/debts/models/debt_model.dart';
+import '../../../goals/presentation/providers/goals_provider.dart';
+import 'package:finanzas/features/goals/models/goal_model.dart';
 import '../../../../core/services/finance_service.dart';
 import '../../../../core/services/ia_service.dart';
 
@@ -334,6 +336,27 @@ class _TransactionFormSheetState extends ConsumerState<TransactionFormSheet> {
 
     // 1. Validar límite de crédito (Requisito 28)
     final accountsList = ref.read(accountsWithBalanceProvider).value ?? [];
+
+    // YNAB Rule: No transfers to credit cards
+    if (_tipo == 'transferencia' && _cuentaDestinoId != null) {
+      final destAccount = accountsList.firstWhereOrNull((a) => a.id == _cuentaDestinoId);
+      if (destAccount != null && destAccount.tipo == 'tarjeta_credito') {
+        setState(() {
+          _tipo = 'pago_deuda';
+          final debtsList = ref.read(debtsListProvider).value ?? [];
+          final associatedDebt = debtsList.firstWhereOrNull((d) => d.cuentaAsociadaId == _cuentaDestinoId);
+          _deudaId = associatedDebt?.id;
+          _cuentaDestinoId = null;
+        });
+        showAppToast(
+          context,
+          message: 'El crédito no es dinero propio. Cambiado a Pago de Deuda.',
+          type: ToastType.warning,
+        );
+        return; // Bloquea la acción
+      }
+    }
+
     if (_cuentaOrigenId != null) {
       final selectedAccount = accountsList.firstWhereOrNull(
         (a) => a.id == _cuentaOrigenId,
@@ -687,6 +710,14 @@ class _TransactionFormSheetState extends ConsumerState<TransactionFormSheet> {
                                 Colors.orange,
                                 isDark,
                               ),
+                              const SizedBox(width: AppColors.sm),
+                              _buildTypeButton(
+                                'meta_aporte',
+                                'Aporte Meta',
+                                Icons.flag_circle_rounded,
+                                Colors.purple,
+                                isDark,
+                              ),
                             ],
                           ),
                         ),
@@ -753,6 +784,27 @@ class _TransactionFormSheetState extends ConsumerState<TransactionFormSheet> {
                                 ),
                                 error: (_, _) =>
                                     const Text('Error al cargar deudas'),
+                              ),
+                        ],
+
+                        if (_tipo == 'meta_aporte') ...[
+                          const SizedBox(height: AppColors.md),
+                          ref
+                              .watch(goalsListProvider)
+                              .when(
+                                data: (goals) => _buildSelectorTile(
+                                  label: 'Meta destino',
+                                  value: _getGoalName(_metaId, goals),
+                                  icon: Icons.flag_rounded,
+                                  onTap: () =>
+                                      _showGoalSelector(context, goals),
+                                  isDark: isDark,
+                                ),
+                                loading: () => const Center(
+                                  child: CircularProgressIndicator(),
+                                ),
+                                error: (_, _) =>
+                                    const Text('Error al cargar metas'),
                               ),
                         ],
 
@@ -849,7 +901,7 @@ class _TransactionFormSheetState extends ConsumerState<TransactionFormSheet> {
                                           CrossAxisAlignment.start,
                                       children: [
                                         Text(
-                                          'Gasto Recurrente',
+                                          'Movimiento Recurrente',
                                           style: GoogleFonts.montserrat(
                                             fontWeight: FontWeight.w700,
                                             fontSize: AppColors.bodyMedium,
@@ -1426,6 +1478,8 @@ class _TransactionFormSheetState extends ConsumerState<TransactionFormSheet> {
         return 'transferir';
       case 'pago_deuda':
         return 'pagar';
+      case 'meta_aporte':
+        return 'aportar';
       default:
         return 'registrar';
     }
@@ -1437,6 +1491,8 @@ class _TransactionFormSheetState extends ConsumerState<TransactionFormSheet> {
         return Colors.red;
       case 'pago_deuda':
         return Colors.orange;
+      case 'meta_aporte':
+        return Colors.purple;
       case 'ingreso':
         return AppColors.success;
       case 'transferencia':
@@ -1466,63 +1522,75 @@ class _TransactionFormSheetState extends ConsumerState<TransactionFormSheet> {
     bool isDark,
   ) {
     final isSelected = _tipo == type;
-    return GestureDetector(
-      onTap: () => setState(() {
-        _tipo = type;
-        if (type != 'transferencia' && type != 'pago_deuda') {
-          _cuentaDestinoId = null;
-          _deudaId = null;
-          _metaId = null;
-        } else if (type == 'transferencia') {
-          _categoriaId = null;
-          _deudaId = null;
-          _metaId = null;
-        } else if (type == 'pago_deuda') {
-          _categoriaId = null;
-          _metaId = null;
-        }
-      }),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.symmetric(
-          horizontal: AppColors.md,
-          vertical: 12,
-        ),
-        decoration: BoxDecoration(
-          color: isSelected
-              ? color
-              : (isDark
-                    ? Colors.white.withValues(alpha: 0.05)
-                    : Colors.grey[100]),
-          borderRadius: BorderRadius.circular(AppColors.radiusLarge),
-          boxShadow: isSelected
-              ? [
-                  BoxShadow(
-                    color: color.withValues(alpha: 0.3),
-                    blurRadius: 8,
-                    offset: const Offset(0, 4),
-                  ),
-                ]
-              : null,
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              icon,
-              color: isSelected ? Colors.white : Colors.grey,
-              size: 18,
-            ),
-            const SizedBox(width: AppColors.sm),
-            Text(
-              label,
-              style: GoogleFonts.montserrat(
-                fontSize: AppColors.bodySmall,
-                fontWeight: FontWeight.w700,
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(AppColors.radiusLarge),
+        onTap: () {
+          setState(() {
+            _tipo = type;
+            if (type != 'transferencia' && type != 'pago_deuda' && type != 'meta_aporte') {
+              _cuentaDestinoId = null;
+              _deudaId = null;
+              _metaId = null;
+            } else if (type == 'transferencia') {
+              _categoriaId = null;
+              _deudaId = null;
+              _metaId = null;
+            } else if (type == 'pago_deuda') {
+              _categoriaId = null;
+              _metaId = null;
+              _cuentaDestinoId = null;
+            } else if (type == 'meta_aporte') {
+              _categoriaId = null;
+              _deudaId = null;
+              _cuentaDestinoId = null;
+            }
+          });
+        },
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          height: 52.0, // Mantener altura interactiva requerida
+          padding: const EdgeInsets.symmetric(
+            horizontal: AppColors.md,
+          ),
+          decoration: BoxDecoration(
+            color: isSelected
+                ? color
+                : (isDark
+                      ? Colors.white.withValues(alpha: 0.05)
+                      : Colors.grey[100]),
+            borderRadius: BorderRadius.circular(AppColors.radiusLarge),
+            boxShadow: isSelected
+                ? [
+                    BoxShadow(
+                      color: color.withValues(alpha: 0.3),
+                      blurRadius: 8,
+                      offset: const Offset(0, 4),
+                    ),
+                  ]
+                : null,
+          ),
+          alignment: Alignment.center,
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                icon,
                 color: isSelected ? Colors.white : Colors.grey,
+                size: 18,
               ),
-            ),
-          ],
+              const SizedBox(width: AppColors.sm),
+              Text(
+                label,
+                style: GoogleFonts.montserrat(
+                  fontSize: AppColors.bodySmall,
+                  fontWeight: FontWeight.w700,
+                  color: isSelected ? Colors.white : Colors.grey,
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -2001,6 +2069,160 @@ class _TransactionFormSheetState extends ConsumerState<TransactionFormSheet> {
                                 const Icon(
                                   Icons.check_circle_rounded,
                                   color: Colors.orange,
+                                ),
+                            ],
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  String _getGoalName(String? id, List<GoalModel> goals) {
+    if (id == null) return 'Seleccionar';
+    try {
+      return goals.firstWhere((g) => g.id == id).title;
+    } catch (_) {
+      return 'Seleccionar';
+    }
+  }
+
+  void _showGoalSelector(BuildContext context, List<GoalModel> goals) {
+    final activeGoals = goals.where((g) => !g.isCompleted).toList();
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (context) {
+        final isDark = Theme.of(context).brightness == Brightness.dark;
+        return Container(
+          decoration: BoxDecoration(
+            color: isDark ? AppColors.surfaceDark : Colors.white,
+            borderRadius: const BorderRadius.vertical(
+              top: Radius.circular(AppColors.radiusXLarge),
+            ),
+          ),
+          padding: const EdgeInsets.fromLTRB(24, 12, 24, 40),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: Colors.grey.withValues(alpha: 0.3),
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              const SizedBox(height: 24),
+              Row(
+                children: [
+                  Text(
+                    'Vincular a Meta',
+                    style: GoogleFonts.montserrat(
+                      fontWeight: FontWeight.w800,
+                      fontSize: AppColors.titleSmall,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 20),
+              if (activeGoals.isEmpty)
+                const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 40),
+                  child: Center(child: Text('No hay metas activas')),
+                )
+              else
+                Flexible(
+                  child: ListView.separated(
+                    shrinkWrap: true,
+                    itemCount: activeGoals.length,
+                    separatorBuilder: (_, _) => const SizedBox(height: 12),
+                    itemBuilder: (context, index) {
+                      final goal = activeGoals[index];
+                      final isSelected = _metaId == goal.id;
+
+                      return InkWell(
+                        splashColor: Colors.transparent,
+                        highlightColor: Colors.transparent,
+                        hoverColor: Colors.transparent,
+                        onTap: () {
+                          setState(() {
+                            _metaId = goal.id;
+                            if (_montoNumerico == 0) {
+                              final remaining = goal.remainingAmount;
+                              if (remaining > 0) {
+                                _montoNumerico = remaining;
+                                _montoController.text = _moneyFormatter.format(remaining);
+                                _onMontoChanged();
+                              }
+                            }
+                          });
+                          Navigator.pop(context);
+                        },
+                        borderRadius: BorderRadius.circular(
+                          AppColors.radiusLarge,
+                        ),
+                        child: Container(
+                          padding: const EdgeInsets.all(AppColors.md),
+                          decoration: BoxDecoration(
+                            color: isSelected
+                                ? Colors.purple.withValues(alpha: 0.1)
+                                : Colors.transparent,
+                            borderRadius: BorderRadius.circular(
+                              AppColors.radiusLarge,
+                            ),
+                            border: Border.all(
+                              color: isSelected
+                                  ? Colors.purple
+                                  : (isDark ? Colors.white10 : Colors.black12),
+                            ),
+                          ),
+                          child: Row(
+                            children: [
+                              CircleAvatar(
+                                backgroundColor: Colors.purple.withValues(
+                                  alpha: 0.1,
+                                ),
+                                child: const Icon(
+                                  Icons.flag_rounded,
+                                  color: Colors.purple,
+                                  size: 20,
+                                ),
+                              ),
+                              const SizedBox(width: AppColors.md),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      goal.title,
+                                      style: GoogleFonts.montserrat(
+                                        fontWeight: FontWeight.w700,
+                                        fontSize: AppColors.bodyMedium,
+                                      ),
+                                    ),
+                                    Text(
+                                      'Falta: ${_moneyFormatter.format(goal.remainingAmount)}',
+                                      style: GoogleFonts.montserrat(
+                                        fontSize: AppColors.bodySmall,
+                                        color: Colors.grey,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              if (isSelected)
+                                const Icon(
+                                  Icons.check_circle_rounded,
+                                  color: Colors.purple,
                                 ),
                             ],
                           ),
