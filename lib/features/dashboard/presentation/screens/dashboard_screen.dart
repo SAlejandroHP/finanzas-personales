@@ -97,6 +97,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       _buildPendingInvitations(context, ref, isDark),
+                      _buildPendingGoalInvitations(context, ref, isDark),
                       const SizedBox(height: 12),
                       _buildBalanceSummaryCard(
                         context,
@@ -471,6 +472,162 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                                 onTap: () async {
                                   try {
                                     await ref.read(debtsNotifierProvider.notifier).rejectInvitation(inv);
+                                    if (context.mounted) {
+                                      showAppToast(context, message: 'Invitación rechazada', type: ToastType.info);
+                                    }
+                                  } catch (e) {
+                                    if (context.mounted) {
+                                      showAppToast(context, message: 'Error: $e', type: ToastType.error);
+                                    }
+                                  }
+                                },
+                                child: Text(
+                                  'Rechazar',
+                                  style: GoogleFonts.montserrat(
+                                    color: Colors.white.withOpacity(0.8),
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w700,
+                                    decoration: TextDecoration.underline,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          }).toList(),
+        );
+      },
+      orElse: () => const SizedBox.shrink(),
+    );
+  }
+
+  Widget _buildPendingGoalInvitations(BuildContext context, WidgetRef ref, bool isDark) {
+    final goalsInvitationsAsync = ref.watch(pendingGoalsInvitationsProvider);
+
+    return goalsInvitationsAsync.maybeWhen(
+      data: (invitations) {
+        if (invitations.isEmpty) return const SizedBox.shrink();
+
+        return Column(
+          children: invitations.map((goal) {
+            return Container(
+              margin: const EdgeInsets.only(bottom: 16),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(24),
+                boxShadow: [
+                  BoxShadow(
+                    color: AppColors.primary.withOpacity(0.2),
+                    blurRadius: 20,
+                    offset: const Offset(0, 8),
+                  ),
+                ],
+              ),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(24),
+                child: Stack(
+                  children: [
+                    // Fondo decorativo
+                    Positioned(
+                      right: -20,
+                      top: -20,
+                      child: Icon(
+                        Icons.track_changes_rounded,
+                        size: 100,
+                        color: Colors.white.withOpacity(0.1),
+                      ),
+                    ),
+                    Container(
+                      padding: const EdgeInsets.all(20),
+                      decoration: const BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: [
+                            AppColors.primary,
+                            Color(0xFF0D9488), // Teal premium
+                          ],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                        ),
+                      ),
+                      child: Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: Colors.white.withOpacity(0.2),
+                              borderRadius: BorderRadius.circular(16),
+                            ),
+                            child: const Icon(Icons.mark_email_unread_rounded, color: Colors.white, size: 24),
+                          ),
+                          const SizedBox(width: 16),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Meta compartida',
+                                  style: GoogleFonts.montserrat(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.w800,
+                                    fontSize: 14,
+                                    letterSpacing: 0.3,
+                                  ),
+                                ),
+                                const SizedBox(height: 2),
+                                Text(
+                                  'Invitación para "${goal.title}"',
+                                  style: GoogleFonts.montserrat(
+                                    color: Colors.white.withOpacity(0.9),
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Column(
+                            children: [
+                              ElevatedButton(
+                                onPressed: () async {
+                                  try {
+                                    await ref.read(goalsNotifierProvider.notifier).acceptInvitation(goal);
+                                    if (context.mounted) {
+                                      showAppToast(context, message: 'Meta aceptada correctamente', type: ToastType.success);
+                                    }
+                                  } catch (e) {
+                                    if (context.mounted) {
+                                      showAppToast(context, message: 'Error: $e', type: ToastType.error);
+                                    }
+                                  }
+                                },
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: Colors.white,
+                                  foregroundColor: AppColors.primary,
+                                  elevation: 0,
+                                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                ),
+                                child: Text(
+                                  'Aceptar',
+                                  style: GoogleFonts.montserrat(
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w800,
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+                              GestureDetector(
+                                onTap: () async {
+                                  try {
+                                    await ref.read(goalsNotifierProvider.notifier).rejectInvitation(goal);
                                     if (context.mounted) {
                                       showAppToast(context, message: 'Invitación rechazada', type: ToastType.info);
                                     }

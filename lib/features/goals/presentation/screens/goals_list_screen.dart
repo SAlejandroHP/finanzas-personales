@@ -152,37 +152,7 @@ class GoalsListScreen extends ConsumerWidget {
             ),
           ),
           
-          // Invitaciones Pendientes
-          ref.watch(pendingGoalsInvitationsProvider).when(
-            data: (pendingInvitations) {
-              if (pendingInvitations.isEmpty) return const SizedBox();
-              
-              return Padding(
-                padding: const EdgeInsets.symmetric(horizontal: AppColors.pagePadding),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Padding(
-                      padding: const EdgeInsets.only(bottom: 12),
-                      child: Text(
-                        'INVITACIONES PENDIENTES',
-                        style: GoogleFonts.montserrat(
-                          fontSize: 10,
-                          fontWeight: FontWeight.w800,
-                          letterSpacing: 1.2,
-                          color: isDark ? Colors.white54 : Colors.grey[600],
-                        ),
-                      ),
-                    ),
-                    ...pendingInvitations.map((goal) => _buildInvitationCard(context, ref, goal, isDark)).toList(),
-                    const SizedBox(height: 8),
-                  ],
-                ),
-              );
-            },
-            loading: () => const SizedBox(height: 4),
-            error: (_, __) => const SizedBox(),
-          ),
+
           
           Expanded(
             child: goalsAsync.when(
@@ -422,73 +392,6 @@ class GoalsListScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildInvitationCard(BuildContext context, WidgetRef ref, GoalModel goal, bool isDark) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: AppColors.primary.withOpacity(0.05),
-        borderRadius: BorderRadius.circular(AppColors.radiusLarge),
-        border: Border.all(color: AppColors.primary.withOpacity(0.2)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Icon(Icons.mark_email_unread_rounded, color: AppColors.primary, size: 20),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  'Invitación a colaborar',
-                  style: GoogleFonts.montserrat(
-                    fontWeight: FontWeight.w600,
-                    fontSize: 14,
-                    color: AppColors.primary,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          Text(
-            'Te han invitado a la meta "${goal.title}"',
-            style: GoogleFonts.montserrat(
-              fontSize: 14,
-              color: isDark ? Colors.white : Colors.black87,
-            ),
-          ),
-          const SizedBox(height: 16),
-          Row(
-            children: [
-              Expanded(
-                child: OutlinedButton(
-                  onPressed: () => ref.read(goalsNotifierProvider.notifier).rejectInvitation(goal),
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: Colors.red,
-                    side: const BorderSide(color: Colors.red),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                  ),
-                  child: const Text('Rechazar'),
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: ElevatedButton(
-                  onPressed: () => ref.read(goalsNotifierProvider.notifier).acceptInvitation(goal),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primary,
-                    foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                  ),
-                  child: const Text('Aceptar'),
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
+
 }
 
