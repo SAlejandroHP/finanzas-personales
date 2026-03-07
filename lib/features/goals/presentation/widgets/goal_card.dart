@@ -89,7 +89,7 @@ class GoalCard extends StatelessWidget {
                                   style: GoogleFonts.montserrat(
                                     fontSize: 9,
                                     fontWeight: FontWeight.w600,
-                                    color: AppColors.primary,
+                                    color: Colors.white,
                                   ),
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
