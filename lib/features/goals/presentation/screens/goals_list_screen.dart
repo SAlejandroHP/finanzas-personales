@@ -4,6 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import '../../../../core/providers/ui_provider.dart';
 import '../../../../core/constants/app_colors.dart';
+import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../models/goal_model.dart';
 import '../providers/goals_provider.dart';
 import '../widgets/goal_card.dart';
@@ -151,6 +152,38 @@ class GoalsListScreen extends ConsumerWidget {
             ),
           ),
           
+          // Invitaciones Pendientes
+          ref.watch(pendingGoalsInvitationsProvider).when(
+            data: (pendingInvitations) {
+              if (pendingInvitations.isEmpty) return const SizedBox();
+              
+              return Padding(
+                padding: const EdgeInsets.symmetric(horizontal: AppColors.pagePadding),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 12),
+                      child: Text(
+                        'INVITACIONES PENDIENTES',
+                        style: GoogleFonts.montserrat(
+                          fontSize: 10,
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: 1.2,
+                          color: isDark ? Colors.white54 : Colors.grey[600],
+                        ),
+                      ),
+                    ),
+                    ...pendingInvitations.map((goal) => _buildInvitationCard(context, ref, goal, isDark)).toList(),
+                    const SizedBox(height: 8),
+                  ],
+                ),
+              );
+            },
+            loading: () => const SizedBox(height: 4),
+            error: (_, __) => const SizedBox(),
+          ),
+          
           Expanded(
             child: goalsAsync.when(
               data: (goals) {
@@ -267,6 +300,11 @@ class GoalsListScreen extends ConsumerWidget {
 
   void _showGoalOptions(BuildContext context, WidgetRef ref, GoalModel goal) {
     ref.read(isCanvasOpenProvider.notifier).state = true;
+    final currentUserAsync = ref.read(currentUserProvider);
+    final isGuest = currentUserAsync.value != null && currentUserAsync.value!.id != goal.userId;
+    // Permisos: 'view', 'contribute', 'edit'
+    final perm = goal.sharedPermission;
+    
     showModalBottomSheet(
       context: context,
       backgroundColor: Theme.of(context).cardColor,
@@ -286,28 +324,40 @@ class GoalsListScreen extends ConsumerWidget {
               style: GoogleFonts.montserrat(fontSize: 18, fontWeight: FontWeight.w700),
             ),
             const SizedBox(height: 20),
+            
+            // Permiso: 'contribute' o 'edit' o 'dueño' -> Mostrar 'Aportar'
+            if (!isGuest || perm == 'contribute' || perm == 'edit')
+              ListTile(
+                leading: const Icon(Icons.add_circle_outline, color: AppColors.primary),
+                title: const Text('Hacer un aporte'),
+                onTap: () {
+                  Navigator.pop(context);
+                  _showContributionSheet(context, ref, goal);
+                },
+              ),
+              
+            // Permiso: 'edit' o 'dueño' -> Mostrar 'Editar'
+            if (!isGuest || perm == 'edit')
+              ListTile(
+                leading: const Icon(Icons.edit_outlined, color: Colors.blue),
+                title: const Text('Editar meta'),
+                onTap: () {
+                  Navigator.pop(context);
+                  _showGoalForm(context, ref, goal: goal);
+                },
+              ),
+              
+            // Permiso: Todos (Si es invitado es Desvincular, si es dueño es Eliminar)
             ListTile(
-              leading: const Icon(Icons.add_circle_outline, color: AppColors.primary),
-              title: const Text('Hacer un aporte'),
+              leading: Icon(isGuest ? Icons.link_off_rounded : Icons.delete_outline, color: Colors.red),
+              title: Text(isGuest ? 'Desvincular meta' : 'Eliminar meta'),
               onTap: () {
                 Navigator.pop(context);
-                _showContributionSheet(context, ref, goal);
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.edit_outlined, color: Colors.blue),
-              title: const Text('Editar meta'),
-              onTap: () {
-                Navigator.pop(context);
-                _showGoalForm(context, ref, goal: goal);
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.delete_outline, color: Colors.red),
-              title: const Text('Eliminar meta'),
-              onTap: () {
-                Navigator.pop(context);
-                _confirmDelete(context, ref, goal);
+                if (isGuest) {
+                  _confirmUnlink(context, ref, goal);
+                } else {
+                  _confirmDelete(context, ref, goal);
+                }
               },
             ),
             const SizedBox(height: 20),
@@ -351,4 +401,94 @@ class GoalsListScreen extends ConsumerWidget {
       ),
     );
   }
+
+  void _confirmUnlink(BuildContext context, WidgetRef ref, GoalModel goal) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('¿Abandonar meta?'),
+        content: const Text('Dejarás de participar en esta meta. El dueño de la meta será notificado.'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancelar')),
+          TextButton(
+            onPressed: () {
+              ref.read(goalsNotifierProvider.notifier).unlinkGoal(goal);
+              Navigator.pop(context);
+            },
+            child: const Text('Desvincular', style: TextStyle(color: Colors.red)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildInvitationCard(BuildContext context, WidgetRef ref, GoalModel goal, bool isDark) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppColors.primary.withOpacity(0.05),
+        borderRadius: BorderRadius.circular(AppColors.radiusLarge),
+        border: Border.all(color: AppColors.primary.withOpacity(0.2)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.mark_email_unread_rounded, color: AppColors.primary, size: 20),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  'Invitación a colaborar',
+                  style: GoogleFonts.montserrat(
+                    fontWeight: FontWeight.w600,
+                    fontSize: 14,
+                    color: AppColors.primary,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Text(
+            'Te han invitado a la meta "${goal.title}"',
+            style: GoogleFonts.montserrat(
+              fontSize: 14,
+              color: isDark ? Colors.white : Colors.black87,
+            ),
+          ),
+          const SizedBox(height: 16),
+          Row(
+            children: [
+              Expanded(
+                child: OutlinedButton(
+                  onPressed: () => ref.read(goalsNotifierProvider.notifier).rejectInvitation(goal),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: Colors.red,
+                    side: const BorderSide(color: Colors.red),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                  child: const Text('Rechazar'),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: ElevatedButton(
+                  onPressed: () => ref.read(goalsNotifierProvider.notifier).acceptInvitation(goal),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.primary,
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                  child: const Text('Aceptar'),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
 }
+

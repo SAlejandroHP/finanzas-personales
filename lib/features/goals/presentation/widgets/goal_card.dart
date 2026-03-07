@@ -74,6 +74,28 @@ class GoalCard extends StatelessWidget {
                               color: isDark ? Colors.white : AppColors.textPrimary,
                             ),
                           ),
+                          if (goal.isShared)
+                            Padding(
+                              padding: const EdgeInsets.only(top: 4, bottom: 2),
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                decoration: BoxDecoration(
+                                  color: AppColors.primary.withOpacity(0.1),
+                                  borderRadius: BorderRadius.circular(4),
+                                  border: Border.all(color: AppColors.primary.withOpacity(0.3)),
+                                ),
+                                child: Text(
+                                  goal.sharedWithEmail != null ? 'Compartida con ${goal.sharedWithEmail}' : 'Compartida',
+                                  style: GoogleFonts.montserrat(
+                                    fontSize: 9,
+                                    fontWeight: FontWeight.w600,
+                                    color: AppColors.primary,
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                            ),
                           if (goal.deadline != null)
                             Text(
                               'Meta: ${DateFormat('MMM yyyy').format(goal.deadline!)}',

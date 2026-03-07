@@ -6,24 +6,39 @@ class GoalModel {
   final String userId;
   final String title;
   final String? description;
-  
+
   /// Monto total que se desea alcanzar
   final double targetAmount;
-  
+
   /// Monto que se ha ahorrado hasta el momento (Actualización en cascada)
   final double currentAmount;
-  
+
   /// Fecha límite para alcanzar la meta (Opcional)
   final DateTime? deadline;
-  
+
   /// Icono representativo (String para mapeo en UI)
   final String icon;
-  
+
   /// Color representativo (Para barras de progreso y acentos)
   final String colorHex;
-  
+
   final DateTime createdAt;
   final DateTime? updatedAt;
+
+  /// Indica si la meta está compartida
+  final bool isShared;
+
+  /// ID único de vinculación
+  final String? sharedId;
+
+  /// Correo del usuario invitado
+  final String? sharedWithEmail;
+
+  /// Estado de la invitación: 'none', 'pending', 'accepted', 'rejected'
+  final String estadoInvitacion;
+
+  /// Permiso del invitado: 'view', 'contribute', 'edit'
+  final String sharedPermission;
 
   const GoalModel({
     required this.id,
@@ -37,6 +52,11 @@ class GoalModel {
     this.colorHex = '#0A7075',
     required this.createdAt,
     this.updatedAt,
+    this.isShared = false,
+    this.sharedId,
+    this.sharedWithEmail,
+    this.estadoInvitacion = 'none',
+    this.sharedPermission = 'view',
   });
 
   /// Calcula el porcentaje de progreso (0.0 a 1.0)
@@ -55,12 +75,13 @@ class GoalModel {
   /// Sugiere un ahorro mensual si hay una fecha límite
   double? get suggestedMonthlySavings {
     if (deadline == null || isCompleted) return null;
-    
+
     final now = DateTime.now();
     if (deadline!.isBefore(now)) return remainingAmount;
 
-    final monthsDifference = ((deadline!.year - now.year) * 12) + deadline!.month - now.month;
-    
+    final monthsDifference =
+        ((deadline!.year - now.year) * 12) + deadline!.month - now.month;
+
     // Si falta menos de un mes, el objetivo es el monto restante completo
     final divisor = monthsDifference <= 0 ? 1 : monthsDifference;
     return remainingAmount / divisor;
@@ -75,10 +96,15 @@ class GoalModel {
     String? icon,
     String? colorHex,
     DateTime? updatedAt,
+    bool? isShared,
+    String? sharedId,
+    String? sharedWithEmail,
+    String? estadoInvitacion,
+    String? sharedPermission,
   }) {
     return GoalModel(
-      id: this.id,
-      userId: this.userId,
+      id: id,
+      userId: userId,
       title: title ?? this.title,
       description: description ?? this.description,
       targetAmount: targetAmount ?? this.targetAmount,
@@ -86,8 +112,13 @@ class GoalModel {
       deadline: deadline ?? this.deadline,
       icon: icon ?? this.icon,
       colorHex: colorHex ?? this.colorHex,
-      createdAt: this.createdAt,
+      createdAt: createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
+      isShared: isShared ?? this.isShared,
+      sharedId: sharedId ?? this.sharedId,
+      sharedWithEmail: sharedWithEmail ?? this.sharedWithEmail,
+      estadoInvitacion: estadoInvitacion ?? this.estadoInvitacion,
+      sharedPermission: sharedPermission ?? this.sharedPermission,
     );
   }
 
@@ -104,6 +135,11 @@ class GoalModel {
       'color_hex': colorHex,
       'created_at': createdAt.toIso8601String(),
       'updated_at': updatedAt?.toIso8601String(),
+      'is_shared': isShared,
+      'shared_id': sharedId,
+      'shared_with_email': sharedWithEmail,
+      'estado_invitacion': estadoInvitacion,
+      'shared_permission': sharedPermission,
     };
   }
 
@@ -115,11 +151,20 @@ class GoalModel {
       description: json['description'],
       targetAmount: (json['target_amount'] as num).toDouble(),
       currentAmount: (json['current_amount'] as num).toDouble(),
-      deadline: json['deadline'] != null ? DateTime.parse(json['deadline']) : null,
+      deadline: json['deadline'] != null
+          ? DateTime.parse(json['deadline'])
+          : null,
       icon: json['icon'] ?? 'savings',
       colorHex: json['color_hex'] ?? '#0A7075',
       createdAt: DateTime.parse(json['created_at']),
-      updatedAt: json['updated_at'] != null ? DateTime.parse(json['updated_at']) : null,
+      updatedAt: json['updated_at'] != null
+          ? DateTime.parse(json['updated_at'])
+          : null,
+      isShared: json['is_shared'] ?? false,
+      sharedId: json['shared_id'] as String?,
+      sharedWithEmail: json['shared_with_email'] as String?,
+      estadoInvitacion: json['estado_invitacion'] ?? 'none',
+      sharedPermission: json['shared_permission'] ?? 'view',
     );
   }
 }

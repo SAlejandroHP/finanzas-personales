@@ -9,20 +9,19 @@ import '../../../auth/presentation/providers/auth_provider.dart';
 final goalsRepositoryProvider = Provider<GoalsRepository>((ref) {
   // Asegura la recreación del repositorio al cambiar de usuario
   ref.watch(currentUserProvider);
-  
+
   final repo = GoalsRepository();
-  ref.onDispose(() => repo.dispose());
   return repo;
 });
 
 /// Provider que obtiene la lista de metas en tiempo real
 final goalsListProvider = StreamProvider<List<GoalModel>>((ref) async* {
   final repo = ref.watch(goalsRepositoryProvider);
-  
+
   // Emite la lista inicial
   final initialGoals = await repo.getUserGoals();
   yield initialGoals;
-  
+
   // Escucha cambios en tiempo real
   await for (final goals in repo.goalsStream) {
     yield goals;
@@ -46,7 +45,8 @@ class GoalsNotifier extends StateNotifier<AsyncValue<void>> {
   final GoalsRepository _repository;
   final Ref _ref;
 
-  GoalsNotifier(this._repository, this._ref) : super(const AsyncValue.data(null));
+  GoalsNotifier(this._repository, this._ref)
+    : super(const AsyncValue.data(null));
 
   Future<void> createGoal(GoalModel goal) async {
     state = const AsyncValue.loading();
@@ -80,9 +80,49 @@ class GoalsNotifier extends StateNotifier<AsyncValue<void>> {
       state = AsyncValue.error(e, st);
     }
   }
+
+  Future<void> acceptInvitation(GoalModel invitation) async {
+    state = const AsyncValue.loading();
+    try {
+      await _repository.acceptInvitation(invitation);
+      state = const AsyncValue.data(null);
+      _ref.read(financeServiceProvider).refreshAll();
+    } catch (e, st) {
+      state = AsyncValue.error(e, st);
+    }
+  }
+
+  Future<void> rejectInvitation(GoalModel invitation) async {
+    state = const AsyncValue.loading();
+    try {
+      await _repository.rejectInvitation(invitation);
+      state = const AsyncValue.data(null);
+      _ref.read(financeServiceProvider).refreshAll();
+    } catch (e, st) {
+      state = AsyncValue.error(e, st);
+    }
+  }
+
+  Future<void> unlinkGoal(GoalModel goal) async {
+    state = const AsyncValue.loading();
+    try {
+      await _repository.unlinkGoal(goal);
+      state = const AsyncValue.data(null);
+      _ref.read(financeServiceProvider).refreshAll();
+    } catch (e, st) {
+      state = AsyncValue.error(e, st);
+    }
+  }
 }
 
-final goalsNotifierProvider = StateNotifierProvider<GoalsNotifier, AsyncValue<void>>((ref) {
-  final repo = ref.watch(goalsRepositoryProvider);
-  return GoalsNotifier(repo, ref);
+final goalsNotifierProvider =
+    StateNotifierProvider<GoalsNotifier, AsyncValue<void>>((ref) {
+      final repo = ref.watch(goalsRepositoryProvider);
+      return GoalsNotifier(repo, ref);
+    });
+
+/// Provider que busca invitaciones a metas pendientes en tiempo real
+final pendingGoalsInvitationsProvider = StreamProvider<List<GoalModel>>((ref) {
+  final repository = ref.watch(goalsRepositoryProvider);
+  return repository.pendingInvitationsStream;
 });

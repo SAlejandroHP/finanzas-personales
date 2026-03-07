@@ -62,26 +62,34 @@ class TransactionsRepository {
 
       if (userId == null) return [];
 
-      // 1. Obtener IDs de deudas donde soy invitado y he aceptado
-      final sharedDebtsResponse = await _supabase
+      // 1. Obtener IDs de deudas donde el usuario es dueño o invitado aceptado
+      final allDebtsResponse = await _supabase
           .from('deudas')
           .select('id')
-          .ilike('shared_with_email', email ?? '')
-          .eq('estado_invitacion', 'accepted');
-      
-      final sharedDebtIds = (sharedDebtsResponse as List).map((d) => d['id'] as String).toList();
+          .or('user_id.eq.$userId,and(shared_with_email.ilike.${email ?? ''},estado_invitacion.eq.accepted)');
+      final allDebtIds = (allDebtsResponse as List).map((d) => d['id'] as String).toList();
 
-      var query = _supabase
-          .from('transacciones')
-          .select();
+      // 2. Obtener IDs de metas donde el usuario es dueño o invitado aceptado
+      final allGoalsResponse = await _supabase
+          .from('metas')
+          .select('id')
+          .or('user_id.eq.$userId,and(shared_with_email.ilike.${email ?? ''},estado_invitacion.eq.accepted)');
+      final allGoalIds = (allGoalsResponse as List).map((g) => g['id'] as String).toList();
+
+      var query = _supabase.from('transacciones').select();
       
-      // Filtramos mis transacciones OR transacciones vinculadas a deudas compartidas aceptadas
-      if (sharedDebtIds.isNotEmpty) {
-        final idsStr = sharedDebtIds.map((id) => '"$id"').join(',');
-        query = query.or('user_id.eq.$userId,deuda_id.in.($idsStr)');
-      } else {
-        query = query.eq('user_id', userId);
+      // Filtramos mis transacciones OR transacciones vinculadas a deudas/metas compartidas
+      final List<String> orConditions = ['user_id.eq.$userId'];
+      if (allDebtIds.isNotEmpty) {
+        final idsStr = allDebtIds.map((id) => '"$id"').join(',');
+        orConditions.add('deuda_id.in.($idsStr)');
       }
+      if (allGoalIds.isNotEmpty) {
+        final idsStr = allGoalIds.map((id) => '"$id"').join(',');
+        orConditions.add('meta_id.in.($idsStr)');
+      }
+
+      query = query.or(orConditions.join(','));
 
       final response = await query.order('fecha', ascending: false);
 

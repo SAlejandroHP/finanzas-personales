@@ -25,12 +25,18 @@ class _GoalFormBottomSheetState extends ConsumerState<GoalFormBottomSheet> {
   late TextEditingController _titleController;
   late TextEditingController _amountController;
   late TextEditingController _descriptionController;
+  late TextEditingController _sharedEmailController;
   final _titleFocusNode = FocusNode();
   final _amountFocusNode = FocusNode();
   final _descriptionFocusNode = FocusNode();
+  final _sharedEmailFocusNode = FocusNode();
+  
   DateTime? _selectedDeadline;
   String _selectedIcon = 'savings';
   String _selectedColorHex = '#0A7075';
+  
+  bool _isShared = false;
+  String _selectedPermission = 'view';
 
   @override
   void initState() {
@@ -44,9 +50,14 @@ class _GoalFormBottomSheetState extends ConsumerState<GoalFormBottomSheet> {
         : '';
     _amountController = TextEditingController(text: amountText);
     _descriptionController = TextEditingController(text: widget.goal?.description);
+    _sharedEmailController = TextEditingController(text: widget.goal?.sharedWithEmail);
+    
     _selectedDeadline = widget.goal?.deadline;
     _selectedIcon = widget.goal?.icon ?? 'savings';
     _selectedColorHex = widget.goal?.colorHex ?? '#0A7075';
+    
+    _isShared = widget.goal?.isShared ?? false;
+    _selectedPermission = widget.goal?.sharedPermission ?? 'view';
   }
 
   @override
@@ -54,9 +65,11 @@ class _GoalFormBottomSheetState extends ConsumerState<GoalFormBottomSheet> {
     _titleController.dispose();
     _amountController.dispose();
     _descriptionController.dispose();
+    _sharedEmailController.dispose();
     _titleFocusNode.dispose();
     _amountFocusNode.dispose();
     _descriptionFocusNode.dispose();
+    _sharedEmailFocusNode.dispose();
     super.dispose();
   }
 
@@ -90,6 +103,15 @@ class _GoalFormBottomSheetState extends ConsumerState<GoalFormBottomSheet> {
 
   void _save() async {
     if (!_formKey.currentState!.validate()) return;
+    
+    // Validación de correo al compartir
+    if (_isShared) {
+      final emailRegex = RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$');
+      if (!emailRegex.hasMatch(_sharedEmailController.text.trim())) {
+        showAppToast(context, message: 'Ingresa un correo válido', type: ToastType.error);
+        return;
+      }
+    }
 
     final title = _titleController.text.trim();
     final amount = double.tryParse(_amountController.text) ?? 0;
@@ -103,6 +125,9 @@ class _GoalFormBottomSheetState extends ConsumerState<GoalFormBottomSheet> {
       icon: _selectedIcon,
       colorHex: _selectedColorHex,
       updatedAt: DateTime.now(),
+      isShared: _isShared,
+      sharedWithEmail: _isShared ? _sharedEmailController.text.trim() : null,
+      sharedPermission: _selectedPermission,
     ) ?? GoalModel(
       id: const Uuid().v4(),
       userId: '', // Se asigna en repo
@@ -114,6 +139,10 @@ class _GoalFormBottomSheetState extends ConsumerState<GoalFormBottomSheet> {
       icon: _selectedIcon,
       colorHex: _selectedColorHex,
       createdAt: DateTime.now(),
+      isShared: _isShared,
+      sharedId: _isShared ? const Uuid().v4() : null,
+      sharedWithEmail: _isShared ? _sharedEmailController.text.trim() : null,
+      sharedPermission: _selectedPermission,
     );
 
     try {
@@ -135,7 +164,9 @@ class _GoalFormBottomSheetState extends ConsumerState<GoalFormBottomSheet> {
         }
       });
     } catch (e) {
-      // Manejo de error
+      if (mounted) {
+         showAppToast(context, message: 'Error al guardar meta', type: ToastType.error);
+      }
     }
   }
 
@@ -312,6 +343,119 @@ class _GoalFormBottomSheetState extends ConsumerState<GoalFormBottomSheet> {
                           },
                         ),
                       ),
+                      const SizedBox(height: 24),
+                      
+                      _buildSectionHeader('COLABORACIÓN (OPCIONAL)', isDark),
+                      const SizedBox(height: 8),
+                      // Switch para compartir
+                      SwitchListTile(
+                        contentPadding: EdgeInsets.zero,
+                        title: Text(
+                          'Compartir Meta',
+                          style: GoogleFonts.montserrat(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                            color: isDark ? Colors.white : AppColors.textPrimary,
+                          ),
+                        ),
+                        subtitle: Text(
+                          'Invita a alguien a colaborar en esta meta',
+                          style: GoogleFonts.montserrat(
+                            fontSize: 12,
+                            color: isDark ? Colors.white60 : Colors.grey[600],
+                          ),
+                        ),
+                        activeColor: AppColors.primary,
+                        value: _isShared,
+                        onChanged: (bool value) {
+                          setState(() {
+                            _isShared = value;
+                            if (value && widget.goal?.sharedId == null) {
+                               // No hacemos nada especial aquí, el ID se crea al guardar
+                            }
+                          });
+                        },
+                      ),
+                      
+                      // Campos que se muestran cuando está compartido
+                      AnimatedSize(
+                        duration: const Duration(milliseconds: 300),
+                        curve: Curves.easeInOut,
+                        child: _isShared ? Padding(
+                          padding: const EdgeInsets.only(top: 8.0, bottom: 8.0),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              AppTextField(
+                                label: 'CORREO DEL INVITADO',
+                                controller: _sharedEmailController,
+                                focusNode: _sharedEmailFocusNode,
+                                keyboardType: TextInputType.emailAddress,
+                                prefixIcon: Icons.email_outlined,
+                                hintText: 'ejemplo@correo.com',
+                              ),
+                              const SizedBox(height: 16),
+                              
+                              Text(
+                                'PERMISOS DEL INVITADO',
+                                style: GoogleFonts.montserrat(
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w800,
+                                  letterSpacing: 1.2,
+                                  color: isDark ? Colors.white38 : Colors.grey[500],
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+                              
+                              // Dropdown de permisos usando decoraciones similares a la vista
+                              Container(
+                                decoration: BoxDecoration(
+                                  color: isDark ? Colors.white.withOpacity(0.05) : Colors.grey[50],
+                                  borderRadius: BorderRadius.circular(AppColors.radiusMedium),
+                                  border: Border.all(color: isDark ? Colors.white10 : Colors.grey[200]!, width: 1),
+                                ),
+                                child: DropdownButtonHideUnderline(
+                                  child: ButtonTheme(
+                                    alignedDropdown: true,
+                                    child: DropdownButton<String>(
+                                      value: _selectedPermission,
+                                      isExpanded: true,
+                                      icon: Icon(Icons.arrow_drop_down, color: isDark ? Colors.white70 : Colors.grey[600]),
+                                      elevation: 0,
+                                      dropdownColor: isDark ? AppColors.surfaceDark : Colors.white,
+                                      style: GoogleFonts.montserrat(
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.w500,
+                                        color: isDark ? Colors.white : AppColors.textPrimary,
+                                      ),
+                                      onChanged: (String? newValue) {
+                                        if (newValue != null) {
+                                          setState(() => _selectedPermission = newValue);
+                                        }
+                                      },
+                                      items: const [
+                                        DropdownMenuItem(
+                                          value: 'view',
+                                          child: Text('Solo lectura (ver progreso)'),
+                                        ),
+                                        DropdownMenuItem(
+                                          value: 'contribute',
+                                          child: Text('Contribuidor (hacer abonos)'),
+                                        ),
+                                        DropdownMenuItem(
+                                          value: 'edit',
+                                          child: Text('Editor (editar datos y abonar)'),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ) : const SizedBox(height: 0),
+                      ),
+                      
                       const SizedBox(height: 32),
                     ],
                   ),

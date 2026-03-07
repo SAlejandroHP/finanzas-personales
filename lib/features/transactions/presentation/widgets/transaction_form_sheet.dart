@@ -9,6 +9,7 @@ import 'package:collection/collection.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/widgets/app_button.dart';
 import '../../../accounts/presentation/providers/accounts_provider.dart';
+import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../../categories/presentation/providers/categories_provider.dart';
 import '../../../accounts/models/account_model.dart';
 import '../../../categories/models/category_model.dart';
@@ -797,7 +798,7 @@ class _TransactionFormSheetState extends ConsumerState<TransactionFormSheet> {
                                   value: _getGoalName(_metaId, goals),
                                   icon: Icons.flag_rounded,
                                   onTap: () =>
-                                      _showGoalSelector(context, goals),
+                                      _showGoalSelector(context, ref, goals),
                                   isDark: isDark,
                                 ),
                                 loading: () => const Center(
@@ -2093,8 +2094,17 @@ class _TransactionFormSheetState extends ConsumerState<TransactionFormSheet> {
     }
   }
 
-  void _showGoalSelector(BuildContext context, List<GoalModel> goals) {
-    final activeGoals = goals.where((g) => !g.isCompleted).toList();
+  void _showGoalSelector(BuildContext context, WidgetRef ref, List<GoalModel> goals) {
+    final currentUserAsync = ref.read(currentUserProvider);
+    final currentUserId = currentUserAsync.value?.id ?? '';
+    
+    // Filtrar: No deben estar completadas y el usuario debe tener permisos (ser dueño o tener 'contribute' o 'edit')
+    final activeGoals = goals.where((g) {
+      if (g.isCompleted) return false;
+      final isOwner = g.userId == currentUserId;
+      final hasPermission = g.sharedPermission == 'contribute' || g.sharedPermission == 'edit';
+      return isOwner || hasPermission;
+    }).toList();
 
     showModalBottomSheet(
       context: context,
