@@ -1,4 +1,5 @@
 import 'dart:ui';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -42,6 +43,11 @@ class AppShell extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final isDark       = Theme.of(context).brightness == Brightness.dark;
     final location = GoRouterState.of(context).matchedLocation;
+    
+    // Detección de PWA vs Nativa (kIsWeb detecta si corre en navegador)
+    final bool isPwa = kIsWeb;
+    final double bottomMargin = isPwa ? AppColors.pagePadding : 0.0;
+    
     int currentIndex = 0;
     if (location.startsWith('/transactions')) {
       currentIndex = 1;
@@ -100,7 +106,7 @@ class AppShell extends ConsumerWidget {
             duration: const Duration(milliseconds: 300),
             curve: Curves.easeInOut,
             child: Transform.translate(
-              offset: const Offset(0, -5),
+              offset: Offset(0, -5 - bottomMargin),
               child: _buildCenterFAB(context, ref),
             ),
           ),
@@ -114,7 +120,11 @@ class AppShell extends ConsumerWidget {
               curve: Curves.easeInOut,
               child: Container(
                 color: Colors.transparent,
-                padding: const EdgeInsets.symmetric(horizontal: 20), // Recuperados laterales, sin margen inferior
+                padding: EdgeInsets.only(
+                  left: 20, 
+                  right: 20, 
+                  bottom: bottomMargin,
+                ),
                 child: SafeArea(
                   child: Stack(
                     alignment: Alignment.topCenter,
