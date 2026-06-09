@@ -17,8 +17,20 @@ final banksProvider = FutureProvider.family<List<BankModel>, String>(
           .map((json) => BankModel.fromJson(json))
           .toList();
       
-      // Si se obtuvieron bancos, retorna la lista ordenada
+      // Si se obtuvieron bancos, inyectar algunos bancos Fintech locales si faltan
       if (banks.isNotEmpty) {
+        // Inyectar Kueski Pay
+        if (!banks.any((b) => b.name.toLowerCase() == 'kueski_pay' || b.displayName.toLowerCase().contains('kueski'))) {
+          banks.add(BankModel(
+            id: 'mock_kueski_pay',
+            name: 'kueski_pay',
+            displayName: 'Kueski Pay',
+            primaryColor: '#00D1B2',
+            countryCodes: ['MX'],
+            status: 'active',
+          ));
+        }
+
         banks.sort((a, b) => a.displayName.compareTo(b.displayName));
         return banks;
       }
