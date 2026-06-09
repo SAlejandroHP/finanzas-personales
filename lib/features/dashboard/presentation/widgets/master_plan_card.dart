@@ -1,21 +1,27 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:intl/intl.dart';
 import '../../../../core/constants/app_colors.dart';
+import '../../domain/models/master_plan_models.dart';
+import '../providers/master_plan_provider.dart';
 
-class MasterPlanCard extends StatefulWidget {
+class MasterPlanCard extends ConsumerStatefulWidget {
   const MasterPlanCard({Key? key}) : super(key: key);
 
   @override
-  State<MasterPlanCard> createState() => _MasterPlanCardState();
+  ConsumerState<MasterPlanCard> createState() => _MasterPlanCardState();
 }
 
-class _MasterPlanCardState extends State<MasterPlanCard> {
+class _MasterPlanCardState extends ConsumerState<MasterPlanCard> {
   bool _isExpanded = false;
 
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final cardColor = isDark ? AppColors.surfaceDark : AppColors.surface;
+
+    final phases = ref.watch(masterPlanProvider);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -40,22 +46,23 @@ class _MasterPlanCardState extends State<MasterPlanCard> {
                   ),
                 ],
               ),
-              TextButton(
-                onPressed: () => setState(() => _isExpanded = !_isExpanded),
-                style: TextButton.styleFrom(
-                  padding: EdgeInsets.zero,
-                  minimumSize: const Size(0, 0),
-                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                ),
-                child: Text(
-                  _isExpanded ? 'Ocultar' : 'Expandir',
-                  style: GoogleFonts.montserrat(
-                    fontSize: AppColors.bodySmall,
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.primary,
+              if (phases.isNotEmpty)
+                TextButton(
+                  onPressed: () => setState(() => _isExpanded = !_isExpanded),
+                  style: TextButton.styleFrom(
+                    padding: EdgeInsets.zero,
+                    minimumSize: const Size(0, 0),
+                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  ),
+                  child: Text(
+                    _isExpanded ? 'Ocultar' : 'Expandir',
+                    style: GoogleFonts.montserrat(
+                      fontSize: AppColors.bodySmall,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.primary,
+                    ),
                   ),
                 ),
-              ),
             ],
           ),
         ),
@@ -79,210 +86,117 @@ class _MasterPlanCardState extends State<MasterPlanCard> {
                 ),
             ],
           ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Código de Operaciones',
-                style: GoogleFonts.montserrat(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                  color: isDark ? Colors.white : AppColors.textPrimary,
-                ),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                'Ejecución estratégica para no descapitalizarte.',
-                style: GoogleFonts.montserrat(
-                  fontSize: 12,
-                  color: Colors.grey,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-              const SizedBox(height: 20),
-              _buildPhase(
-                title: '🔴 Fase 1: Contención y Viaje',
-                subtitle: '15 al 30 de Junio',
-                isDark: isDark,
-                items: [
-                  _buildTimelineItem(
-                    date: 'Lun 15 Jun',
-                    title: 'Quincena y Despliegue de Efectivo',
-                    isDark: isDark,
-                    actions: [
-                      _buildActionPill('Ingreso', '+\$17,500.00', Colors.green, isDark),
-                      _buildActionPill('Reserva', 'Retira \$329.46', Colors.orange, isDark),
-                      _buildActionRow('Blindaje Inmediato:', [
-                        'Renta: \$4,000.00',
-                        'Comida: \$3,500.00',
-                        'Mayordomía: \$2,500.00',
-                        'Escuela: \$1,800.00',
-                        'Viaje SD: \$1,500.00',
-                        'Kueski: \$1,472.15',
-                        'Deuda + IKEA: \$1,566.00',
-                        'Fruta: \$600.00',
-                        'Nu Préstamo: \$541.31',
-                        'Gas: \$350.00',
-                      ], isDark),
-                    ],
-                    note: 'Tu cuenta de débito queda en ceros, pero familia, techo y escuela 100% cubiertos.',
-                  ),
-                  _buildTimelineItem(
-                    date: 'Mar 16 Jun',
-                    title: 'Contención de Stori',
-                    isDark: isDark,
-                    actions: [
-                      _buildActionPill('Acción', 'Transfiere sobrante Nu (\$1,579.62) a Stori', AppColors.primary, isDark),
-                    ],
-                    note: 'Superas pago mínimo y cruzas el corte limpiecito.',
-                  ),
-                  if (_isExpanded) ...[
-                    _buildTimelineItem(
-                      date: 'Mié 17 Jun',
-                      title: 'Límite Stori',
-                      isDark: isDark,
-                      actions: [
-                         _buildActionPill('Status', 'Ya cubierto el día 16', Colors.grey, isDark),
-                      ],
-                    ),
-                    _buildTimelineItem(
-                      date: 'Vie 26 Jun',
-                      title: 'El Viaje a San Diego',
-                      isDark: isDark,
-                      actions: [
-                        _buildActionPill('Ejecución', 'Pago físico de inscripciones', AppColors.secondary, isDark),
-                      ],
-                    ),
-                  ],
-                  _buildTimelineItem(
-                    date: 'Mar 30 Jun',
-                    title: 'Quincena y Reinicio',
-                    isDark: isDark,
-                    actions: [
-                      _buildActionPill('Ingreso', '+\$17,500.00', Colors.green, isDark),
-                      _buildActionPill('Crítica', 'Separar \$2,508.81 para tarjeta Klar (AT&T pateado)', Colors.redAccent, isDark),
-                    ],
-                    isLastInSection: true,
-                  ),
-                ],
-              ),
-              if (_isExpanded) ...[
-                const SizedBox(height: 24),
-                _buildPhase(
-                  title: '🔵 Fase 2: Choque Escolar y Apalancamiento',
-                  subtitle: '1 al 31 de Julio',
-                  isDark: isDark,
-                  items: [
-                    _buildTimelineItem(
-                      date: 'Mié 1 Jul',
-                      title: 'Corte de Klar',
-                      isDark: isDark,
-                      actions: [
-                        _buildActionPill('Regla', 'NO usar la tarjeta hoy', Colors.redAccent, isDark),
-                      ],
-                    ),
-                    _buildTimelineItem(
-                      date: 'Jue 2 Jul',
-                      title: 'Apalancamiento Regalo Mía',
-                      isDark: isDark,
-                      actions: [
-                        _buildActionPill('Acción', 'Compra regalo Mía con Klar', AppColors.primary, isDark),
-                      ],
-                      note: 'El pago se patea automáticamente 40 días, hasta el 11 de agosto.',
-                    ),
-                    _buildTimelineItem(
-                      date: '5 al 10 Jul',
-                      title: 'Apalancamiento Plata',
-                      isDark: isDark,
-                      actions: [
-                         _buildActionPill('Acción', 'Pagar Totalplay (\$790) con Plata', AppColors.secondary, isDark),
-                      ],
-                      note: 'Ganas 60 días de margen.',
-                    ),
-                    _buildTimelineItem(
-                      date: 'Sáb 11 Jul',
-                      title: 'Límite de Klar',
-                      isDark: isDark,
-                      actions: [
-                         _buildActionPill('Pago', 'Paga los \$2,508.81 del AT&T con reserva del 30 Jun', AppColors.primary, isDark),
-                      ],
-                    ),
-                    _buildTimelineItem(
-                      date: 'Mié 15 Jul',
-                      title: 'Quincena y Choque',
-                      isDark: isDark,
-                      actions: [
-                        _buildActionPill('Ingreso', '+\$17,500.00', Colors.green, isDark),
-                        _buildActionRow('Blindaje:', [
-                          'Uniformes: \$3,540.00',
-                          'Mayordomía: \$2,500.00',
-                          'Renta: \$4,000.00',
-                          'Comida: \$3,500.00',
-                          'Deuda Ismael: \$1,000.00',
-                          'Fruta: \$600.00',
-                          'Gas: \$350.00',
-                        ], isDark),
-                        _buildActionPill('Remanente', '\$2,010.00 Libres', Colors.green, isDark),
-                      ],
-                    ),
-                    _buildTimelineItem(
-                      date: 'Jue 16 Jul',
-                      title: 'Golpe a Stori',
-                      isDark: isDark,
-                      actions: [
-                        _buildActionPill('Inyección', '\$2,010.00 íntegros a Stori', AppColors.primary, isDark),
-                      ],
-                    ),
-                    _buildTimelineItem(
-                      date: 'Mié 22 Jul',
-                      title: 'Cumpleaños Mía y Corte Nu',
-                      isDark: isDark,
-                      actions: [
-                         _buildActionPill('Regla', 'NO usar Nu hoy', Colors.redAccent, isDark),
-                      ],
-                    ),
-                    _buildTimelineItem(
-                      date: 'Jue 23 Jul',
-                      title: 'Apalancamiento Regalo Eiden',
-                      isDark: isDark,
-                      actions: [
-                        _buildActionPill('Acción', 'Compra regalo Eiden con Nu', AppColors.secondary, isDark),
-                      ],
-                      note: 'Al hacerlo 1 día después del corte, ganas 40 días. Se patea al 2 de Sep.',
-                    ),
-                    _buildTimelineItem(
-                      date: 'Vie 31 Jul',
-                      title: 'Quincena y Revisión Algorítmica',
-                      isDark: isDark,
-                      actions: [
-                        _buildActionPill('Ingreso', '+\$17,500.00', Colors.green, isDark),
-                        _buildActionPill('Revisión', 'Verificar app Nu para préstamo personal', AppColors.primary, isDark),
-                      ],
-                      note: 'Preparar liquidez para la mudanza del 8 de agosto.',
-                      isLastInSection: true,
-                    ),
-                  ],
-                ),
-              ],
-              if (!_isExpanded)
-                Center(
-                  child: Padding(
-                    padding: const EdgeInsets.only(top: 10),
-                    child: Text(
-                      '+ Expandir para ver todas las estrategias y meses',
+          child: phases.isEmpty
+              ? _buildEmptyState(isDark)
+              : Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Código de Operaciones Generado',
                       style: GoogleFonts.montserrat(
-                        fontSize: 11,
-                        color: Colors.grey,
-                        fontWeight: FontWeight.w600,
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: isDark ? Colors.white : AppColors.textPrimary,
                       ),
                     ),
-                  ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'Ejecución estratégica dinámica calculada a 45 días.',
+                      style: GoogleFonts.montserrat(
+                        fontSize: 12,
+                        color: Colors.grey,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+                    ..._buildPhasesList(phases, isDark),
+                    if (!_isExpanded && phases.length > 1)
+                      Center(
+                        child: Padding(
+                          padding: const EdgeInsets.only(top: 10),
+                          child: Text(
+                            '+ Expandir para ver todas las estrategias y meses',
+                            style: GoogleFonts.montserrat(
+                              fontSize: 11,
+                              color: Colors.grey,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                      ),
+                  ],
                 ),
-            ],
-          ),
         ),
       ],
     );
+  }
+
+  Widget _buildEmptyState(bool isDark) {
+    return Center(
+      child: Column(
+        children: [
+          Icon(Icons.query_stats, size: 48, color: Colors.grey.withOpacity(0.5)),
+          const SizedBox(height: 16),
+          Text(
+            'El Motor de Inteligencia está inactivo.',
+            style: GoogleFonts.montserrat(
+              fontSize: 14,
+              fontWeight: FontWeight.bold,
+              color: isDark ? Colors.white : AppColors.textPrimary,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Agrega tarjetas de crédito con fechas de corte, deudas o ingresos/gastos recurrentes para que el motor empiece a trazar tu hoja de ruta estratégica.',
+            textAlign: TextAlign.center,
+            style: GoogleFonts.montserrat(
+              fontSize: 12,
+              color: Colors.grey,
+              fontWeight: FontWeight.w500,
+              height: 1.5,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  List<Widget> _buildPhasesList(List<PlanPhase> phases, bool isDark) {
+    List<Widget> widgets = [];
+    
+    for (int i = 0; i < phases.length; i++) {
+      if (i > 0 && !_isExpanded) break; // Solo mostrar la primera fase si no está expandido
+
+      final phase = phases[i];
+      widgets.add(_buildPhase(
+        title: phase.title,
+        subtitle: phase.subtitle,
+        isDark: isDark,
+        items: phase.milestones.asMap().entries.map((entry) {
+          final isLast = entry.key == phase.milestones.length - 1;
+          final milestone = entry.value;
+          
+          final DateFormat formatter = DateFormat('E d MMM', 'es_MX');
+          final dateStr = formatter.format(milestone.date);
+          
+          return _buildTimelineItem(
+            date: '${dateStr[0].toUpperCase()}${dateStr.substring(1)}',
+            title: milestone.title,
+            isDark: isDark,
+            actions: milestone.actions.map((action) => _buildActionPill(action, isDark)).toList(),
+            note: milestone.note,
+            bullets: milestone.bulletPoints,
+            isLastInSection: isLast,
+          );
+        }).toList(),
+      ));
+      
+      if (i < phases.length - 1 && _isExpanded) {
+        widgets.add(const SizedBox(height: 24));
+      }
+    }
+    
+    return widgets;
   }
 
   Widget _buildPhase({
@@ -335,6 +249,7 @@ class _MasterPlanCardState extends State<MasterPlanCard> {
     required bool isDark,
     required List<Widget> actions,
     String? note,
+    List<String> bullets = const [],
     bool isLastInSection = false,
   }) {
     return Stack(
@@ -371,63 +286,67 @@ class _MasterPlanCardState extends State<MasterPlanCard> {
             const SizedBox(width: 16),
             // Main content column
             Expanded(
-            child: Padding(
-              padding: const EdgeInsets.only(bottom: 24),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.end,
-                    children: [
-                      Text(
-                        date,
-                        style: GoogleFonts.montserrat(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w800,
-                          color: AppColors.primary,
+              child: Padding(
+                padding: const EdgeInsets.only(bottom: 24),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      children: [
+                        Text(
+                          date,
+                          style: GoogleFonts.montserrat(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w800,
+                            color: AppColors.primary,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      title,
+                      style: GoogleFonts.montserrat(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w700,
+                        color: isDark ? Colors.white : AppColors.textPrimary,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: actions,
+                    ),
+                    if (bullets.isNotEmpty) ...[
+                      const SizedBox(height: 8),
+                      _buildActionRow('Blindaje Inmediato:', bullets, isDark),
+                    ],
+                    if (note != null) ...[
+                      const SizedBox(height: 8),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: AppColors.primary.withOpacity(0.05),
+                          border: Border(
+                            left: BorderSide(color: AppColors.primary.withOpacity(0.5), width: 3),
+                          ),
+                        ),
+                        child: Text(
+                          note,
+                          style: GoogleFonts.montserrat(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w500,
+                            color: isDark ? Colors.white70 : Colors.black87,
+                            fontStyle: FontStyle.italic,
+                          ),
                         ),
                       ),
                     ],
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    title,
-                    style: GoogleFonts.montserrat(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w700,
-                      color: isDark ? Colors.white : AppColors.textPrimary,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Wrap(
-                    spacing: 8,
-                    runSpacing: 8,
-                    children: actions,
-                  ),
-                  if (note != null) ...[
-                    const SizedBox(height: 8),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                      decoration: BoxDecoration(
-                        color: AppColors.primary.withOpacity(0.05),
-                        border: Border(
-                          left: BorderSide(color: AppColors.primary.withOpacity(0.5), width: 3),
-                        ),
-                      ),
-                      child: Text(
-                        note,
-                        style: GoogleFonts.montserrat(
-                          fontSize: 11,
-                          fontWeight: FontWeight.w500,
-                          color: isDark ? Colors.white70 : Colors.black87,
-                          fontStyle: FontStyle.italic,
-                        ),
-                      ),
-                    ),
                   ],
-                ],
+                ),
               ),
-            ),
             ),
           ],
         ),
@@ -435,7 +354,25 @@ class _MasterPlanCardState extends State<MasterPlanCard> {
     );
   }
 
-  Widget _buildActionPill(String label, String value, Color color, bool isDark) {
+  Color _getColorForActionType(ActionType type) {
+    switch (type) {
+      case ActionType.income:
+        return Colors.green;
+      case ActionType.expense:
+        return Colors.orange;
+      case ActionType.rule:
+        return Colors.redAccent;
+      case ActionType.payment:
+        return AppColors.primary;
+      case ActionType.leverage:
+        return AppColors.secondary;
+      case ActionType.info:
+        return Colors.grey;
+    }
+  }
+
+  Widget _buildActionPill(PlanAction action, bool isDark) {
+    final color = _getColorForActionType(action.type);
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
@@ -447,7 +384,7 @@ class _MasterPlanCardState extends State<MasterPlanCard> {
         text: TextSpan(
           children: [
             TextSpan(
-              text: '$label: ',
+              text: '${action.label}: ',
               style: GoogleFonts.montserrat(
                 fontSize: 10,
                 fontWeight: FontWeight.w700,
@@ -455,7 +392,7 @@ class _MasterPlanCardState extends State<MasterPlanCard> {
               ),
             ),
             TextSpan(
-              text: value,
+              text: action.description,
               style: GoogleFonts.montserrat(
                 fontSize: 11,
                 fontWeight: FontWeight.w800,
