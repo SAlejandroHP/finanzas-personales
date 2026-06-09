@@ -13,8 +13,8 @@ class AccountModel {
   /// Tipo de cuenta: 'efectivo', 'chequera', 'ahorro', 'tarjeta_credito', 'inversion', 'otro'
   final String tipo;
 
-  /// ID del banco (de Belvo API)
-  final int? bancoId;
+  /// ID del banco
+  final String? bancoId;
 
   /// Nombre del banco
   final String? bancoNombre;
@@ -93,7 +93,7 @@ class AccountModel {
       userId: json['user_id'] as String,
       nombre: json['nombre'] as String,
       tipo: json['tipo'] as String,
-      bancoId: json['banco_id'] as int?,
+      bancoId: json['banco_id'] as String?,
       bancoNombre: json['banco_nombre'] as String?,
       bancoLogo: json['banco_logo'] as String?,
       monedaId: json['moneda_id'] as String,
@@ -142,7 +142,7 @@ class AccountModel {
     String? userId,
     String? nombre,
     String? tipo,
-    int? bancoId,
+    String? bancoId,
     String? bancoNombre,
     String? bancoLogo,
     String? monedaId,

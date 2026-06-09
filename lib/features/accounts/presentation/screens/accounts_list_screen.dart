@@ -12,6 +12,7 @@ import '../widgets/account_form_bottom_sheet.dart';
 import '../providers/currencies_provider.dart';
 import '../../../debts/presentation/providers/debts_provider.dart';
 import '../../models/bank_model.dart';
+import '../../models/account_model.dart';
 import '../providers/banks_provider.dart';
 import '../../../../core/services/finance_service.dart';
 
