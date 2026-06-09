@@ -92,9 +92,6 @@ class AccountsListScreen extends ConsumerWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 _buildSummaryCard(context, totalBalance, totalDebts, isDark),
-                
-                // Catálogo de bancos de Belvo
-                _buildBankCatalog(context, ref, isDark),
 
                 _buildSectionHeader(context, 'Tus activos'),
 
@@ -388,116 +385,10 @@ class AccountsListScreen extends ConsumerWidget {
     return result ?? false;
   }
 
-  Widget _buildBankCatalog(BuildContext context, WidgetRef ref, bool isDark) {
-    final banksAsync = ref.watch(banksProvider('MX'));
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            _buildSectionHeader(context, 'Instituciones Aliadas'),
-            Padding(
-              padding: const EdgeInsets.only(right: 20, top: 20),
-              child: Text(
-                'BELVO',
-                style: GoogleFonts.montserrat(
-                  fontSize: 9,
-                  fontWeight: FontWeight.w900,
-                  color: AppColors.primary.withOpacity(0.3),
-                  letterSpacing: 2,
-                ),
-              ),
-            ),
-          ],
-        ),
-        SizedBox(
-          height: 95,
-          child: banksAsync.when(
-            data: (banks) {
-              if (banks.isEmpty) return const SizedBox.shrink();
-              final popularBanks = banks.take(25).toList();
-              
-              return ListView.builder(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                scrollDirection: Axis.horizontal,
-                physics: const BouncingScrollPhysics(),
-                itemCount: popularBanks.length,
-                itemBuilder: (context, index) {
-                  final bank = popularBanks[index];
-                  return _buildBankItem(context, ref, bank, isDark);
-                },
-              );
-            },
-            loading: () => ListView.builder(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              scrollDirection: Axis.horizontal,
-              itemCount: 5,
-              itemBuilder: (context, index) => _buildBankSkeleton(isDark),
-            ),
-            error: (_, __) => const SizedBox.shrink(),
-          ),
-        ),
-        const SizedBox(height: 24),
-      ],
-    );
-  }
-
-  Widget _buildBankItem(BuildContext context, WidgetRef ref, BankModel bank, bool isDark) {
-    return Container(
-      width: 70,
-      margin: const EdgeInsets.only(right: 14),
-      child: Column(
-        children: [
-          InkWell(
-            onTap: () {
-              ref.read(selectedBankProvider.notifier).state = bank;
-              _showAccountForm(context, ref);
-            },
-            borderRadius: BorderRadius.circular(15),
-            child: Container(
-              padding: const EdgeInsets.all(10),
-              decoration: BoxDecoration(
-                color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
-                borderRadius: BorderRadius.circular(10), // Squircle homologado R:10
-                boxShadow: [
-                  if (!isDark)
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.03),
-                      blurRadius: 10,
-                      offset: const Offset(0, 4),
-                    ),
-                ],
-              ),
-              child: BankLogo(
-                bankName: bank.displayName,
-                primaryColor: bank.primaryColor,
-                size: 28,
-              ),
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            bank.displayName.split(' ')[0],
-            style: GoogleFonts.montserrat(
-              fontSize: 10,
-              fontWeight: FontWeight.w600,
-              color: isDark ? Colors.white60 : Colors.grey[600],
-            ),
-            textAlign: TextAlign.center,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-          ),
-        ],
-      ),
-    );
-  }
-
   /// Construye el encabezado de una sección
   Widget _buildSectionHeader(BuildContext context, String title) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 32, 20, 12),
+      padding: const EdgeInsets.fromLTRB(20, 20, 20, 12),
       child: Text(
         title.toUpperCase(),
         style: GoogleFonts.montserrat(
@@ -506,34 +397,6 @@ class AccountsListScreen extends ConsumerWidget {
           color: AppColors.primary.withOpacity(0.6),
           letterSpacing: 1.5,
         ),
-      ),
-    );
-  }
-
-  Widget _buildBankSkeleton(bool isDark) {
-    return Container(
-      width: 80,
-      margin: const EdgeInsets.symmetric(horizontal: 4),
-      child: Column(
-        children: [
-          Container(
-            width: 56,
-            height: 56,
-            decoration: BoxDecoration(
-              color: isDark ? Colors.white.withOpacity(0.05) : Colors.black.withOpacity(0.05),
-              borderRadius: BorderRadius.circular(16),
-            ),
-          ),
-          const SizedBox(height: 8),
-          Container(
-            width: 40,
-            height: 8,
-            decoration: BoxDecoration(
-              color: isDark ? Colors.white.withOpacity(0.05) : Colors.black.withOpacity(0.05),
-              borderRadius: BorderRadius.circular(4),
-            ),
-          ),
-        ],
       ),
     );
   }
