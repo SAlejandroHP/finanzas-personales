@@ -185,7 +185,7 @@ class _AppShellState extends ConsumerState<AppShell> {
               duration: const Duration(milliseconds: 300),
               curve: Curves.easeInOut,
               child: Container(
-                height: 48, // Altura súper compacta
+                height: 60, // Aumentado
                 width: double.infinity,
                 margin: EdgeInsets.only(
                   left: 20, 
@@ -219,11 +219,11 @@ class _AppShellState extends ConsumerState<AppShell> {
                               ),
                               // Círculo flotante que se mueve con el hueco
                               Positioned(
-                                left: (animIndex * itemWidth) + (itemWidth / 2) - 18,
-                                top: -10, // Flota 10px arriba
+                                left: (animIndex * itemWidth) + (itemWidth / 2) - 24,
+                                top: -16, // Flota más arriba
                                 child: Container(
-                                  width: 36,
-                                  height: 36,
+                                  width: 48,
+                                  height: 48,
                                   decoration: const BoxDecoration(
                                     color: AppColors.primary,
                                     shape: BoxShape.circle,
@@ -283,19 +283,19 @@ class _AppShellState extends ConsumerState<AppShell> {
           fit: StackFit.expand,
           children: [
             // Icon - Animación matemática exacta:
-            // Navbar height = 48. Inactive center = 24 (top:0, bottom:0)
-            // Círculo center = 8. Active center = 8 (top:-16, bottom:16)
+            // Navbar height = 60. Inactive center = 30 (top:0, bottom:0)
+            // Círculo center = 8. Active center = 8 (top:-22, bottom:22)
             AnimatedPositioned(
               duration: const Duration(milliseconds: 500),
               curve: Curves.fastOutSlowIn,
-              top: isActive ? -16.0 : 0.0,
-              bottom: isActive ? 16.0 : 0.0,
+              top: isActive ? -22.0 : 0.0,
+              bottom: isActive ? 22.0 : 0.0,
               left: 0,
               right: 0,
               child: Center(
                 child: Icon(
                   item.icon,
-                  size: 22, // Icono ligeramente más pequeño para encajar perfecto en el de 36px
+                  size: 26,
                   color: isActive 
                       ? Colors.white 
                       : (isDark ? Colors.white54 : Colors.grey[600]),
@@ -394,7 +394,7 @@ class _CurvedBarPainter extends CustomPainter {
     // 1. Base pill shape
     final RRect hostRRect = RRect.fromRectAndRadius(
       Rect.fromLTWH(0, 0, size.width, size.height),
-      const Radius.circular(20.0), // Curva más suave para altura 48
+      const Radius.circular(30.0), // Curva más suave para altura 60
     );
     final Path hostPath = Path()..addRRect(hostRRect);
 
@@ -402,29 +402,29 @@ class _CurvedBarPainter extends CustomPainter {
     final double notchCenter = (index * itemWidth) + (itemWidth / 2);
 
     // 3. Notch cut-out shape (Matemática perfecta C1)
-    // El círculo flotante tiene 36px, centro en y = 8.
-    // El arco tiene radio 22. Inicia exactamente en su ecuador (y = 8)
+    // El círculo flotante tiene 48px, centro en y = 8.
+    // El arco tiene radio 28. Inicia exactamente en su ecuador (y = 8)
     // para asegurar que Flutter dibuje un semicírculo perfecto concéntrico.
     final Path notchPath = Path();
-    notchPath.moveTo(notchCenter - 36, 0); // Empieza el flare
+    notchPath.moveTo(notchCenter - 44, 0); // Empieza el flare
     
     // Flare izquierdo (Tangente vertical exacta al conectar con el arco)
     notchPath.quadraticBezierTo(
-      notchCenter - 22, 0,
-      notchCenter - 22, 8,
+      notchCenter - 28, 0,
+      notchCenter - 28, 8,
     );
     
-    // Semicírculo perfecto (Centro real en y=8, baja hasta y=30)
+    // Semicírculo perfecto (Centro real en y=8, baja hasta y=36)
     notchPath.arcToPoint(
-      Offset(notchCenter + 22, 8),
-      radius: const Radius.circular(22),
+      Offset(notchCenter + 28, 8),
+      radius: const Radius.circular(28),
       clockwise: false,
     );
     
     // Flare derecho (Tangente vertical exacta)
     notchPath.quadraticBezierTo(
-      notchCenter + 22, 0,
-      notchCenter + 36, 0,
+      notchCenter + 28, 0,
+      notchCenter + 44, 0,
     ); 
     
     // Cierra el polígono hacia arriba
