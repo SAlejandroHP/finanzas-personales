@@ -356,7 +356,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
 
     return invitationsAsync.maybeWhen(
       data: (invitations) {
-        if (invitations.isEmpty) return const SizedBox.shrink();
+        if (invitations.isEmpty) return SizedBox.shrink(key: UniqueKey());
 
         return Column(
           children: invitations.map((inv) {
@@ -503,7 +503,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
           }).toList(),
         );
       },
-      orElse: () => const SizedBox.shrink(),
+      orElse: () => SizedBox.shrink(key: UniqueKey()),
     );
   }
 
@@ -512,7 +512,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
 
     return goalsInvitationsAsync.maybeWhen(
       data: (invitations) {
-        if (invitations.isEmpty) return const SizedBox.shrink();
+        if (invitations.isEmpty) return SizedBox.shrink(key: UniqueKey());
 
         return Column(
           children: invitations.map((goal) {
@@ -659,7 +659,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
           }).toList(),
         );
       },
-      orElse: () => const SizedBox.shrink(),
+      orElse: () => SizedBox.shrink(key: UniqueKey()),
     );
   }
 
