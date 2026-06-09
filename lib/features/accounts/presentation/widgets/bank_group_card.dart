@@ -80,9 +80,13 @@ class _BankGroupCardState extends State<BankGroupCard> {
           color: Colors.transparent,
           child: InkWell(
             onTap: () {
-              setState(() {
-                _isExpanded = !_isExpanded;
-              });
+              if (widget.accounts.length == 1) {
+                widget.onTap(widget.accounts.first);
+              } else {
+                setState(() {
+                  _isExpanded = !_isExpanded;
+                });
+              }
             },
             borderRadius: BorderRadius.circular(12),
             child: Padding(
@@ -136,15 +140,52 @@ class _BankGroupCardState extends State<BankGroupCard> {
                     ],
                   ),
                   const SizedBox(width: 8),
-                  AnimatedRotation(
-                    turns: _isExpanded ? 0.5 : 0.0,
-                    duration: const Duration(milliseconds: 300),
-                    child: Icon(
-                      Icons.keyboard_arrow_down_rounded,
-                      color: isDark ? Colors.white38 : Colors.grey[400],
-                      size: 20,
+                  if (widget.accounts.length > 1)
+                    AnimatedRotation(
+                      turns: _isExpanded ? 0.5 : 0.0,
+                      duration: const Duration(milliseconds: 300),
+                      child: Icon(
+                        Icons.keyboard_arrow_down_rounded,
+                        color: isDark ? Colors.white38 : Colors.grey[400],
+                        size: 20,
+                      ),
+                    )
+                  else
+                    PopupMenuButton<String>(
+                      padding: EdgeInsets.zero,
+                      icon: Icon(
+                        Icons.more_vert_rounded,
+                        size: 20,
+                        color: isDark ? Colors.white38 : Colors.grey[400],
+                      ),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      onSelected: (value) {
+                        if (value == 'edit') widget.onEdit(widget.accounts.first);
+                        if (value == 'delete') widget.onDelete(widget.accounts.first);
+                      },
+                      itemBuilder: (context) => [
+                        const PopupMenuItem(
+                          value: 'edit',
+                          child: Row(
+                            children: [
+                              Icon(Icons.edit_outlined, size: 18),
+                              SizedBox(width: 8),
+                              Text('Editar cuenta'),
+                            ],
+                          ),
+                        ),
+                        const PopupMenuItem(
+                          value: 'delete',
+                          child: Row(
+                            children: [
+                              Icon(Icons.delete_outline, size: 18, color: Colors.red),
+                              SizedBox(width: 8),
+                              Text('Eliminar cuenta', style: TextStyle(color: Colors.red)),
+                            ],
+                          ),
+                        ),
+                      ],
                     ),
-                  ),
                 ],
               ),
             ),
@@ -154,24 +195,23 @@ class _BankGroupCardState extends State<BankGroupCard> {
         AnimatedSize(
           duration: const Duration(milliseconds: 250),
           curve: Curves.easeInOut,
-          child: Container(
-            constraints: _isExpanded
-                ? const BoxConstraints(maxHeight: 2000)
-                : const BoxConstraints(maxHeight: 0),
-            margin: const EdgeInsets.only(left: 16),
-            child: Column(
-              children: [
-                ...widget.accounts.map((acc) => AccountListTile(
-                      account: acc,
-                      currencySymbol: widget.currencySymbol,
-                      onEdit: () => widget.onEdit(acc),
-                      onDelete: () => widget.onDelete(acc),
-                      onTap: () => widget.onTap(acc),
-                    )),
-                const SizedBox(height: 8),
-              ],
-            ),
-          ),
+          child: (_isExpanded && widget.accounts.length > 1)
+              ? Container(
+                  margin: const EdgeInsets.only(left: 16),
+                  child: Column(
+                    children: [
+                      ...widget.accounts.map((acc) => AccountListTile(
+                            account: acc,
+                            currencySymbol: widget.currencySymbol,
+                            onEdit: () => widget.onEdit(acc),
+                            onDelete: () => widget.onDelete(acc),
+                            onTap: () => widget.onTap(acc),
+                          )),
+                      const SizedBox(height: 8),
+                    ],
+                  ),
+                )
+              : const SizedBox.shrink(),
         ),
         Divider(height: 1, color: isDark ? Colors.white10 : Colors.grey[200]),
       ],
