@@ -217,10 +217,10 @@ class _AppShellState extends ConsumerState<AppShell> {
                                   ),
                                 ),
                               ),
-                              // Círculo flotante que se mueve con el hueco
+                              // Círculo indicador de activo integrado al navbar
                               Positioned(
                                 left: (animIndex * itemWidth) + (itemWidth / 2) - 24,
-                                top: -16, // Flota más arriba
+                                top: 6, // Centrado verticalmente (60 - 48) / 2
                                 child: Container(
                                   width: 48,
                                   height: 48,
@@ -282,14 +282,12 @@ class _AppShellState extends ConsumerState<AppShell> {
           clipBehavior: Clip.none,
           fit: StackFit.expand,
           children: [
-            // Icon - Animación matemática exacta:
-            // Navbar height = 60. Inactive center = 30 (top:0, bottom:0)
-            // Círculo center = 8. Active center = 8 (top:-22, bottom:22)
+            // Icon - Centrado en todo momento
             AnimatedPositioned(
               duration: const Duration(milliseconds: 500),
               curve: Curves.fastOutSlowIn,
-              top: isActive ? -22.0 : 0.0,
-              bottom: isActive ? 22.0 : 0.0,
+              top: 0.0,
+              bottom: 0.0,
               left: 0,
               right: 0,
               child: Center(
@@ -391,52 +389,44 @@ class _CurvedBarPainter extends CustomPainter {
       ..color = Colors.black.withOpacity(0.10)
       ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 24);
 
-    // 1. Base pill shape
+    // 1. Base shape
     final RRect hostRRect = RRect.fromRectAndRadius(
       Rect.fromLTWH(0, 0, size.width, size.height),
-      const Radius.circular(30.0), // Curva más suave para altura 60
+      const Radius.circular(22.0), // Radio ajustado para evitar esquinas afiladas con la jorobita
     );
     final Path hostPath = Path()..addRRect(hostRRect);
 
-    // 2. Exact center of the current selected notch
+    // 2. Exact center of the current selected notch/bump
     final double notchCenter = (index * itemWidth) + (itemWidth / 2);
 
-    // 3. Notch cut-out shape (Matemática perfecta C1)
-    // El círculo flotante tiene 48px, centro en y = 8.
-    // El arco tiene radio 28. Inicia exactamente en su ecuador (y = 8)
-    // para asegurar que Flutter dibuje un semicírculo perfecto concéntrico.
-    final Path notchPath = Path();
-    notchPath.moveTo(notchCenter - 44, 0); // Empieza el flare
-    
-    // Flare izquierdo (Tangente vertical exacta al conectar con el arco)
-    notchPath.quadraticBezierTo(
-      notchCenter - 28, 0,
-      notchCenter - 28, 8,
-    );
-    
-    // Semicírculo perfecto (Centro real en y=8, baja hasta y=36)
-    notchPath.arcToPoint(
-      Offset(notchCenter + 28, 8),
-      radius: const Radius.circular(28),
-      clockwise: false,
-    );
-    
-    // Flare derecho (Tangente vertical exacta)
-    notchPath.quadraticBezierTo(
-      notchCenter + 28, 0,
-      notchCenter + 44, 0,
-    ); 
-    
-    // Cierra el polígono hacia arriba
-    notchPath.lineTo(notchCenter + 64, -100);
-    notchPath.lineTo(notchCenter - 64, -100);
-    notchPath.close();
+    double clampX(double x) => x < 0 ? 0 : (x > size.width ? size.width : x);
 
-    // 4. Subtract the notch from the pill
+    // 3. Crear el path de la "jorobita" (pansita)
+    final Path bumpPath = Path();
+    // Empezamos profundo y clampado a los bordes para fusionarse suavemente con las esquinas
+    bumpPath.moveTo(clampX(notchCenter - 40), 30); 
+    
+    // Curva sutil y ancha sobre el círculo
+    bumpPath.cubicTo(
+      clampX(notchCenter - 28), 10,   
+      clampX(notchCenter - 26), -4,   
+      notchCenter, -4,        
+    );
+    
+    // Curva de bajada
+    bumpPath.cubicTo(
+      clampX(notchCenter + 26), -4,
+      clampX(notchCenter + 28), 10,
+      clampX(notchCenter + 40), 30,
+    );
+    
+    bumpPath.close(); // Se cierra a lo largo de y=30
+
+    // 4. Unir la jorobita al rectángulo principal
     final Path finalPath = Path.combine(
-      PathOperation.difference,
+      PathOperation.union,
       hostPath,
-      notchPath,
+      bumpPath,
     );
 
     // Shadow
