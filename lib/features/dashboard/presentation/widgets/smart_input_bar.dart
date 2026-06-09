@@ -41,7 +41,12 @@ class _SmartInputBarState extends ConsumerState<SmartInputBar> {
   void initState() {
     super.initState();
     _iaService = IAService();
-    _speech = stt.SpeechToText();
+    try {
+      _speech = stt.SpeechToText();
+    } catch (e) {
+      _speechEnabled = false;
+      debugPrint('SpeechToText could not be instantiated: $e');
+    }
     _initSpeech();
     // Escucha cambios en el texto para notificar al FAB sobre ocultarse
     _controller.addListener(_onTextChanged);
@@ -90,39 +95,49 @@ class _SmartInputBarState extends ConsumerState<SmartInputBar> {
   }
 
   void _listen() async {
-    if (!_speechEnabled) {
-      bool initSuccess = await _speech.initialize();
-      if (!initSuccess) {
-        if (mounted) {
-          showAppToast(
-            context,
-            message: "Permiso de micrófono denegado o no disponible.",
-            type: ToastType.error,
-          );
+    try {
+      if (!_speechEnabled) {
+        bool initSuccess = await _speech.initialize();
+        if (!initSuccess) {
+          if (mounted) {
+            showAppToast(
+              context,
+              message: "Permiso de micrófono denegado o no disponible.",
+              type: ToastType.error,
+            );
+          }
+          return;
+        } else {
+          _speechEnabled = true;
         }
-        return;
-      } else {
-        _speechEnabled = true;
       }
-    }
 
-    if (_isListening) {
-      await _speech.stop();
-      setState(() => _isListening = false);
-      if (_controller.text.trim().isNotEmpty) {
-        _processInput();
+      if (_isListening) {
+        await _speech.stop();
+        setState(() => _isListening = false);
+        if (_controller.text.trim().isNotEmpty) {
+          _processInput();
+        }
+      } else {
+        _controller.clear();
+        await _speech.listen(
+          onResult: (result) {
+            setState(() {
+              _controller.text = result.recognizedWords;
+            });
+          },
+          localeId: 'es_MX',
+        );
+        setState(() => _isListening = true);
       }
-    } else {
-      _controller.clear();
-      await _speech.listen(
-        onResult: (result) {
-          setState(() {
-            _controller.text = result.recognizedWords;
-          });
-        },
-        localeId: 'es_MX',
-      );
-      setState(() => _isListening = true);
+    } catch (e) {
+      if (mounted) {
+        showAppToast(
+          context,
+          message: "No se pudo acceder al micrófono.",
+          type: ToastType.error,
+        );
+      }
     }
   }
 
