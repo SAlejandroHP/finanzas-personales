@@ -1,3 +1,4 @@
+import 'dart:ui';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -10,19 +11,17 @@ import '../../../../core/widgets/app_toast.dart';
 import '../../../../core/widgets/app_social_button.dart';
 import '../providers/auth_provider.dart';
 
-/// Pantalla de autenticación con tabs para Login y Registro.
-/// Incluye soporte para Face ID/Touch ID y login social con Google/Apple.
+/// Pantalla de autenticación rediseñada con Glassmorphism y formas geométricas asimétricas.
 class AuthScreen extends ConsumerStatefulWidget {
-  const AuthScreen({Key? key}) : super(key: key);
+  const AuthScreen({super.key});
 
   @override
   ConsumerState<AuthScreen> createState() => _AuthScreenState();
 }
 
-class _AuthScreenState extends ConsumerState<AuthScreen>
-    with SingleTickerProviderStateMixin {
-  late TabController _tabController;
-  late PageController _pageController;
+class _AuthScreenState extends ConsumerState<AuthScreen> {
+  // 0 para Login, 1 para Registro
+  int _currentIndex = 0;
 
   // Controladores para login
   final _loginEmailController = TextEditingController();
@@ -41,27 +40,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen>
   String? _signupConfirmPasswordError;
 
   @override
-  void initState() {
-    super.initState();
-    _tabController = TabController(length: 2, vsync: this);
-    _pageController = PageController();
-
-    // Sincroniza el TabController con el PageController
-    _tabController.addListener(() {
-      if (_tabController.indexIsChanging) {
-        _pageController.animateToPage(
-          _tabController.index,
-          duration: const Duration(milliseconds: 300),
-          curve: Curves.easeInOut,
-        );
-      }
-    });
-  }
-
-  @override
   void dispose() {
-    _tabController.dispose();
-    _pageController.dispose();
     _loginEmailController.dispose();
     _loginPasswordController.dispose();
     _signupEmailController.dispose();
@@ -70,18 +49,22 @@ class _AuthScreenState extends ConsumerState<AuthScreen>
     super.dispose();
   }
 
+  void _switchTab(int index) {
+    setState(() {
+      _currentIndex = index;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final canUseBiometrics = ref.watch(canUseBiometricsProvider);
     final isLoading = ref.watch(authLoadingProvider);
 
-    // Escucha cambios en el estado de autenticación
     ref.listen<AsyncValue<dynamic>>(authNotifierProvider, (previous, next) {
       next.when(
         data: (user) {
           if (user != null) {
-            // Navega al dashboard cuando hay usuario autenticado
             context.go('/');
           }
         },
@@ -92,347 +75,385 @@ class _AuthScreenState extends ConsumerState<AuthScreen>
       );
     });
 
+    final size = MediaQuery.of(context).size;
+
     return Scaffold(
-      backgroundColor: isDark ? const Color(0xFF121212) : AppColors.backgroundColor,
+      backgroundColor: isDark ? const Color(0xFF0F0F12) : AppColors.backgroundColor,
       body: SafeArea(
-        child: SingleChildScrollView(
-          physics: const BouncingScrollPhysics(),
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Logo y título
-              Center(
+        child: Center(
+              child: SingleChildScrollView(
+                physics: const BouncingScrollPhysics(),
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
                 child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    Icon(
-                      Icons.account_balance_wallet_outlined,
-                      size : 64,
-                      color: AppColors.primary,
+                    // Logo Geométrico
+                    Center(
+                      child: Container(
+                        width: 80,
+                        height: 80,
+                        decoration: BoxDecoration(
+                          color: AppColors.primary,
+                          borderRadius: const BorderRadius.only(
+                            topLeft: Radius.circular(30),
+                            bottomRight: Radius.circular(30),
+                            topRight: Radius.circular(10),
+                            bottomLeft: Radius.circular(10),
+                          ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: AppColors.primary.withValues(alpha: 0.4),
+                              blurRadius: 20,
+                              offset: const Offset(0, 10),
+                            ),
+                          ],
+                        ),
+                        child: const Icon(
+                          Icons.account_balance_wallet_rounded,
+                          size: 40,
+                          color: Colors.white,
+                        ),
+                      ),
                     ),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: 24),
                     Text(
                       'Finanzas Personal',
+                      textAlign: TextAlign.center,
                       style: GoogleFonts.montserrat(
-                        fontSize: AppColors.titleLarge,
-                        fontWeight: FontWeight.w700,
+                        fontSize: 28,
+                        fontWeight: FontWeight.w800,
                         color: isDark ? Colors.white : AppColors.textPrimary,
+                        letterSpacing: -0.5,
                       ),
                     ),
                     const SizedBox(height: 8),
                     Text(
                       'Gestiona tu dinero de forma inteligente',
+                      textAlign: TextAlign.center,
                       style: GoogleFonts.montserrat(
-                        fontSize: AppColors.bodyMedium,
-                        color: Colors.grey[600],
+                        fontSize: 14,
+                        color: isDark ? Colors.white60 : Colors.grey[600],
+                        fontWeight: FontWeight.w500,
                       ),
+                    ),
+                    const SizedBox(height: 40),
+
+                    // Switcher de Pestañas (Pill Switch)
+                    _buildPillSwitch(isDark),
+                    const SizedBox(height: 32),
+
+                    // Tarjeta principal (Sólida en lugar de Glassmorphism)
+                    Container(
+                      decoration: BoxDecoration(
+                        color: isDark ? AppColors.surfaceDark : Colors.white,
+                        borderRadius: const BorderRadius.only(
+                          topLeft: Radius.circular(40),
+                          bottomRight: Radius.circular(40),
+                          topRight: Radius.circular(15),
+                          bottomLeft: Radius.circular(15),
+                        ),
+                        boxShadow: [
+                          if (!isDark)
+                            BoxShadow(
+                              color: Colors.black.withValues(alpha: 0.05),
+                              blurRadius: 30,
+                              offset: const Offset(0, 15),
+                            ),
+                        ],
+                      ),
+                      child: Padding(
+                            padding: const EdgeInsets.all(32),
+                            child: AnimatedSize(
+                              duration: const Duration(milliseconds: 300),
+                              curve: Curves.easeInOutCubic,
+                              child: AnimatedSwitcher(
+                                duration: const Duration(milliseconds: 300),
+                                switchInCurve: Curves.easeOut,
+                                switchOutCurve: Curves.easeIn,
+                                child: _currentIndex == 0
+                                    ? _buildLoginForm(isDark, canUseBiometrics, isLoading)
+                                    : _buildSignupForm(isDark, isLoading),
+                              ),
+                            ),
+                          ),
+                        ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+    );
+  }
+
+  Widget _buildPillSwitch(bool isDark) {
+    return Container(
+      height: 54,
+      padding: const EdgeInsets.all(6),
+      decoration: BoxDecoration(
+        color: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.grey[200],
+        borderRadius: BorderRadius.circular(40),
+      ),
+      child: Stack(
+        children: [
+          AnimatedAlign(
+            duration: const Duration(milliseconds: 300),
+            curve: Curves.easeInOutCubic,
+            alignment: _currentIndex == 0 ? Alignment.centerLeft : Alignment.centerRight,
+            child: FractionallySizedBox(
+              widthFactor: 0.5,
+              child: Container(
+                decoration: BoxDecoration(
+                  color: isDark ? const Color(0xFF2C2C2C) : Colors.white,
+                  borderRadius: BorderRadius.circular(30),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.1),
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
                     ),
                   ],
                 ),
               ),
-              const SizedBox(height: 40),
-
-              // Tabs personalizados
-              _buildCustomTabs(isDark),
-              const SizedBox(height: 24),
-
-              // Contenedor con altura fija para los formularios
-              SizedBox(
-                height: 450, // Altura fija para evitar cambios
-                child: PageView(
-                  controller: _pageController,
-                  physics: const BouncingScrollPhysics(),
-                  onPageChanged: (index) {
-                    _tabController.animateTo(index);
-                  },
-                  children: [
-                    // Pestaña de Login
-                    _buildLoginForm(isDark, canUseBiometrics, isLoading),
-                    // Pestaña de Registro
-                    _buildSignupForm(isDark, isLoading),
-                  ],
+            ),
+          ),
+          Row(
+            children: [
+              Expanded(
+                child: GestureDetector(
+                  onTap: () => _switchTab(0),
+                  behavior: HitTestBehavior.opaque,
+                  child: Center(
+                    child: Text(
+                      'Ingresar',
+                      style: GoogleFonts.montserrat(
+                        fontSize: 14,
+                        fontWeight: _currentIndex == 0 ? FontWeight.w700 : FontWeight.w600,
+                        color: _currentIndex == 0
+                            ? (isDark ? Colors.white : AppColors.primary)
+                            : (isDark ? Colors.white54 : Colors.grey[500]),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+              Expanded(
+                child: GestureDetector(
+                  onTap: () => _switchTab(1),
+                  behavior: HitTestBehavior.opaque,
+                  child: Center(
+                    child: Text(
+                      'Registro',
+                      style: GoogleFonts.montserrat(
+                        fontSize: 14,
+                        fontWeight: _currentIndex == 1 ? FontWeight.w700 : FontWeight.w600,
+                        color: _currentIndex == 1
+                            ? (isDark ? Colors.white : AppColors.primary)
+                            : (isDark ? Colors.white54 : Colors.grey[500]),
+                      ),
+                    ),
+                  ),
                 ),
               ),
             ],
           ),
-        ),
+        ],
       ),
     );
   }
 
-  /// Construye los tabs personalizados con indicador animado
-  Widget _buildCustomTabs(bool isDark) {
+  Widget _buildLoginForm(bool isDark, AsyncValue<bool> canUseBiometrics, bool isLoading) {
     return Column(
+      key: const ValueKey('login_form'),
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Row(
-          children: [
-            Expanded(
-              child: _buildTab('Iniciar sesión', 0, isDark),
-            ),
-            Expanded(
-              child: _buildTab('Crear cuenta', 1, isDark),
-            ),
-          ],
+        if (!kIsWeb)
+          AppSocialButton(
+            label: 'Continuar con Google',
+            provider: 'google',
+            onPressed: isLoading ? null : _handleGoogleSignIn,
+          ),
+        if (!kIsWeb) const SizedBox(height: 12),
+        if (!kIsWeb && (defaultTargetPlatform == TargetPlatform.iOS || defaultTargetPlatform == TargetPlatform.macOS))
+          AppSocialButton(
+            label: 'Continuar con Apple',
+            provider: 'apple',
+            onPressed: isLoading ? null : _handleAppleSignIn,
+          ),
+        if (!kIsWeb) ...[
+          const SizedBox(height: 24),
+          Row(
+            children: [
+              Expanded(child: Divider(color: isDark ? Colors.white24 : Colors.grey[300])),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: Text(
+                  'O CON EMAIL',
+                  style: GoogleFonts.montserrat(
+                    fontSize: 10,
+                    fontWeight: FontWeight.w700,
+                    color: isDark ? Colors.white54 : Colors.grey[500],
+                    letterSpacing: 1.0,
+                  ),
+                ),
+              ),
+              Expanded(child: Divider(color: isDark ? Colors.white24 : Colors.grey[300])),
+            ],
+          ),
+          const SizedBox(height: 24),
+        ],
+
+        AppTextField(
+          label: 'Correo electrónico',
+          controller: _loginEmailController,
+          keyboardType: TextInputType.emailAddress,
+          prefixIcon: Icons.alternate_email_rounded,
+          helperText: _loginEmailError,
+          isError: _loginEmailError != null,
+          enabled: !isLoading,
         ),
-        const SizedBox(height: 8),
-        // Indicador animado con degradado teal
-        AnimatedBuilder(
-          animation: _tabController,
-          builder: (context, child) {
-            return Stack(
-              children: [
-                Container(
-                  height: 3,
-                  decoration: BoxDecoration(
-                    color: Colors.grey[300],
-                    borderRadius: BorderRadius.circular(2),
-                  ),
-                ),
-                AnimatedPositioned(
-                  duration: const Duration(milliseconds: 300),
-                  curve: Curves.easeOutCubic,
-                  left: _tabController.index == 0
-                      ? 0
-                      : MediaQuery.of(context).size.width / 2 - 24,
-                  child: Container(
-                    height: 3,
-                    width: (MediaQuery.of(context).size.width - 48) / 2,
-                    decoration: BoxDecoration(
-                      gradient: AppColors.tealGradient,
-                      borderRadius: BorderRadius.circular(2),
-                    ),
-                  ),
-                ),
-              ],
+        const SizedBox(height: 16),
+        AppTextField(
+          label: 'Contraseña',
+          controller: _loginPasswordController,
+          isPassword: true,
+          prefixIcon: Icons.lock_outline_rounded,
+          helperText: _loginPasswordError,
+          isError: _loginPasswordError != null,
+          enabled: !isLoading,
+        ),
+        const SizedBox(height: 12),
+
+        Align(
+          alignment: Alignment.centerRight,
+          child: TextButton(
+            onPressed: isLoading ? null : _handleForgotPassword,
+            style: TextButton.styleFrom(
+              padding: EdgeInsets.zero,
+              minimumSize: Size.zero,
+              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+            ),
+            child: Text(
+              '¿Olvidaste tu contraseña?',
+              style: GoogleFonts.montserrat(
+                fontSize: 13,
+                color: AppColors.secondary,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(height: 32),
+
+        AppButton(
+          label: 'Iniciar sesión',
+          onPressed: isLoading ? null : _handleEmailLogin,
+          isFullWidth: true,
+          isLoading: isLoading,
+          height: 56,
+        ),
+        const SizedBox(height: 16),
+
+        canUseBiometrics.when(
+          data: (canUse) {
+            if (!canUse) return const SizedBox.shrink();
+            final isIOS = defaultTargetPlatform == TargetPlatform.iOS;
+            return AppButton(
+              label: isIOS ? 'Usar Face ID' : 'Usar Touch ID',
+              icon: isIOS ? Icons.face_rounded : Icons.fingerprint_rounded,
+              onPressed: isLoading ? null : _handleBiometricLogin,
+              variant: 'outlined',
+              isFullWidth: true,
+              height: 56,
             );
           },
+          loading: () => const SizedBox.shrink(),
+          error: (_, __) => const SizedBox.shrink(),
         ),
       ],
     );
   }
 
-  /// Construye un tab individual
-  Widget _buildTab(String text, int index, bool isDark) {
-    final isSelected = _tabController.index == index;
-
-    return GestureDetector(
-      onTap: () {
-        _tabController.animateTo(index);
-      },
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 12),
-        child: Text(
-          text,
-          textAlign: TextAlign.center,
-          style: GoogleFonts.montserrat(
-            fontSize: AppColors.bodyLarge,
-            fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
-            color: isSelected
-                ? (isDark ? Colors.white : AppColors.primary)
-                : Colors.grey[500],
-          ),
-        ),
-      ),
-    );
-  }
-
-  /// Construye el formulario de login
-  Widget _buildLoginForm(bool isDark, AsyncValue<bool> canUseBiometrics, bool isLoading) {
-    return SingleChildScrollView(
-      physics: const NeverScrollableScrollPhysics(),
-      child: Column(
-        children: [
-          // Botones sociales
-          // Google Sign-In solo disponible en plataformas móviles
-          if (!kIsWeb)
-            AppSocialButton(
-              label: 'Continuar con Google',
-              provider: 'google',
-              onPressed: isLoading ? null : _handleGoogleSignIn,
-            ),
-          if (!kIsWeb) const SizedBox(height: 12),
-          if (!kIsWeb && (defaultTargetPlatform == TargetPlatform.iOS || defaultTargetPlatform == TargetPlatform.macOS))
-            AppSocialButton(
-              label: 'Continuar con Apple',
-              provider: 'apple',
-              onPressed: isLoading ? null : _handleAppleSignIn,
-            ),
-          if (!kIsWeb) const SizedBox(height: 20),
-
-          // Divisor
-          Row(
-            children: [
-              Expanded(child: Divider(color: Colors.grey[400])),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: Text(
-                  'O con email',
-                  style: GoogleFonts.montserrat(
-                    fontSize: AppColors.bodySmall,
-                    color: Colors.grey[600],
-                  ),
-                ),
-              ),
-              Expanded(child: Divider(color: Colors.grey[400])),
-            ],
-          ),
-          const SizedBox(height: 20),
-
-          // Campos de email y contraseña
-          AppTextField(
-            label: 'Email',
-            controller: _loginEmailController,
-            keyboardType: TextInputType.emailAddress,
-            prefixIcon: Icons.mail_outline,
-            helperText: _loginEmailError,
-            isError: _loginEmailError != null,
-            enabled: !isLoading,
-          ),
-          const SizedBox(height: 16),
-          AppTextField(
-            label: 'Contraseña',
-            controller: _loginPasswordController,
-            isPassword: true,
-            prefixIcon: Icons.lock_outline,
-            helperText: _loginPasswordError,
-            isError: _loginPasswordError != null,
-            enabled: !isLoading,
-          ),
-          const SizedBox(height: 8),
-
-          // Olvidé mi contraseña
-          Align(
-            alignment: Alignment.centerRight,
-            child: TextButton(
-              onPressed: isLoading ? null : _handleForgotPassword,
-              child: Text(
-                'Olvidé mi contraseña',
-                style: GoogleFonts.montserrat(
-                  fontSize: AppColors.bodySmall,
-                  color: AppColors.secondary,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-            ),
-          ),
-          const SizedBox(height: 8),
-
-          // Botón de login
-          AppButton(
-            label      : 'Iniciar sesión',
-            onPressed  : isLoading ? null: _handleEmailLogin,
-            isFullWidth: true,
-            isLoading  : isLoading,
-            height     : AppColors.buttonHeight,
-          ),
-          const SizedBox(height: 16),
-
-          // Botón de Face ID / Touch ID (si está disponible)
-          canUseBiometrics.when(
-            data: (canUse) {
-              if (!canUse) return const SizedBox.shrink();
-              
-              final isIOS = defaultTargetPlatform == TargetPlatform.iOS;
-              
-              return AppButton(
-                label: isIOS ? 'Ingresar con Face ID' : 'Ingresar con Touch ID',
-                icon: isIOS ? Icons.qr_code_scanner_outlined : Icons.fingerprint_outlined,
-                onPressed: isLoading ? null : _handleBiometricLogin,
-                variant: 'outlined',
-                isFullWidth: true,
-              );
-            },
-            loading: () => const SizedBox.shrink(),
-            error: (_, __) => const SizedBox.shrink(),
-          ),
-        ],
-      ),
-    );
-  }
-
-  /// Construye el formulario de registro
   Widget _buildSignupForm(bool isDark, bool isLoading) {
-    return SingleChildScrollView(
-      physics: const NeverScrollableScrollPhysics(),
-      child: Column(
-        children: [
-          // Botones sociales
-          // Google Sign-In solo disponible en plataformas móviles
-          if (!kIsWeb)
-            AppSocialButton(
-              label: 'Continuar con Google',
-              provider: 'google',
-              onPressed: isLoading ? null : _handleGoogleSignIn,
-            ),
-          if (!kIsWeb) const SizedBox(height: 12),
-          if (!kIsWeb && (defaultTargetPlatform == TargetPlatform.iOS || defaultTargetPlatform == TargetPlatform.macOS))
-            AppSocialButton(
-              label: 'Continuar con Apple',
-              provider: 'apple',
-              onPressed: isLoading ? null : _handleAppleSignIn,
-            ),
-          if (!kIsWeb) const SizedBox(height: 20),
-
-          // Divisor
+    return Column(
+      key: const ValueKey('signup_form'),
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        if (!kIsWeb)
+          AppSocialButton(
+            label: 'Registrarse con Google',
+            provider: 'google',
+            onPressed: isLoading ? null : _handleGoogleSignIn,
+          ),
+        if (!kIsWeb) const SizedBox(height: 12),
+        if (!kIsWeb && (defaultTargetPlatform == TargetPlatform.iOS || defaultTargetPlatform == TargetPlatform.macOS))
+          AppSocialButton(
+            label: 'Registrarse con Apple',
+            provider: 'apple',
+            onPressed: isLoading ? null : _handleAppleSignIn,
+          ),
+        if (!kIsWeb) ...[
+          const SizedBox(height: 24),
           Row(
             children: [
-              Expanded(child: Divider(color: Colors.grey[400])),
+              Expanded(child: Divider(color: isDark ? Colors.white24 : Colors.grey[300])),
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16),
                 child: Text(
-                  'O con email',
+                  'O CON EMAIL',
                   style: GoogleFonts.montserrat(
-                    fontSize: AppColors.bodySmall,
-                    color: Colors.grey[600],
+                    fontSize: 10,
+                    fontWeight: FontWeight.w700,
+                    color: isDark ? Colors.white54 : Colors.grey[500],
+                    letterSpacing: 1.0,
                   ),
                 ),
               ),
-              Expanded(child: Divider(color: Colors.grey[400])),
+              Expanded(child: Divider(color: isDark ? Colors.white24 : Colors.grey[300])),
             ],
-          ),
-          const SizedBox(height: 20),
-
-          // Campos de registro
-          AppTextField(
-            label: 'Email',
-            controller: _signupEmailController,
-            keyboardType: TextInputType.emailAddress,
-            prefixIcon: Icons.mail_outline,
-            helperText: _signupEmailError,
-            isError: _signupEmailError != null,
-            enabled: !isLoading,
-          ),
-          const SizedBox(height: 16),
-          AppTextField(
-            label: 'Contraseña',
-            controller: _signupPasswordController,
-            isPassword: true,
-            prefixIcon: Icons.lock_outline,
-            helperText: _signupPasswordError,
-            isError: _signupPasswordError != null,
-            enabled: !isLoading,
-          ),
-          const SizedBox(height: 16),
-          AppTextField(
-            label: 'Confirmar contraseña',
-            controller: _signupConfirmPasswordController,
-            isPassword: true,
-            prefixIcon: Icons.lock_outline,
-            helperText: _signupConfirmPasswordError,
-            isError: _signupConfirmPasswordError != null,
-            enabled: !isLoading,
           ),
           const SizedBox(height: 24),
-
-          // Botón de registro
-          AppButton(
-            label: 'Crear cuenta',
-            onPressed: isLoading ? null : _handleEmailSignup,
-            isFullWidth: true,
-            isLoading: isLoading,
-          ),
         ],
-      ),
+
+        AppTextField(
+          label: 'Correo electrónico',
+          controller: _signupEmailController,
+          keyboardType: TextInputType.emailAddress,
+          prefixIcon: Icons.alternate_email_rounded,
+          helperText: _signupEmailError,
+          isError: _signupEmailError != null,
+          enabled: !isLoading,
+        ),
+        const SizedBox(height: 16),
+        AppTextField(
+          label: 'Contraseña',
+          controller: _signupPasswordController,
+          isPassword: true,
+          prefixIcon: Icons.lock_outline_rounded,
+          helperText: _signupPasswordError,
+          isError: _signupPasswordError != null,
+          enabled: !isLoading,
+        ),
+        const SizedBox(height: 16),
+        AppTextField(
+          label: 'Confirmar contraseña',
+          controller: _signupConfirmPasswordController,
+          isPassword: true,
+          prefixIcon: Icons.lock_clock_rounded,
+          helperText: _signupConfirmPasswordError,
+          isError: _signupConfirmPasswordError != null,
+          enabled: !isLoading,
+        ),
+        const SizedBox(height: 32),
+
+        AppButton(
+          label: 'Crear cuenta',
+          onPressed: isLoading ? null : _handleEmailSignup,
+          isFullWidth: true,
+          isLoading: isLoading,
+          height: 56,
+        ),
+      ],
     );
   }
 
@@ -447,7 +468,6 @@ class _AuthScreenState extends ConsumerState<AuthScreen>
     final email = _loginEmailController.text.trim();
     final password = _loginPasswordController.text.trim();
 
-    // Validación
     bool hasError = false;
     if (email.isEmpty) {
       setState(() => _loginEmailError = 'Ingresa tu email');
@@ -478,7 +498,6 @@ class _AuthScreenState extends ConsumerState<AuthScreen>
     final password = _signupPasswordController.text.trim();
     final confirmPassword = _signupConfirmPasswordController.text.trim();
 
-    // Validación
     bool hasError = false;
     if (email.isEmpty) {
       setState(() => _signupEmailError = 'Ingresa tu email');
@@ -525,7 +544,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen>
     final email = _loginEmailController.text.trim();
     
     if (email.isEmpty || !_isValidEmail(email)) {
-      _showErrorSnackBar('Por favor ingresa un email válido');
+      _showErrorSnackBar('Por favor ingresa un email válido arriba para recuperar');
       return;
     }
 

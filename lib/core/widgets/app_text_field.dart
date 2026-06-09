@@ -183,11 +183,17 @@ class _AppTextFieldState extends State<AppTextField> {
                 : widget.suffixIcon,
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide.none,
+              borderSide: BorderSide(
+                color: isDark ? Colors.white12 : Colors.grey[300]!,
+                width: 1,
+              ),
             ),
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide.none,
+              borderSide: BorderSide(
+                color: isDark ? Colors.white12 : Colors.grey[200]!,
+                width: 1,
+              ),
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
