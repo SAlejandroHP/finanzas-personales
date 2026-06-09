@@ -428,6 +428,7 @@ class _MasterPlanCardState extends State<MasterPlanCard> {
                 ],
               ),
             ),
+            ),
           ],
         ),
       ],
