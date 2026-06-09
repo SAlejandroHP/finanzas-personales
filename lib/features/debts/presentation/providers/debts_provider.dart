@@ -3,6 +3,7 @@ import '../../data/debts_repository.dart';
 import 'package:finanzas/features/debts/models/debt_model.dart';
 import '../../../../core/services/finance_service.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
+import '../../accounts/presentation/providers/accounts_provider.dart';
 
 /// Provider del repositorio de deudas
 final debtsRepositoryProvider = Provider<DebtsRepository>((ref) {
@@ -120,13 +121,43 @@ final pendingInvitationsProvider = StreamProvider<List<DebtModel>>((ref) {
 
 /// Provider que calcula el monto total de deuda (lo que YO debo - Liability)
 final totalDebtsProvider = Provider<double>((ref) {
+  // 1. Sumamos deudas explícitas de la tabla debts
   final debtsAsync = ref.watch(debtsListProvider);
-  return debtsAsync.maybeWhen(
+  double explicitDebts = debtsAsync.maybeWhen(
     data: (debts) => debts
         .where((d) => d.ownerRole == 'borrower')
         .fold<double>(0.0, (sum, debt) => sum + debt.montoRestante),
     orElse: () => 0.0,
   );
+
+  // 2. Sumamos deudas implícitas de tarjetas de crédito
+  // Para evitar conteo doble, verificamos si la tarjeta ya tiene un registro en debts
+  final accountsAsync = ref.watch(accountsWithBalanceProvider);
+  double implicitCreditCardDebts = accountsAsync.maybeWhen(
+    data: (accounts) {
+      double sum = 0.0;
+      final existingDebtAccountIds = debtsAsync.maybeWhen(
+        data: (debts) => debts.map((d) => d.cuentaAsociadaId).toSet(),
+        orElse: () => <String?>{},
+      );
+
+      for (var acc in accounts) {
+        if (acc.tipo == 'tarjeta_credito') {
+          if (!existingDebtAccountIds.contains(acc.id)) {
+            // La deuda es el límite (saldoInicial) menos lo disponible (saldoActual)
+            double deuda = acc.saldoInicial - acc.saldoActual;
+            if (deuda > 0) {
+              sum += deuda;
+            }
+          }
+        }
+      }
+      return sum;
+    },
+    orElse: () => 0.0,
+  );
+
+  return explicitDebts + implicitCreditCardDebts;
 });
 
 /// Provider que calcula el monto total que me deben (Assets)
