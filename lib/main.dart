@@ -12,6 +12,7 @@ import 'core/theme/app_theme.dart';
 import 'core/widgets/app_shell.dart';
 import 'core/providers/ui_provider.dart';
 import 'core/services/notification_service.dart';
+import 'core/services/finance_service.dart';
 import 'features/auth/presentation/screens/auth_screen.dart';
 import 'features/dashboard/presentation/screens/dashboard_screen.dart';
 import 'features/dashboard/presentation/screens/notifications_screen.dart';
@@ -119,11 +120,39 @@ void main() async {
   );
 }
 
-class MyApp extends ConsumerWidget {
+class MyApp extends ConsumerStatefulWidget {
   const MyApp({Key? key}) : super(key: key);
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<MyApp> createState() => _MyAppState();
+}
+
+class _MyAppState extends ConsumerState<MyApp> with WidgetsBindingObserver {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      // Cuando la app vuelve a primer plano, refrescar todos los datos
+      // para asegurar sincronización entre web y móvil
+      try {
+        ref.read(financeServiceProvider).refreshAll();
+      } catch (_) {}
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
     // Obtiene el modo de tema del provider
     final themeModeValue = ref.watch(themeModeProvider);
     
