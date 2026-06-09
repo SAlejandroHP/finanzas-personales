@@ -51,18 +51,23 @@ class _BankGroupCardState extends State<BankGroupCard> {
     final bankColor = _parseColor(widget.primaryColor);
 
     // Calcular saldos
-    double totalEfectivo = 0;
-    double totalDeuda = 0;
+    double totalLiquidez = 0;
+    double totalCreditoDisponible = 0;
+    bool hasLiquidez = false;
+
     for (var acc in widget.accounts) {
-      if (acc.tipo == 'tarjeta_credito') {
-        totalDeuda += (acc.saldoInicial - acc.saldoActual); // deudaActual = limite - disponible
+      if (acc.tipo != 'tarjeta_credito') {
+        totalLiquidez += acc.saldoActual;
+        hasLiquidez = true;
       } else {
-        totalEfectivo += acc.saldoActual;
+        totalCreditoDisponible += acc.saldoActual;
       }
     }
     
-    // El saldo neto total del banco (Efectivo/Ahorro - Deudas de TDC)
-    final totalNeto = totalEfectivo - totalDeuda;
+    // Si tiene liquidez (Ahorro/Débito/Efectivo), mostramos eso (Regla 1 finzAi: Efectivo manda).
+    // Si SOLO tiene tarjetas de crédito, mostramos el crédito disponible.
+    final displayValue = hasLiquidez ? totalLiquidez : totalCreditoDisponible;
+    final isOnlyCredit = !hasLiquidez && widget.accounts.isNotEmpty;
 
     final currencyFormatter = NumberFormat.currency(
       symbol: widget.currencySymbol,
@@ -105,15 +110,30 @@ class _BankGroupCardState extends State<BankGroupCard> {
                     ),
                   ),
                   // Saldo Consolidado
-                  Text(
-                    currencyFormatter.format(totalNeto),
-                    style: GoogleFonts.montserrat(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w700,
-                      color: totalNeto < 0 
-                          ? Colors.redAccent 
-                          : (isDark ? Colors.white : AppColors.textPrimary),
-                    ),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(
+                        currencyFormatter.format(displayValue),
+                        style: GoogleFonts.montserrat(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w700,
+                          color: displayValue < 0 
+                              ? Colors.redAccent 
+                              : (isOnlyCredit ? Colors.grey : (isDark ? Colors.white : AppColors.textPrimary)),
+                        ),
+                      ),
+                      if (isOnlyCredit)
+                        Text(
+                          'Disponible',
+                          style: GoogleFonts.montserrat(
+                            fontSize: 9,
+                            fontWeight: FontWeight.w500,
+                            color: Colors.grey,
+                          ),
+                        ),
+                    ],
                   ),
                   const SizedBox(width: 8),
                   AnimatedRotation(
