@@ -929,6 +929,14 @@ class _AccountFormBottomSheetState extends ConsumerState<AccountFormBottomSheet>
 
   Future<void> _showBankPicker(BuildContext context, List<BankModel> banks, bool isDark) async {
     String searchQuery = '';
+    final searchFocusNode = FocusNode();
+    
+    // Solicitar foco con un pequeño retraso para asegurar que el modal ya esté visible y la animación terminada
+    Future.delayed(const Duration(milliseconds: 300), () {
+      if (context.mounted && searchFocusNode.canRequestFocus) {
+        searchFocusNode.requestFocus();
+      }
+    });
     
     await showModalBottomSheet(
       context: context,
@@ -964,6 +972,7 @@ class _AccountFormBottomSheetState extends ConsumerState<AccountFormBottomSheet>
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 20).copyWith(bottom: 12),
                       child: TextField(
+                        focusNode: searchFocusNode,
                         autofocus: true,
                         textCapitalization: TextCapitalization.words,
                         style: GoogleFonts.montserrat(fontSize: 14),
