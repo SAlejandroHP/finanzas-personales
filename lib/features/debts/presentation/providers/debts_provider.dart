@@ -121,34 +121,37 @@ final pendingInvitationsProvider = StreamProvider<List<DebtModel>>((ref) {
 
 /// Provider que calcula el monto total de deuda (lo que YO debo - Liability)
 final totalDebtsProvider = Provider<double>((ref) {
-  // 1. Sumamos deudas explícitas de la tabla debts
+  final accountsAsync = ref.watch(accountsWithBalanceProvider);
   final debtsAsync = ref.watch(debtsListProvider);
+
+  // Mapear los IDs de las tarjetas de crédito para identificar registros 'sombra'
+  final creditCardIds = accountsAsync.maybeWhen(
+    data: (accounts) => accounts
+        .where((acc) => acc.tipo == 'tarjeta_credito')
+        .map((acc) => acc.id)
+        .toSet(),
+    orElse: () => <String>{},
+  );
+
+  // 1. Sumamos deudas explícitas, IGNORANDO los registros sombra de tarjetas de crédito
+  // porque esos pueden estar desactualizados.
   double explicitDebts = debtsAsync.maybeWhen(
     data: (debts) => debts
-        .where((d) => d.ownerRole == 'borrower')
+        .where((d) => d.ownerRole == 'borrower' && !creditCardIds.contains(d.cuentaAsociadaId))
         .fold<double>(0.0, (sum, debt) => sum + debt.montoRestante),
     orElse: () => 0.0,
   );
 
-  // 2. Sumamos deudas implícitas de tarjetas de crédito
-  // Para evitar conteo doble, verificamos si la tarjeta ya tiene un registro en debts
-  final accountsAsync = ref.watch(accountsWithBalanceProvider);
+  // 2. Sumamos deudas implícitas de TODAS las tarjetas de crédito usando su saldo real en vivo
   double implicitCreditCardDebts = accountsAsync.maybeWhen(
     data: (accounts) {
       double sum = 0.0;
-      final existingDebtAccountIds = debtsAsync.maybeWhen(
-        data: (debts) => debts.map((d) => d.cuentaAsociadaId).toSet(),
-        orElse: () => <String?>{},
-      );
-
       for (var acc in accounts) {
         if (acc.tipo == 'tarjeta_credito') {
-          if (!existingDebtAccountIds.contains(acc.id)) {
-            // La deuda es el límite (saldoInicial) menos lo disponible (saldoActual)
-            double deuda = acc.saldoInicial - acc.saldoActual;
-            if (deuda > 0) {
-              sum += deuda;
-            }
+          // La deuda es el límite (saldoInicial) menos lo disponible (saldoActual)
+          double deuda = acc.saldoInicial - acc.saldoActual;
+          if (deuda > 0) {
+            sum += deuda;
           }
         }
       }
