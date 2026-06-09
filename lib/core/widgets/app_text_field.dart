@@ -109,20 +109,47 @@ class _AppTextFieldState extends State<AppTextField> {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
+    // Colores para el diseño de "píldora"
+    final fillColor = isDark 
+        ? Colors.white.withValues(alpha: 0.08) 
+        : AppColors.primary.withValues(alpha: 0.06);
+    final bubbleColor = isDark ? Colors.white : AppColors.primary;
+    final iconColor = isDark ? AppColors.surfaceDark : Colors.white;
+
+    // Helper para el icono en burbuja
+    Widget? buildBubbleIcon(IconData? icon, {bool isPrefix = true, VoidCallback? onTap}) {
+      if (icon == null) return null;
+      return Container(
+        margin: EdgeInsets.only(
+          left: isPrefix ? 6 : 0, 
+          right: isPrefix ? 12 : 6, 
+          top: 6, 
+          bottom: 6
+        ),
+        decoration: BoxDecoration(
+          color: bubbleColor,
+          shape: BoxShape.circle,
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.1),
+              blurRadius: 4,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: InkWell(
+          customBorder: const CircleBorder(),
+          onTap: onTap,
+          child: Center(
+            child: Icon(icon, color: iconColor, size: 20),
+          ),
+        ),
+      );
+    }
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          widget.label,
-          style: GoogleFonts.montserrat(
-            fontSize: AppColors.bodySmall,
-            fontWeight: FontWeight.w600,
-            color: widget.isError 
-                ? AppColors.error 
-                : (isDark ? Colors.white70 : Colors.grey[700]),
-          ),
-        ),
-        const SizedBox(height: 4),
         TextFormField(
           controller: widget.controller,
           focusNode: _effectiveFocusNode,
@@ -139,90 +166,89 @@ class _AppTextFieldState extends State<AppTextField> {
           onSaved: widget.onSaved,
           style: GoogleFonts.montserrat(
             fontSize: AppColors.bodyMedium,
+            fontWeight: FontWeight.w500,
             color: widget.enabled
                 ? (isDark ? Colors.white : AppColors.textPrimary)
                 : Colors.grey,
           ),
           decoration: InputDecoration(
-            hintText: widget.hintText,
+            hintText: widget.hintText ?? widget.label,
             errorText: widget.errorText,
             hintStyle: GoogleFonts.montserrat(
               fontSize: AppColors.bodyMedium,
-              color: isDark ? Colors.white30 : Colors.grey[400],
+              fontWeight: FontWeight.w500,
+              color: isDark ? Colors.white60 : Colors.grey[500],
             ),
-            filled: false,
+            filled: true,
+            fillColor: fillColor,
             isDense: true,
-            contentPadding: const EdgeInsets.symmetric(
-              horizontal: 0,
-              vertical: 12,
+            contentPadding: EdgeInsets.symmetric(
+              horizontal: 20,
+              vertical: widget.maxLines > 1 ? 16 : 18,
             ),
-            prefixIcon: widget.prefixIcon != null
-                ? Icon(
-                    widget.prefixIcon,
-                    color: widget.isError
-                        ? AppColors.error
-                        : Colors.grey,
-                    size: 20,
-                  )
-                : null,
+            prefixIconConstraints: const BoxConstraints(minWidth: 56, minHeight: 56),
+            suffixIconConstraints: const BoxConstraints(minWidth: 56, minHeight: 56),
+            prefixIcon: buildBubbleIcon(widget.prefixIcon),
             suffixIcon: widget.isPassword
-                ? IconButton(
-                    icon: Icon(
-                      _obscureText ? Icons.visibility_off : Icons.visibility,
-                      color: isDark ? Colors.white70 : Colors.grey[600],
-                      size: 20,
-                    ),
-                    onPressed: () {
+                ? buildBubbleIcon(
+                    _obscureText ? Icons.visibility_off : Icons.visibility,
+                    isPrefix: false,
+                    onTap: () {
                       setState(() {
                         _obscureText = !_obscureText;
                       });
                     },
                   )
-                : widget.suffixIcon,
-            border: UnderlineInputBorder(
+                : (widget.suffixIcon != null 
+                    ? Padding(
+                        padding: const EdgeInsets.only(right: 16.0),
+                        child: widget.suffixIcon,
+                      ) 
+                    : null),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(100),
+              borderSide: BorderSide.none,
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(100),
+              borderSide: BorderSide.none,
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(100),
               borderSide: BorderSide(
-                color: isDark ? Colors.white24 : Colors.grey[300]!,
-                width: 1,
+                color: widget.isError ? AppColors.error : AppColors.primary.withValues(alpha: 0.5),
+                width: 1.5,
               ),
             ),
-            enabledBorder: UnderlineInputBorder(
-              borderSide: BorderSide(
-                color: isDark ? Colors.white24 : Colors.grey[300]!,
-                width: 1,
-              ),
-            ),
-            focusedBorder: UnderlineInputBorder(
-              borderSide: BorderSide(
-                color: widget.isError ? AppColors.error : AppColors.primary,
-                width: 2,
-              ),
-            ),
-            errorBorder: const UnderlineInputBorder(
-              borderSide: BorderSide(
+            errorBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(100),
+              borderSide: const BorderSide(
                 color: AppColors.error,
-                width: 2,
+                width: 1.5,
               ),
             ),
-            focusedErrorBorder: const UnderlineInputBorder(
-              borderSide: BorderSide(
+            focusedErrorBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(100),
+              borderSide: const BorderSide(
                 color: AppColors.error,
-                width: 2,
+                width: 1.5,
               ),
             ),
-            disabledBorder: const UnderlineInputBorder(
+            disabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(100),
               borderSide: BorderSide.none,
             ),
           ),
         ),
         if (widget.helperText != null) ...[
-          const SizedBox(height: 4),
+          const SizedBox(height: 8),
           Padding(
-            padding: const EdgeInsets.only(left: 16),
+            padding: const EdgeInsets.only(left: 20),
             child: Text(
               widget.helperText!,
               style: GoogleFonts.montserrat(
                 fontSize: AppColors.bodySmall,
-                color: widget.isError ? AppColors.secondary : Colors.grey[600],
+                color: widget.isError ? AppColors.error : Colors.grey[600],
               ),
             ),
           ),
