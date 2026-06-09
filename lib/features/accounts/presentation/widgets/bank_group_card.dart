@@ -73,15 +73,6 @@ class _BankGroupCardState extends State<BankGroupCard> {
       margin: const EdgeInsets.only(bottom: 16),
       decoration: BoxDecoration(
         color: baseColor,
-        gradient: LinearGradient(
-          colors: [
-            bankColor.withOpacity(isDark ? 0.15 : 0.05),
-            baseColor,
-          ],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          stops: const [0.0, 0.4],
-        ),
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
           if (!isDark)
