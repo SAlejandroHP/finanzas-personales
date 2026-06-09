@@ -928,49 +928,98 @@ class _AccountFormBottomSheetState extends ConsumerState<AccountFormBottomSheet>
   }
 
   Future<void> _showBankPicker(BuildContext context, List<BankModel> banks, bool isDark) async {
+    String searchQuery = '';
+    
     await showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (context) => DraggableScrollableSheet(
-        initialChildSize: 0.7,
-        builder: (_, scrollController) => Container(
-          decoration: BoxDecoration(color: isDark ? AppColors.surfaceDark : Colors.white, borderRadius: const BorderRadius.vertical(top: Radius.circular(AppColors.radiusXLarge))),
-          child: Column(
-            children: [
-              Padding(
-                padding: const EdgeInsets.all(20),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      builder: (context) => Padding(
+        padding: EdgeInsets.only(
+          bottom: MediaQuery.of(context).viewInsets.bottom,
+        ),
+        child: DraggableScrollableSheet(
+          initialChildSize: 0.8,
+          maxChildSize: 0.9,
+          minChildSize: 0.5,
+          expand: false,
+          builder: (_, scrollController) => StatefulBuilder(
+            builder: (context, setModalState) {
+              final filteredBanks = banks.where((b) => b.displayName.toLowerCase().contains(searchQuery.toLowerCase())).toList();
+              
+              return Container(
+                decoration: BoxDecoration(color: isDark ? AppColors.surfaceDark : Colors.white, borderRadius: const BorderRadius.vertical(top: Radius.circular(AppColors.radiusXLarge))),
+                child: Column(
                   children: [
-                    Text('Bancos', style: GoogleFonts.montserrat(fontSize: 16, fontWeight: FontWeight.w700)),
-                    IconButton(icon: const Icon(Icons.close_rounded), onPressed: () => Navigator.pop(context)),
+                    Padding(
+                      padding: const EdgeInsets.all(20),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text('Bancos', style: GoogleFonts.montserrat(fontSize: 16, fontWeight: FontWeight.w700)),
+                          IconButton(icon: const Icon(Icons.close_rounded), onPressed: () => Navigator.pop(context)),
+                        ],
+                      ),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 20).copyWith(bottom: 12),
+                      child: TextField(
+                        autofocus: true,
+                        textCapitalization: TextCapitalization.words,
+                        style: GoogleFonts.montserrat(fontSize: 14),
+                        decoration: InputDecoration(
+                          hintText: 'Buscar banco...',
+                          hintStyle: GoogleFonts.montserrat(fontSize: 14, color: isDark ? Colors.white38 : Colors.grey[400]),
+                          prefixIcon: Icon(Icons.search_rounded, color: isDark ? Colors.white38 : Colors.grey[400]),
+                          filled: true,
+                          fillColor: isDark ? Colors.white.withOpacity(0.05) : Colors.grey[50],
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: BorderSide.none,
+                          ),
+                          contentPadding: const EdgeInsets.symmetric(vertical: 0),
+                        ),
+                        onChanged: (value) {
+                          setModalState(() {
+                            searchQuery = value;
+                          });
+                        },
+                      ),
+                    ),
+                    const Divider(height: 1),
+                    Expanded(
+                      child: ListView.builder(
+                        controller: scrollController,
+                        itemCount: filteredBanks.length + (searchQuery.isEmpty ? 1 : 0),
+                        itemBuilder: (context, index) {
+                          if (searchQuery.isEmpty && index == 0) {
+                            return ListTile(
+                              leading: Container(
+                                width: 40, height: 40,
+                                decoration: BoxDecoration(
+                                  color: isDark ? Colors.white10 : Colors.grey[100],
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: Icon(Icons.not_interested, color: isDark ? Colors.white38 : Colors.grey[400]),
+                              ),
+                              title: Text('Ninguno', style: GoogleFonts.montserrat(fontWeight: FontWeight.w500)),
+                              onTap: () { setState(() => _selectedBank = null); Navigator.pop(context); },
+                            );
+                          }
+                          final bankIndex = searchQuery.isEmpty ? index - 1 : index;
+                          final bank = filteredBanks[bankIndex];
+                          return ListTile(
+                            leading: BankLogo(bankName: bank.displayName, primaryColor: bank.primaryColor, size: 40),
+                            title: Text(bank.displayName, style: GoogleFonts.montserrat(fontWeight: FontWeight.w500)),
+                            onTap: () { setState(() => _selectedBank = bank); Navigator.pop(context); },
+                          );
+                        },
+                      ),
+                    ),
                   ],
                 ),
-              ),
-              const Divider(height: 1),
-              Expanded(
-                child: ListView.builder(
-                  controller: scrollController,
-                  itemCount: banks.length + 1,
-                  itemBuilder: (context, index) {
-                    if (index == 0) {
-                      return ListTile(
-                        leading: const CircleAvatar(child: Icon(Icons.not_interested)),
-                        title: const Text('Ninguno'),
-                        onTap: () { setState(() => _selectedBank = null); Navigator.pop(context); },
-                      );
-                    }
-                    final bank = banks[index - 1];
-                    return ListTile(
-                      leading: BankLogo(bankName: bank.displayName, primaryColor: bank.primaryColor, size: 40),
-                      title: Text(bank.displayName),
-                      onTap: () { setState(() => _selectedBank = bank); Navigator.pop(context); },
-                    );
-                  },
-                ),
-              ),
-            ],
+              );
+            }
           ),
         ),
       ),
