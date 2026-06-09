@@ -3,7 +3,7 @@ import '../../data/debts_repository.dart';
 import 'package:finanzas/features/debts/models/debt_model.dart';
 import '../../../../core/services/finance_service.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
-import '../../accounts/presentation/providers/accounts_provider.dart';
+import '../../../accounts/presentation/providers/accounts_provider.dart';
 
 /// Provider del repositorio de deudas
 final debtsRepositoryProvider = Provider<DebtsRepository>((ref) {
