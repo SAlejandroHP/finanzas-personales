@@ -113,29 +113,27 @@ class _AppTextFieldState extends State<AppTextField> {
     final fillColor = isDark 
         ? Colors.white.withValues(alpha: 0.08) 
         : AppColors.primary.withValues(alpha: 0.06);
-    final bubbleColor = isDark ? Colors.white : AppColors.primary;
-    final iconColor = isDark ? AppColors.surfaceDark : Colors.white;
+    // La burbuja del ícono es un tono ligeramente más claro que la píldora
+    final bubbleColor = isDark
+        ? Colors.white.withValues(alpha: 0.15)
+        : AppColors.primary.withValues(alpha: 0.15);
+    final iconColor = isDark ? Colors.white : AppColors.primary;
 
     // Helper para el icono en burbuja
     Widget? buildBubbleIcon(IconData? icon, {bool isPrefix = true, VoidCallback? onTap}) {
       if (icon == null) return null;
       return Container(
+        width: 36,
+        height: 36,
         margin: EdgeInsets.only(
           left: isPrefix ? 6 : 0, 
-          right: isPrefix ? 12 : 6, 
+          right: isPrefix ? 0 : 6, 
           top: 6, 
           bottom: 6
         ),
         decoration: BoxDecoration(
           color: bubbleColor,
           shape: BoxShape.circle,
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.1),
-              blurRadius: 4,
-              offset: const Offset(0, 2),
-            ),
-          ],
         ),
         child: InkWell(
           customBorder: const CircleBorder(),
@@ -182,12 +180,12 @@ class _AppTextFieldState extends State<AppTextField> {
             filled: true,
             fillColor: fillColor,
             isDense: true,
-            contentPadding: EdgeInsets.symmetric(
-              horizontal: 20,
-              vertical: widget.maxLines > 1 ? 16 : 18,
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 12,
+              vertical: 12,
             ),
-            prefixIconConstraints: const BoxConstraints(minWidth: 56, minHeight: 56),
-            suffixIconConstraints: const BoxConstraints(minWidth: 56, minHeight: 56),
+            prefixIconConstraints: const BoxConstraints(minWidth: 46, maxWidth: 46, minHeight: 46, maxHeight: 46),
+            suffixIconConstraints: const BoxConstraints(minWidth: 46, maxWidth: 46, minHeight: 46, maxHeight: 46),
             prefixIcon: buildBubbleIcon(widget.prefixIcon),
             suffixIcon: widget.isPassword
                 ? buildBubbleIcon(
