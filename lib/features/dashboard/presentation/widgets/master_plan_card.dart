@@ -300,8 +300,9 @@ class _MasterPlanCardState extends State<MasterPlanCard> {
             color: isDark ? Colors.white.withOpacity(0.05) : Colors.black.withOpacity(0.03),
             borderRadius: BorderRadius.circular(8),
           ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
+          child: Wrap(
+            crossAxisAlignment: WrapCrossAlignment.center,
+            spacing: 8,
             children: [
               Text(
                 title,
@@ -311,7 +312,6 @@ class _MasterPlanCardState extends State<MasterPlanCard> {
                   color: isDark ? Colors.white : AppColors.textPrimary,
                 ),
               ),
-              const SizedBox(width: 8),
               Text(
                 subtitle,
                 style: GoogleFonts.montserrat(
