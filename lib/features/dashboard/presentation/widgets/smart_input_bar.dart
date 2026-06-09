@@ -36,6 +36,7 @@ class _SmartInputBarState extends ConsumerState<SmartInputBar> {
   bool _isLoading = false;
   bool _isListening = false;
   bool _speechEnabled = false;
+  bool _speechInstantiated = false;
 
   @override
   void initState() {
@@ -43,8 +44,10 @@ class _SmartInputBarState extends ConsumerState<SmartInputBar> {
     _iaService = IAService();
     try {
       _speech = stt.SpeechToText();
+      _speechInstantiated = true;
     } catch (e) {
       _speechEnabled = false;
+      _speechInstantiated = false;
       debugPrint('SpeechToText could not be instantiated: $e');
     }
     _initSpeech();
@@ -64,6 +67,7 @@ class _SmartInputBarState extends ConsumerState<SmartInputBar> {
   }
 
   Future<void> _initSpeech() async {
+    if (!_speechInstantiated) return;
     try {
       _speechEnabled = await _speech.initialize(
         onStatus: (status) {
@@ -96,6 +100,15 @@ class _SmartInputBarState extends ConsumerState<SmartInputBar> {
 
   void _listen() async {
     try {
+      if (!_speechInstantiated) {
+        showAppToast(
+          context,
+          message: "El reconocimiento de voz no está disponible en este dispositivo.",
+          type: ToastType.warning,
+        );
+        return;
+      }
+      
       if (!_speechEnabled) {
         bool initSuccess = await _speech.initialize();
         if (!initSuccess) {

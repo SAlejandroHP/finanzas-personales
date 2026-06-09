@@ -392,7 +392,7 @@ class _CurvedBarPainter extends CustomPainter {
     // 1. Base shape
     final RRect hostRRect = RRect.fromRectAndRadius(
       Rect.fromLTWH(0, 0, size.width, size.height),
-      const Radius.circular(22.0), // Radio ajustado para evitar esquinas afiladas con la jorobita
+      const Radius.circular(30.0), // Radio aumentado a 30 (píldora completa) para coincidir con las opciones
     );
     final Path hostPath = Path()..addRRect(hostRRect);
 
