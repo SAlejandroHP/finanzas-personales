@@ -98,6 +98,7 @@ class AccountsListScreen extends ConsumerWidget {
                 Consumer(
                   builder: (context, ref, child) {
                     final Map<String, List<AccountModel>> accountsByBank = {};
+                    final banksList = ref.watch(banksProvider('MX')).value ?? [];
                     
                     for (final acc in accounts) {
                       final bankName = acc.bancoNombre ?? 'Otras cuentas';
@@ -124,11 +125,15 @@ class AccountsListScreen extends ConsumerWidget {
                           
                           // Buscamos si hay logo
                           final bankLogo = bankAccounts.firstWhere((a) => a.bancoLogo != null, orElse: () => bankAccounts.first).bancoLogo;
+                          
+                          // Buscamos el color del banco
+                          final bankModel = banksList.where((b) => b.displayName == bankName).firstOrNull;
+                          final primaryColor = bankModel?.primaryColor ?? '#000000';
 
                           return BankGroupCard(
                             bankName: bankName,
                             bankLogo: bankLogo,
-                            primaryColor: '#000000', // Default fallback for BankLogo
+                            primaryColor: primaryColor,
                             accounts: bankAccounts,
                             currencySymbol: symbol,
                             onEdit: (account) {
