@@ -93,6 +93,22 @@ class AccountListTile extends StatelessWidget {
                         color: isDark ? Colors.white60 : Colors.black54,
                       ),
                     ),
+                    if (isTC) ...[
+                      if (account.esVentanaDeOro)
+                        Container(
+                          margin: const EdgeInsets.only(top: 4),
+                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                          decoration: BoxDecoration(color: Colors.green.withOpacity(0.15), borderRadius: BorderRadius.circular(4)),
+                          child: Text('🔥 Ideal para compras', style: GoogleFonts.montserrat(fontSize: 9, fontWeight: FontWeight.w700, color: Colors.green)),
+                        ),
+                      if (account.diasParaPago >= 0 && account.diasParaPago <= 5)
+                        Container(
+                          margin: const EdgeInsets.only(top: 4),
+                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                          decoration: BoxDecoration(color: Colors.red.withOpacity(0.15), borderRadius: BorderRadius.circular(4)),
+                          child: Text('⚠️ Paga en ${account.diasParaPago} días', style: GoogleFonts.montserrat(fontSize: 9, fontWeight: FontWeight.w700, color: Colors.red)),
+                        ),
+                    ],
                   ],
                 ),
               ),

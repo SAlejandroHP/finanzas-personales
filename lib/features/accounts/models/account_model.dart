@@ -241,3 +241,39 @@ class AccountModel {
     );
   }
 }
+
+/// Extensión de lógica financiera (finzAi) para Tarjetas de Crédito
+extension CreditCardHacks on AccountModel {
+  /// 1. Calcula cuántos días exactos faltan para la fecha de pago
+  int get diasParaPago {
+    if (fechaLimitePago == null || fechaCorte == null) return -1;
+    final hoy = DateTime.now();
+    
+    // Si la fecha actual es igual o menor al límite, el pago es en este mes
+    // IMPORTANTE: Esto asume que el pago corresponde al periodo actual si hoy es < fecha límite
+    if (hoy.day <= fechaLimitePago!) {
+      return fechaLimitePago! - hoy.day;
+    } else {
+      // Si ya pasó, calculamos para el mes siguiente
+      final proximoMes = DateTime(hoy.year, hoy.month + 1, fechaLimitePago!);
+      return proximoMes.difference(hoy).inDays;
+    }
+  }
+
+  /// 2. Determina si es el momento ideal para gastar (Ventana de Oro: 1 a 5 días post-corte)
+  bool get esVentanaDeOro {
+    if (fechaCorte == null) return false;
+    final hoy = DateTime.now().day;
+    
+    // Es el mejor momento si estamos en los 1 a 5 días posteriores al corte
+    int diasDespuesDelCorte = hoy - fechaCorte!;
+    if (diasDespuesDelCorte < 0) {
+      // Manejo de cambio de mes (ej. si cortó el 28 y hoy es 2)
+      // Restamos el día de hoy con el día del corte para saber si estamos en la ventana
+      // Asumiremos 30 días en promedio para no complicar el cambio de mes
+      diasDespuesDelCorte += 30;
+    }
+    
+    return diasDespuesDelCorte >= 1 && diasDespuesDelCorte <= 5;
+  }
+}

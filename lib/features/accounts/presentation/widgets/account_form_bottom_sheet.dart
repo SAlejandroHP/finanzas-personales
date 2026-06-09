@@ -408,7 +408,29 @@ class _AccountFormBottomSheetState extends ConsumerState<AccountFormBottomSheet>
                                         prefixIcon: const Icon(Icons.calendar_today_outlined, size: 16),
                                       ),
                                       items: List.generate(31, (index) => index + 1).map((day) => DropdownMenuItem(value: day, child: Text(day.toString(), style: GoogleFonts.montserrat(fontSize: 12)))).toList(),
-                                      onChanged: _isLoading ? null : (value) => setState(() => _fechaCorte = value),
+                                      onChanged: _isLoading ? null : (value) {
+                                        setState(() {
+                                          _fechaCorte = value;
+                                          if (value != null && _fechaLimitePago == null) {
+                                            int offset = 20;
+                                            final bankName = _selectedBank?.displayName?.toLowerCase() ?? '';
+                                            if (bankName.contains('plata')) {
+                                              offset = 30;
+                                            } else if (bankName.contains('nu') || bankName.contains('klar')) {
+                                              offset = 10;
+                                            }
+                                            
+                                            int paymentDate = value + offset;
+                                            if (paymentDate > 30) {
+                                              paymentDate = paymentDate % 30;
+                                              if (paymentDate == 0) paymentDate = 30;
+                                            }
+                                            if (paymentDate > 31) paymentDate = 31;
+                                            
+                                            _fechaLimitePago = paymentDate;
+                                          }
+                                        });
+                                      },
                                     ),
                                   ),
                                   const SizedBox(width: 12),
