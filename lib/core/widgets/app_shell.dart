@@ -1,14 +1,17 @@
 import 'dart:ui';
+import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:go_router/go_router.dart';
+import 'package:receive_sharing_intent/receive_sharing_intent.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/providers/ui_provider.dart';
 import '../../features/transactions/presentation/widgets/transaction_form_sheet.dart';
 import '../../features/auth/presentation/providers/auth_provider.dart';
+import '../../features/dashboard/presentation/widgets/ai_advisor_bottom_sheet.dart';
 
 /// Provider para mantener el índice de la ruta activa en la navegación
 final navigationIndexProvider = StateProvider<int>((ref) => 0);
@@ -30,7 +33,7 @@ class NavItem {
 
 /// Widget shell que contiene el BottomNavigationBar tipo "island"
 /// Se usa con GoRouter para envolver todas las rutas principales
-class AppShell extends ConsumerWidget {
+class AppShell extends ConsumerStatefulWidget {
   /// Pantalla actual a mostrar
   final Widget child;
 
@@ -40,7 +43,80 @@ class AppShell extends ConsumerWidget {
   });
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<AppShell> createState() => _AppShellState();
+}
+
+class _AppShellState extends ConsumerState<AppShell> {
+  StreamSubscription? _intentSub;
+
+  @override
+  void initState() {
+    super.initState();
+    _initSharingIntentListener();
+  }
+
+  @override
+  void dispose() {
+    _intentSub?.cancel();
+    super.dispose();
+  }
+
+  void _initSharingIntentListener() {
+    // 1. Escuchar cuando la app está en segundo plano y recibe una imagen compartida
+    _intentSub = ReceiveSharingIntent.instance.getMediaStream().listen((value) {
+      if (value.isNotEmpty) {
+        _handleSharedMedia(value);
+      }
+    }, onError: (err) {
+      debugPrint("Error al escuchar intenciones compartidas: $err");
+    });
+
+    // 2. Escuchar cuando la app se abre de cero compartiendo la imagen
+    ReceiveSharingIntent.instance.getInitialMedia().then((value) {
+      if (value.isNotEmpty) {
+        _handleSharedMedia(value);
+      }
+      ReceiveSharingIntent.instance.reset();
+    }).catchError((err) {
+      debugPrint("Error al obtener intención compartida inicial: $err");
+    });
+  }
+
+  void _handleSharedMedia(List<SharedMediaFile> files) {
+    SharedMediaFile? imageFile;
+    for (final f in files) {
+      final path = f.path.toLowerCase();
+      if (path.endsWith('.png') ||
+          path.endsWith('.jpg') ||
+          path.endsWith('.jpeg') ||
+          path.endsWith('.heic') ||
+          path.endsWith('.webp')) {
+        imageFile = f;
+        break;
+      }
+    }
+
+    if (imageFile != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          /*
+          showModalBottomSheet(
+            context: context,
+            useRootNavigator: true,
+            isScrollControlled: true,
+            backgroundColor: Colors.transparent,
+            builder: (context) => AIAdvisorBottomSheet(
+              initialImagePath: imageFile!.path,
+            ),
+          );
+          */
+        }
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final isDark       = Theme.of(context).brightness == Brightness.dark;
     final location = GoRouterState.of(context).matchedLocation;
     
@@ -48,20 +124,9 @@ class AppShell extends ConsumerWidget {
     final bool isPwa = kIsWeb;
     final double bottomMargin = isPwa ? AppColors.pagePadding : 0.0;
     
-    int currentIndex = 0;
-    if (location.startsWith('/transactions')) {
-      currentIndex = 1;
-    } else if (location.startsWith('/settings') || 
-               location.startsWith('/accounts') || 
-               location.startsWith('/categories')) {
-      currentIndex = 2;
-    }
     final isCanvasOpen = ref.watch(isCanvasOpenProvider);
-    // Oculta el FAB cuando el SmartInputBar tiene texto (Punto 2)
-    final smartInputHasText = ref.watch(smartInputHasTextProvider);
-    final bool showFab = !isCanvasOpen && !smartInputHasText;
 
-    // Ítems de navegación reorganizados por relevancia
+    // Ítems de navegación con "Agregar" como opción
     final navItems = [
       NavItem(
         label: 'Dashboard',
@@ -76,92 +141,114 @@ class AppShell extends ConsumerWidget {
         index: 1,
       ),
       NavItem(
+        label: 'Agregar',
+        icon: Icons.add_circle_outline_rounded,
+        path: '', // Abre el modal
+        index: 2,
+      ),
+      NavItem(
         label: 'Configuración',
         icon: Icons.settings_outlined,
         path: '/settings',
-        index: 2,
+        index: 3,
       ),
       NavItem(
         label: 'Salir',
         icon: Icons.logout_outlined,
-        path: '', // No navega, dispara acción
-        index: 3,
+        path: '', // Dispara acción
+        index: 4,
       ),
     ];
 
+    int currentIndex = 0;
+    if (isCanvasOpen) {
+      currentIndex = 2; // El notch se desliza al centro si el modal está abierto
+    } else if (location.startsWith('/transactions')) {
+      currentIndex = 1;
+    } else if (location.startsWith('/settings') || 
+               location.startsWith('/accounts') || 
+               location.startsWith('/categories')) {
+      currentIndex = 3;
+    }
+
     final isNavbarVisible = ref.watch(isNavbarVisibleProvider);
+    // Ocultar la barra entera cuando el teclado inteligente esté activo
+    final smartInputHasText = ref.watch(smartInputHasTextProvider);
+    final bool hideNav = smartInputHasText;
 
     return Scaffold(
       extendBody: true,
-      body: child,
-      floatingActionButton: AnimatedScale(
-        scale: showFab ? 1.0 : 0.0,
-        duration: const Duration(milliseconds: 220),
-        curve: Curves.easeInOut,
-        child: AnimatedOpacity(
-          opacity: showFab ? 1.0 : 0.0,
-          duration: const Duration(milliseconds: 180),
-          child: AnimatedSlide(
-            offset: isNavbarVisible ? Offset.zero : const Offset(0, 2),
-            duration: const Duration(milliseconds: 300),
-            curve: Curves.easeInOut,
-            child: Transform.translate(
-              offset: Offset(0, -5 - bottomMargin),
-              child: _buildCenterFAB(context, ref),
-            ),
-          ),
-        ),
-      ),
-      floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
-      bottomNavigationBar: !isCanvasOpen
+      body: widget.child,
+      bottomNavigationBar: !hideNav
           ? AnimatedSlide(
               offset: isNavbarVisible ? Offset.zero : const Offset(0, 2),
               duration: const Duration(milliseconds: 300),
               curve: Curves.easeInOut,
               child: Container(
-                color: Colors.transparent,
-                padding: EdgeInsets.only(
+                height: 48, // Altura súper compacta
+                width: double.infinity,
+                margin: EdgeInsets.only(
                   left: 20, 
                   right: 20, 
-                  bottom: bottomMargin,
+                  bottom: bottomMargin + AppColors.pagePadding, 
                 ),
                 child: SafeArea(
-                  child: Stack(
-                    alignment: Alignment.topCenter,
-                    clipBehavior: Clip.none,
-                    children: [
-                      // Fondo del Nav Island con el "hueco" central
-                      CustomPaint(
-                        painter: _NotchedIslandPainter(
-                          color: isDark 
-                              ? AppColors.secondary.withOpacity(0.2) 
-                              : AppColors.secondary.withOpacity(0.5),
-                          strokeWidth: 3.5,
-                        ),
-                        child: ClipPath(
-                          clipper: _NotchedIslandClipper(),
-                          child: Container(
-                            height: 64,
-                            decoration: BoxDecoration(
-                              color: isDark 
-                                  ? AppColors.surfaceDark.withOpacity(0.95) 
-                                  : AppColors.surfaceLight.withOpacity(0.95),
-                              borderRadius: BorderRadius.circular(32), // Recuperado el radio completo
-                            ),
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                              children: [
-                                _buildNavButton(context, ref, navItems[0], currentIndex == 0),
-                                _buildNavButton(context, ref, navItems[1], currentIndex == 1),
-                                const SizedBox(width: 80), // Hueco físico en el Row
-                                _buildNavButton(context, ref, navItems[2], currentIndex == 2),
-                                _buildNavButton(context, ref, navItems[3], false),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
+                  child: LayoutBuilder(
+                    builder: (context, constraints) {
+                      final double itemWidth = constraints.maxWidth / navItems.length;
+                      
+                      return TweenAnimationBuilder<double>(
+                        tween: Tween<double>(end: currentIndex.toDouble()),
+                        duration: const Duration(milliseconds: 500),
+                        curve: Curves.fastOutSlowIn,
+                        builder: (context, animIndex, child) {
+                          return Stack(
+                            clipBehavior: Clip.none,
+                            children: [
+                              // Fondo del Nav Island con el hueco central móvil
+                              Positioned.fill(
+                                child: CustomPaint(
+                                  painter: _CurvedBarPainter(
+                                    index: animIndex,
+                                    itemWidth: itemWidth,
+                                    color: isDark 
+                                        ? AppColors.surfaceDark.withOpacity(0.95) 
+                                        : AppColors.surfaceLight.withOpacity(0.95),
+                                  ),
+                                ),
+                              ),
+                              // Círculo flotante que se mueve con el hueco
+                              Positioned(
+                                left: (animIndex * itemWidth) + (itemWidth / 2) - 18,
+                                top: -10, // Flota 10px arriba
+                                child: Container(
+                                  width: 36,
+                                  height: 36,
+                                  decoration: const BoxDecoration(
+                                    color: AppColors.primary,
+                                    shape: BoxShape.circle,
+                                    // Sombra eliminada de las opciones
+                                  ),
+                                ),
+                              ),
+                              // Fila de botones de navegación
+                              Positioned.fill(
+                                child: Row(
+                                  children: navItems.map((item) {
+                                    return _buildNavButton(
+                                      context, 
+                                      ref, 
+                                      item, 
+                                      currentIndex == item.index
+                                    );
+                                  }).toList(),
+                                ),
+                              ),
+                            ],
+                          );
+                        },
+                      );
+                    },
                   ),
                 ),
               ),
@@ -170,7 +257,7 @@ class AppShell extends ConsumerWidget {
     );
   }
 
-  /// Construye un botón de navegación con animación
+  /// Construye un botón de navegación con animación (Sin labels)
   Widget _buildNavButton(
     BuildContext context,
     WidgetRef ref,
@@ -180,46 +267,41 @@ class AppShell extends ConsumerWidget {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Expanded(
-      child: InkWell(
+      child: GestureDetector(
         onTap: () {
           if (item.label == 'Salir') {
             _showLogoutConfirmation(context, ref);
+          } else if (item.label == 'Agregar') {
+            _showAddTransactionSheet(context, ref);
           } else {
             context.go(item.path);
           }
         },
-        borderRadius: BorderRadius.circular(16),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          mainAxisAlignment: MainAxisAlignment.center,
+        behavior: HitTestBehavior.opaque,
+        child: Stack(
+          clipBehavior: Clip.none,
+          fit: StackFit.expand,
           children: [
-            AnimatedContainer(
-              duration: const Duration(milliseconds: 300),
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: isActive 
-                    ? AppColors.primary.withOpacity(0.15) 
-                    : Colors.transparent,
-                shape: BoxShape.circle,
-              ),
-              child: Icon(
-                item.icon,
-                size: 24,
-                color: isActive
-                    ? AppColors.primary
-                    : (isDark ? Colors.white54 : Colors.grey[600]),
-              ),
-            ),
-            if (isActive)
-              Container(
-                margin: const EdgeInsets.only(top: 2),
-                width: 4,
-                height: 4,
-                decoration: const BoxDecoration(
-                  color: AppColors.primary,
-                  shape: BoxShape.circle,
+            // Icon - Animación matemática exacta:
+            // Navbar height = 48. Inactive center = 24 (top:0, bottom:0)
+            // Círculo center = 8. Active center = 8 (top:-16, bottom:16)
+            AnimatedPositioned(
+              duration: const Duration(milliseconds: 500),
+              curve: Curves.fastOutSlowIn,
+              top: isActive ? -16.0 : 0.0,
+              bottom: isActive ? 16.0 : 0.0,
+              left: 0,
+              right: 0,
+              child: Center(
+                child: Icon(
+                  item.icon,
+                  size: 22, // Icono ligeramente más pequeño para encajar perfecto en el de 36px
+                  color: isActive 
+                      ? Colors.white 
+                      : (isDark ? Colors.white54 : Colors.grey[600]),
                 ),
               ),
+            ),
           ],
         ),
       ),
@@ -273,21 +355,6 @@ class AppShell extends ConsumerWidget {
     );
   }
 
-  /// Construye el FAB central flotante
-  Widget _buildCenterFAB(BuildContext context, WidgetRef ref) {
-    return FloatingActionButton(
-      onPressed: () => _showAddTransactionSheet(context, ref),
-      backgroundColor: AppColors.primary,
-      elevation: 0,
-      shape: const CircleBorder(),
-      child: const Icon(
-        Icons.add_rounded,
-        size: 32,
-        color: Colors.white,
-      ),
-    );
-  }
-
   /// Muestra un bottom sheet para agregar transacción
   void _showAddTransactionSheet(BuildContext context, WidgetRef ref) {
     ref.read(isCanvasOpenProvider.notifier).state = true;
@@ -297,109 +364,105 @@ class AppShell extends ConsumerWidget {
   }
 }
 
-/// Clipper personalizado para crear un hueco (notch) en el Nav Island
-class _NotchedIslandClipper extends CustomClipper<Path> {
-  @override
-  Path getClip(Size size) {
-    final path = Path();
-    final double radius = 32; // Radio de los bordes del container
-    final double notchRadius = 38; // Radio del hueco para el FAB
-    final double shoulderRadius = 10; // Radio de las orillas del hueco
-    final double centerX = size.width / 2;
-
-    path.moveTo(radius, 0);
-    
-    // Lado izquierdo superior hasta el hombro del notch
-    path.lineTo(centerX - notchRadius - shoulderRadius, 0);
-    
-    // Hombro izquierdo redondeado hacia adentro/abajo
-    path.quadraticBezierTo(
-      centerX - notchRadius, 
-      0, 
-      centerX - notchRadius + 4, 
-      8,
-    );
-    
-    // El hueco principal (Notch)
-    path.arcToPoint(
-      Offset(centerX + notchRadius - 4, 8),
-      radius: Radius.circular(notchRadius),
-      clockwise: false,
-    );
-
-    // Hombro derecho redondeado hacia afuera/arriba
-    path.quadraticBezierTo(
-      centerX + notchRadius, 
-      0, 
-      centerX + notchRadius + shoulderRadius, 
-      0,
-    );
-    
-    path.lineTo(size.width - radius, 0);
-    path.arcToPoint(
-      Offset(size.width, radius),
-      radius: Radius.circular(radius),
-    );
-    path.lineTo(size.width, size.height - radius);
-    path.arcToPoint(
-      Offset(size.width - radius, size.height),
-      radius: Radius.circular(radius),
-    );
-    path.lineTo(radius, size.height);
-    path.arcToPoint(
-      Offset(0, size.height - radius),
-      radius: Radius.circular(radius),
-    );
-    path.lineTo(0, radius);
-    path.arcToPoint(
-      Offset(radius, 0),
-      radius: Radius.circular(radius),
-    );
-
-    return path;
-  }
-
-  @override
-  bool shouldReclip(CustomClipper<Path> oldClipper) => false;
-}
-
-/// Painter personalizado para dibujar el borde que sigue el notch
-class _NotchedIslandPainter extends CustomPainter {
+class _CurvedBarPainter extends CustomPainter {
+  final double index;
+  final double itemWidth;
   final Color color;
-  final double strokeWidth;
 
-  _NotchedIslandPainter({required this.color, required this.strokeWidth});
+  _CurvedBarPainter({
+    required this.index,
+    required this.itemWidth,
+    required this.color,
+  });
 
   @override
   void paint(Canvas canvas, Size size) {
-    final painter = Paint()
+    final paint = Paint()
       ..color = color
+      ..style = PaintingStyle.fill;
+
+    // Sombra principal fuerte
+    final dropShadowPaint = Paint()
+      ..color = Colors.black.withOpacity(0.20) // Sombra más oscura para destacar la barra
+      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 12);
+      
+    // Sombra ambiental suave
+    final ambientShadowPaint = Paint()
+      ..color = Colors.black.withOpacity(0.10)
+      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 24);
+
+    // 1. Base pill shape
+    final RRect hostRRect = RRect.fromRectAndRadius(
+      Rect.fromLTWH(0, 0, size.width, size.height),
+      const Radius.circular(20.0), // Curva más suave para altura 48
+    );
+    final Path hostPath = Path()..addRRect(hostRRect);
+
+    // 2. Exact center of the current selected notch
+    final double notchCenter = (index * itemWidth) + (itemWidth / 2);
+
+    // 3. Notch cut-out shape (Matemática perfecta C1)
+    // El círculo flotante tiene 36px, centro en y = 8.
+    // El arco tiene radio 22. Inicia exactamente en su ecuador (y = 8)
+    // para asegurar que Flutter dibuje un semicírculo perfecto concéntrico.
+    final Path notchPath = Path();
+    notchPath.moveTo(notchCenter - 36, 0); // Empieza el flare
+    
+    // Flare izquierdo (Tangente vertical exacta al conectar con el arco)
+    notchPath.quadraticBezierTo(
+      notchCenter - 22, 0,
+      notchCenter - 22, 8,
+    );
+    
+    // Semicírculo perfecto (Centro real en y=8, baja hasta y=30)
+    notchPath.arcToPoint(
+      Offset(notchCenter + 22, 8),
+      radius: const Radius.circular(22),
+      clockwise: false,
+    );
+    
+    // Flare derecho (Tangente vertical exacta)
+    notchPath.quadraticBezierTo(
+      notchCenter + 22, 0,
+      notchCenter + 36, 0,
+    ); 
+    
+    // Cierra el polígono hacia arriba
+    notchPath.lineTo(notchCenter + 64, -100);
+    notchPath.lineTo(notchCenter - 64, -100);
+    notchPath.close();
+
+    // 4. Subtract the notch from the pill
+    final Path finalPath = Path.combine(
+      PathOperation.difference,
+      hostPath,
+      notchPath,
+    );
+
+    // Shadow
+    canvas.save();
+    // Ambient Shadow (centrada)
+    canvas.drawPath(finalPath, ambientShadowPaint);
+    // Drop Shadow (hacia abajo)
+    canvas.translate(0, 6);
+    canvas.drawPath(finalPath, dropShadowPaint);
+    canvas.restore();
+
+    // Solid bar
+    canvas.drawPath(finalPath, paint);
+    
+    // Subtle border
+    final borderPaint = Paint()
+      ..color = Colors.grey.withOpacity(0.15)
       ..style = PaintingStyle.stroke
-      ..strokeWidth = strokeWidth;
-
-    final path = Path();
-    final double radius = 32;
-    final double notchRadius = 38;
-    final double shoulderRadius = 10;
-    final double centerX = size.width / 2;
-
-    path.moveTo(radius, 0);
-    path.lineTo(centerX - notchRadius - shoulderRadius, 0);
-    path.quadraticBezierTo(centerX - notchRadius, 0, centerX - notchRadius + 4, 8);
-    path.arcToPoint(Offset(centerX + notchRadius - 4, 8), radius: Radius.circular(notchRadius), clockwise: false);
-    path.quadraticBezierTo(centerX + notchRadius, 0, centerX + notchRadius + shoulderRadius, 0);
-    path.lineTo(size.width - radius, 0);
-    path.arcToPoint(Offset(size.width, radius), radius: Radius.circular(radius));
-    path.lineTo(size.width, size.height - radius);
-    path.arcToPoint(Offset(size.width - radius, size.height), radius: Radius.circular(radius));
-    path.lineTo(radius, size.height);
-    path.arcToPoint(Offset(0, size.height - radius), radius: Radius.circular(radius));
-    path.lineTo(0, radius);
-    path.arcToPoint(Offset(radius, 0), radius: Radius.circular(radius));
-
-    canvas.drawPath(path, painter);
+      ..strokeWidth = 0.5;
+    canvas.drawPath(finalPath, borderPaint);
   }
 
   @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+  bool shouldRepaint(covariant _CurvedBarPainter oldDelegate) {
+    return oldDelegate.index != index || 
+           oldDelegate.itemWidth != itemWidth ||
+           oldDelegate.color != color;
+  }
 }

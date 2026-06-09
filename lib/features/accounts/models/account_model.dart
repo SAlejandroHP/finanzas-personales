@@ -49,6 +49,12 @@ class AccountModel {
   /// Indica si es una cuenta puramente virtual u organizativa
   final bool isVirtual;
 
+  /// Día del mes para la fecha de corte (ej. 1-31), aplica principalmente para tarjetas de crédito
+  final int? fechaCorte;
+
+  /// Día del mes para la fecha límite de pago (ej. 1-31), aplica principalmente para tarjetas de crédito
+  final int? fechaLimitePago;
+
   const AccountModel({
     required this.id,
     required this.userId,
@@ -66,6 +72,8 @@ class AccountModel {
     this.lastFour,
     this.tags = const [],
     this.isVirtual = false,
+    this.fechaCorte,
+    this.fechaLimitePago,
   });
 
   /// Valores permitidos para el campo 'tipo'
@@ -99,6 +107,8 @@ class AccountModel {
       lastFour: json['last_four'] as String?,
       tags: (json['tags'] as List<dynamic>?)?.map((e) => e.toString()).toList() ?? const [],
       isVirtual: json['is_virtual'] as bool? ?? false,
+      fechaCorte: json['fecha_corte'] as int?,
+      fechaLimitePago: json['fecha_limite_pago'] as int?,
     );
   }
 
@@ -121,6 +131,8 @@ class AccountModel {
       'last_four': lastFour,
       'tags': tags,
       'is_virtual': isVirtual,
+      'fecha_corte': fechaCorte,
+      'fecha_limite_pago': fechaLimitePago,
     };
   }
 
@@ -142,6 +154,8 @@ class AccountModel {
     String? lastFour,
     List<String>? tags,
     bool? isVirtual,
+    int? fechaCorte,
+    int? fechaLimitePago,
   }) {
     return AccountModel(
       id: id ?? this.id,
@@ -160,6 +174,8 @@ class AccountModel {
       lastFour: lastFour ?? this.lastFour,
       tags: tags ?? this.tags,
       isVirtual: isVirtual ?? this.isVirtual,
+      fechaCorte: fechaCorte ?? this.fechaCorte,
+      fechaLimitePago: fechaLimitePago ?? this.fechaLimitePago,
     );
   }
 
@@ -188,7 +204,9 @@ class AccountModel {
         other.isDefault == isDefault &&
         other.lastFour == lastFour &&
         _listaTagsIguales(other.tags, tags) &&
-        other.isVirtual == isVirtual;
+        other.isVirtual == isVirtual &&
+        other.fechaCorte == fechaCorte &&
+        other.fechaLimitePago == fechaLimitePago;
   }
 
   bool _listaTagsIguales(List<String> list1, List<String> list2) {
@@ -218,6 +236,8 @@ class AccountModel {
       lastFour,
       Object.hashAll(tags),
       isVirtual,
+      fechaCorte,
+      fechaLimitePago,
     );
   }
 }

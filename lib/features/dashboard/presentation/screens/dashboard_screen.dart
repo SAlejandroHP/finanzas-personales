@@ -99,6 +99,8 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                       _buildPendingInvitations(context, ref, isDark),
                       _buildPendingGoalInvitations(context, ref, isDark),
                       const SizedBox(height: 12),
+                      const SmartInputBar(),
+                      const SizedBox(height: 16),
                       _buildBalanceSummaryCard(
                         context,
                         totalBalance,
@@ -111,9 +113,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                         cardColor,
                         isDark,
                       ),
-                      const SizedBox(height: 16),
-                      const SmartInputBar(),
-                                            const SizedBox(height: 24),
+                      const SizedBox(height: 24),
                       _buildAccountsAndCardsSection(
                         context,
                         accounts,
@@ -675,139 +675,151 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     Color cardColor,
     bool isDark,
   ) {
-    // Diseño Nishikigo 2026: Verde petróleo elegante
     final Color cardBackground = isDark ? AppColors.surfaceDark : AppColors.primary;
     
-    return Container(
-      width: double.infinity,
-      decoration: BoxDecoration(
-        color: cardBackground,
-        borderRadius: BorderRadius.circular(AppColors.radiusLarge), // 24.0
-        boxShadow: [
-          BoxShadow(
-            color: cardBackground.withOpacity(0.3),
-            blurRadius: 25,
-            offset: const Offset(0, 12),
-            spreadRadius: -5,
+    return Column(
+      children: [
+        Container(
+          width: double.infinity,
+          decoration: BoxDecoration(
+            color: cardBackground,
+            borderRadius: const BorderRadius.only(
+              topLeft: Radius.circular(40),
+              bottomRight: Radius.circular(40),
+              topRight: Radius.circular(12),
+              bottomLeft: Radius.circular(12),
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: cardBackground.withOpacity(0.3),
+                blurRadius: 20,
+                offset: const Offset(0, 10),
+              ),
+            ],
           ),
-        ],
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(24, 24, 24, 40),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  'WORKING BALANCE',
-                  style: GoogleFonts.montserrat(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w700,
-                    color: Colors.white.withOpacity(0.6),
-                    letterSpacing: 2.0,
-                  ),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      'BALANCE TOTAL',
+                      style: GoogleFonts.montserrat(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w700,
+                        color: Colors.white.withOpacity(0.6),
+                        letterSpacing: 2.0,
+                      ),
+                    ),
+                    Icon(
+                      Icons.account_balance_wallet_outlined,
+                      color: Colors.white.withOpacity(0.5),
+                      size: 20,
+                    ),
+                  ],
                 ),
-                Icon(
-                  Icons.account_balance_wallet_outlined,
-                  color: Colors.white.withOpacity(0.5),
-                  size: 20,
+                const SizedBox(height: 12),
+                FittedBox(
+                  fit: BoxFit.scaleDown,
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    balanceFormatter.format(balance),
+                    style: GoogleFonts.montserrat(
+                      fontSize: AppColors.displayLarge,
+                      fontWeight: FontWeight.w800,
+                      color: Colors.white,
+                      letterSpacing: -1.0,
+                    ),
+                  ),
                 ),
               ],
             ),
-            const SizedBox(height: 12),
-            FittedBox(
-              fit: BoxFit.scaleDown,
-              alignment: Alignment.centerLeft,
-              child: Text(
-                balanceFormatter.format(balance),
-                style: GoogleFonts.montserrat(
-                  fontSize: AppColors.displayLarge, // 32.0
-                  fontWeight: FontWeight.w800,
-                  color: Colors.white,
-                  letterSpacing: -1.0,
-                ),
-              ),
-            ),
-            const SizedBox(height: 24),
-            
-            // Línea de acento minimalista
-            Container(
-              height: 2,
-              width: 40,
-              decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.2),
-                borderRadius: BorderRadius.circular(1),
-              ),
-            ),
-            const SizedBox(height: 24),
-            
-            // Subtotales con elegancia monocromática
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                _buildFlowItem(
-                  'Ingresos',
-                  incomes,
-                  Colors.white.withOpacity(0.9),
-                  Icons.arrow_upward_rounded,
-                ),
-                _buildFlowItem(
-                  'Gastos',
-                  expenses,
-                  Colors.white.withOpacity(0.9),
-                  Icons.arrow_downward_rounded,
-                ),
-                if (totalDebts > 0)
-                  _buildFlowItem(
-                    'Deudas',
-                    totalDebts,
-                    Colors.white.withOpacity(0.9),
-                    Icons.history_rounded,
-                  ),
-              ],
-            ),
-          ],
+          ),
         ),
-      ),
+        Transform.translate(
+          offset: const Offset(0, -24),
+          child: SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                _buildFlowItem('Ingresos', incomes, Colors.green, Icons.arrow_upward_rounded, isDark),
+                const SizedBox(width: 8),
+                _buildFlowItem('Gastos', expenses, Colors.redAccent, Icons.arrow_downward_rounded, isDark),
+                if (totalDebts > 0) ...[
+                  const SizedBox(width: 8),
+                  _buildFlowItem('Deudas', totalDebts, Colors.orange, Icons.history_rounded, isDark),
+                ],
+              ],
+            ),
+          ),
+        ),
+      ],
     );
   }
 
   Widget _buildFlowItem(
     String label,
     double amount,
-    Color textColor,
+    Color accentColor,
     IconData icon,
+    bool isDark,
   ) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            Icon(icon, color: textColor.withOpacity(0.5), size: 14),
-            const SizedBox(width: 4),
-            Text(
-              label.toUpperCase(),
-              style: GoogleFonts.montserrat(
-                fontSize: 9,
-                fontWeight: FontWeight.w700,
-                color: textColor.withOpacity(0.5),
-                letterSpacing: 0.5,
-              ),
-            ),
-          ],
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      decoration: BoxDecoration(
+        color: isDark ? AppColors.surfaceDark : Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: isDark ? Colors.white.withOpacity(0.05) : Colors.black.withOpacity(0.02),
         ),
-        const SizedBox(height: 4),
-        Text(
-          NumberFormat.compactCurrency(symbol: r'$', decimalDigits: 2, locale: 'es_MX').format(amount),
-          style: GoogleFonts.montserrat(
-            fontSize: 16,
-            fontWeight: FontWeight.w700,
-            color: textColor,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(isDark ? 0.2 : 0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
           ),
-        ),
-      ],
+        ],
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(4),
+            decoration: BoxDecoration(
+              color: accentColor.withOpacity(0.1),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(icon, color: accentColor, size: 14),
+          ),
+          const SizedBox(width: 8),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                label.toUpperCase(),
+                style: GoogleFonts.montserrat(
+                  fontSize: 9,
+                  fontWeight: FontWeight.w700,
+                  color: isDark ? Colors.white54 : Colors.black54,
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                NumberFormat.compactCurrency(symbol: r'$', decimalDigits: 2, locale: 'es_MX').format(amount),
+                style: GoogleFonts.montserrat(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
+                  color: isDark ? Colors.white : Colors.black87,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
     );
   }
 
@@ -891,7 +903,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
             }
 
             return SizedBox(
-              height: 165, // Aumentado para acomodar correctamente el nombre, saldo, tipo y barra de progreso sin overflow
+              height: 200, // Más alto para la píldora vertical
               child: ListView.separated(
                 scrollDirection: Axis.horizontal,
                 padding: const EdgeInsets.symmetric(horizontal: 4),
@@ -931,7 +943,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                   }
 
                   return Container(
-                    width: 175, // Ligeramente más ancho
+                    width: 140, // Más delgado
                     decoration: BoxDecoration(
                       gradient: isTC 
                           ? LinearGradient(
@@ -943,7 +955,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                             )
                           : null,
                       color: !isTC ? cardColor : null,
-                      borderRadius: BorderRadius.circular(22), // Bordes más suaves Apple-style
+                      borderRadius: BorderRadius.circular(40), // Forma de píldora
                       boxShadow: [
                         if (!isDark)
                           BoxShadow(
@@ -963,7 +975,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                       color: Colors.transparent,
                       child: InkWell(
                         onTap: () => context.push('/accounts/detail/${acc.id}'),
-                        borderRadius: BorderRadius.circular(22),
+                        borderRadius: BorderRadius.circular(40),
                         child: Stack(
                           children: [
                             // Indicador visual discreto de tipo de cuenta
@@ -976,7 +988,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                                 decoration: BoxDecoration(
                                   color: typeColor.withOpacity(0.05),
                                   borderRadius: const BorderRadius.only(
-                                    topRight: Radius.circular(22),
+                                    topRight: Radius.circular(40),
                                     bottomLeft: Radius.circular(22),
                                   ),
                                 ),
@@ -984,7 +996,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                               ),
                             ),
                             Padding(
-                              padding: const EdgeInsets.all(16),
+                              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
@@ -992,7 +1004,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                                     BankLogo(
                                       bankName: acc.bancoNombre ?? acc.nombre,
                                       primaryColor: typeColor.value.toRadixString(16).padLeft(8, '0').substring(2),
-                                      size: 32,
+                                      size: 36,
                                     )
                                   else
                                     Container(
@@ -1149,7 +1161,12 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
           padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
           decoration: BoxDecoration(
             color: cardColor,
-            borderRadius: BorderRadius.circular(AppColors.radiusXLarge),
+            borderRadius: const BorderRadius.only(
+              topLeft: Radius.circular(30),
+              bottomLeft: Radius.circular(30),
+              bottomRight: Radius.circular(30),
+              topRight: Radius.circular(5),
+            ),
             border: Border.all(
               color: isDark ? Colors.white.withOpacity(0.05) : Colors.black.withOpacity(0.03),
             ),
@@ -1324,7 +1341,12 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: cardColor,
-        borderRadius: BorderRadius.circular(24),
+        borderRadius: const BorderRadius.only(
+          topLeft: Radius.circular(30),
+          bottomLeft: Radius.circular(30),
+          bottomRight: Radius.circular(30),
+          topRight: Radius.circular(5),
+        ),
         border: Border.all(
           color: isDark ? Colors.white.withOpacity(0.05) : Colors.black.withOpacity(0.05),
         ),
@@ -1844,7 +1866,12 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
           padding: const EdgeInsets.all(20),
           decoration: BoxDecoration(
             color: cardColor,
-            borderRadius: BorderRadius.circular(AppColors.radiusXLarge),
+            borderRadius: const BorderRadius.only(
+              topLeft: Radius.circular(30),
+              bottomLeft: Radius.circular(30),
+              bottomRight: Radius.circular(30),
+              topRight: Radius.circular(5),
+            ),
             border: Border.all(
               color: isDark ? Colors.white.withOpacity(0.05) : Colors.black.withOpacity(0.03),
             ),
@@ -1998,7 +2025,12 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
           padding: EdgeInsets.all(AppColors.cardPadding),
           decoration: BoxDecoration(
             color: cardColor,
-            borderRadius: BorderRadius.circular(AppColors.radiusXLarge),
+            borderRadius: const BorderRadius.only(
+              topLeft: Radius.circular(30),
+              bottomLeft: Radius.circular(30),
+              bottomRight: Radius.circular(30),
+              topRight: Radius.circular(5),
+            ),
             boxShadow: [
               if (!isDark)
                 BoxShadow(

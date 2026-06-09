@@ -11,6 +11,7 @@ import 'core/network/supabase_client.dart';
 import 'core/theme/app_theme.dart';
 import 'core/widgets/app_shell.dart';
 import 'core/providers/ui_provider.dart';
+import 'core/services/notification_service.dart';
 import 'features/auth/presentation/screens/auth_screen.dart';
 import 'features/dashboard/presentation/screens/dashboard_screen.dart';
 import 'features/dashboard/presentation/screens/notifications_screen.dart';
@@ -21,6 +22,7 @@ import 'features/transactions/presentation/screens/transaction_list_screen.dart'
 import 'features/settings/presentation/screens/settings_screen.dart';
 import 'features/debts/presentation/screens/debts_list_screen.dart';
 import 'features/goals/presentation/screens/goals_list_screen.dart';
+import 'features/transactions/presentation/screens/recurring_transactions_screen.dart';
 
 
 /// ==============================================================
@@ -103,6 +105,9 @@ void main() async {
 
   // Inicializa SharedPreferences
   final prefs = await SharedPreferences.getInstance();
+  
+  // Inicializa el servicio de notificaciones en segundo plano
+  await NotificationService.initialize();
   
   runApp(
     ProviderScope(
@@ -235,6 +240,14 @@ final routerProvider = Provider<GoRouter>((ref) {
                 pageBuilder: (context, state) => _fadeTransitionPage(
                   state: state,
                   child: const DebtsListScreen(),
+                ),
+              ),
+              GoRoute(
+                path: 'recurring',
+                name: 'recurring',
+                pageBuilder: (context, state) => _fadeTransitionPage(
+                  state: state,
+                  child: const RecurringTransactionsScreen(),
                 ),
               ),
             ],

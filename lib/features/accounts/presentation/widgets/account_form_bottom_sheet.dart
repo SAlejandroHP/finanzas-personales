@@ -55,6 +55,8 @@ class _AccountFormBottomSheetState extends ConsumerState<AccountFormBottomSheet>
   BankModel? _selectedBank;
   bool _isLoading = false;
   bool _isDefault = false;
+  int? _fechaCorte;
+  int? _fechaLimitePago;
 
   @override
   void initState() {
@@ -81,6 +83,14 @@ class _AccountFormBottomSheetState extends ConsumerState<AccountFormBottomSheet>
       if (selectedAccount != null) {
         _nombreController.text = selectedAccount.nombre;
         _saldoInicialController.text = selectedAccount.saldoInicial.toString();
+        
+        if (selectedAccount.tipo == 'tarjeta_credito') {
+          _limiteCreditoController.text = selectedAccount.saldoInicial.toString();
+          _deudaActualController.text = (selectedAccount.saldoInicial - selectedAccount.saldoActual).toString();
+          _fechaCorte = selectedAccount.fechaCorte;
+          _fechaLimitePago = selectedAccount.fechaLimitePago;
+        }
+
         setState(() {
           _selectedTipo = selectedAccount.tipo;
           _selectedMonedaId = selectedAccount.monedaId;
@@ -226,8 +236,28 @@ class _AccountFormBottomSheetState extends ConsumerState<AccountFormBottomSheet>
     setState(() => _isLoading = true);
 
     try {
+      if (_tagsController.text.trim().isNotEmpty) {
+        final cleanedTag = _tagsController.text.trim();
+        if (!_tags.contains(cleanedTag)) {
+          _tags.add(cleanedTag);
+        }
+        _tagsController.clear();
+      }
+
       final selectedAccount = ref.read(selectedAccountProvider);
-      final saldoInicial = double.tryParse(_saldoInicialController.text) ?? 0.0;
+      
+      double finalSaldoInicial = double.tryParse(_saldoInicialController.text) ?? 0.0;
+      double finalSaldoActual = selectedAccount?.saldoActual ?? finalSaldoInicial;
+      double? limiteCredito;
+      double? deudaActual;
+
+      if (_selectedTipo == 'tarjeta_credito') {
+        limiteCredito = double.tryParse(_limiteCreditoController.text) ?? 0.0;
+        deudaActual = double.tryParse(_deudaActualController.text) ?? 0.0;
+        finalSaldoInicial = limiteCredito;
+        // Si es edicion, actualizamos saldoActual en base a la nueva deuda y limite
+        finalSaldoActual = limiteCredito - deudaActual;
+      }
 
       final account = AccountModel(
         id: selectedAccount?.id ?? const Uuid().v4(),
@@ -238,25 +268,24 @@ class _AccountFormBottomSheetState extends ConsumerState<AccountFormBottomSheet>
         bancoNombre: _selectedBank?.displayName,
         bancoLogo: _selectedBank?.logo,
         monedaId: _selectedMonedaId!,
-        saldoInicial: saldoInicial,
-        saldoActual: selectedAccount?.saldoActual ?? saldoInicial,
+        saldoInicial: finalSaldoInicial,
+        saldoActual: finalSaldoActual,
         createdAt: selectedAccount?.createdAt ?? DateTime.now(),
         updatedAt: selectedAccount != null ? DateTime.now() : null,
         isDefault: _isDefault,
         lastFour: _lastFourController.text.trim().isEmpty ? null : _lastFourController.text.trim(),
         tags: _tags,
+        fechaCorte: _selectedTipo == 'tarjeta_credito' ? _fechaCorte : null,
+        fechaLimitePago: _selectedTipo == 'tarjeta_credito' ? _fechaLimitePago : null,
       );
 
       if (selectedAccount != null) {
         await ref.read(accountsNotifierProvider.notifier).updateAccount(account);
       } else {
-        final limiteCredito = double.tryParse(_limiteCreditoController.text);
-        final deudaActual = double.tryParse(_deudaActualController.text) ?? 0.0;
-        
         await ref.read(accountsNotifierProvider.notifier).createAccount(
           account,
-          limiteCredito: _selectedTipo == 'tarjeta_credito' ? limiteCredito : null,
-          deudaActual: _selectedTipo == 'tarjeta_credito' ? deudaActual : null,
+          limiteCredito: limiteCredito,
+          deudaActual: deudaActual,
         );
       }
 
@@ -377,6 +406,46 @@ class _AccountFormBottomSheetState extends ConsumerState<AccountFormBottomSheet>
                               _buildMontoField(label: 'Deuda actual', controller: _deudaActualController, focusNode: _deudaActualFocusNode, icon: Icons.credit_score_rounded, isDark: isDark),
                               const SizedBox(height: 12),
                               _buildInfoBox('Disponible: \$${((double.tryParse(_limiteCreditoController.text) ?? 0.0) - (double.tryParse(_deudaActualController.text) ?? 0.0)).toStringAsFixed(2)}', isDark),
+                              const SizedBox(height: 16),
+                              Row(
+                                children: [
+                                  Expanded(
+                                    child: DropdownButtonFormField<int>(
+                                      value: _fechaCorte,
+                                      decoration: InputDecoration(
+                                        labelText: 'Día de corte',
+                                        labelStyle: GoogleFonts.montserrat(fontSize: 10),
+                                        filled: true,
+                                        fillColor: isDark ? AppColors.surfaceDark : Colors.white,
+                                        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+                                        prefixIcon: const Icon(Icons.calendar_today_outlined, size: 16),
+                                      ),
+                                      items: List.generate(31, (index) => index + 1).map((day) => DropdownMenuItem(value: day, child: Text(day.toString(), style: GoogleFonts.montserrat(fontSize: 12)))).toList(),
+                                      onChanged: _isLoading ? null : (value) => setState(() => _fechaCorte = value),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 12),
+                                  Expanded(
+                                    child: DropdownButtonFormField<int>(
+                                      value: _fechaLimitePago,
+                                      decoration: InputDecoration(
+                                        labelText: 'Día de pago',
+                                        labelStyle: GoogleFonts.montserrat(fontSize: 10),
+                                        filled: true,
+                                        fillColor: isDark ? AppColors.surfaceDark : Colors.white,
+                                        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+                                        prefixIcon: const Icon(Icons.event_outlined, size: 16),
+                                      ),
+                                      items: List.generate(31, (index) => index + 1).map((day) => DropdownMenuItem(value: day, child: Text(day.toString(), style: GoogleFonts.montserrat(fontSize: 12)))).toList(),
+                                      onChanged: _isLoading ? null : (value) => setState(() => _fechaLimitePago = value),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 12),
+                              _buildInfoBox('Opcional. Las fechas ayudan a hacer proyecciones y generar alertas.', isDark, isHelp: true),
                             ] else ...[
                               _buildMontoField(label: 'Saldo inicial', controller: _saldoInicialController, focusNode: _saldoInicialFocusNode, icon: Icons.account_balance_wallet_rounded, isDark: isDark),
                               const SizedBox(height: 12),

@@ -50,6 +50,8 @@ class _AccountFormScreenState extends ConsumerState<AccountFormScreen> {
   String? _selectedMonedaId;
   BankModel? _selectedBank;
   bool _isLoading = false;
+  int? _fechaCorte;
+  int? _fechaLimitePago;
 
   @override
   void initState() {
@@ -87,6 +89,8 @@ class _AccountFormScreenState extends ConsumerState<AccountFormScreen> {
             _limiteCreditoController.text = selectedAccount.saldoInicial.toString();
             // La deuda actual es límite - disponible (saldoActual)
             _deudaActualController.text = (selectedAccount.saldoInicial - selectedAccount.saldoActual).toString();
+            _fechaCorte = selectedAccount.fechaCorte;
+            _fechaLimitePago = selectedAccount.fechaLimitePago;
           }
           
           // Crear un BankModel temporal si el banco existe
@@ -359,6 +363,8 @@ class _AccountFormScreenState extends ConsumerState<AccountFormScreen> {
         tags: _tagsController.text.trim().isEmpty 
             ? [] 
             : _tagsController.text.split(',').map((e) => e.trim()).where((e) => e.isNotEmpty).toList(),
+        fechaCorte: _selectedTipo == 'tarjeta_credito' ? _fechaCorte : null,
+        fechaLimitePago: _selectedTipo == 'tarjeta_credito' ? _fechaLimitePago : null,
       );
 
       if (selectedAccount != null) {
@@ -756,6 +762,77 @@ class _AccountFormScreenState extends ConsumerState<AccountFormScreen> {
                     color: AppColors.primary,
                     fontWeight: FontWeight.w500,
                   ),
+                ),
+              ),
+              const SizedBox(height: 16),
+              
+              Row(
+                children: [
+                  Expanded(
+                    child: DropdownButtonFormField<int>(
+                      value: _fechaCorte,
+                      decoration: InputDecoration(
+                        labelText: 'Día de corte',
+                        labelStyle: GoogleFonts.montserrat(fontSize: AppColors.bodySmall),
+                        filled: true,
+                        fillColor: isDark ? AppColors.surfaceDark : Colors.white,
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide.none,
+                        ),
+                        prefixIcon: const Icon(Icons.calendar_today_outlined),
+                      ),
+                      items: List.generate(31, (index) => index + 1).map((day) {
+                        return DropdownMenuItem(
+                          value: day,
+                          child: Text(day.toString(), style: GoogleFonts.montserrat(fontSize: AppColors.bodyMedium)),
+                        );
+                      }).toList(),
+                      onChanged: _isLoading ? null : (value) => setState(() => _fechaCorte = value),
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: DropdownButtonFormField<int>(
+                      value: _fechaLimitePago,
+                      decoration: InputDecoration(
+                        labelText: 'Día de pago',
+                        labelStyle: GoogleFonts.montserrat(fontSize: AppColors.bodySmall),
+                        filled: true,
+                        fillColor: isDark ? AppColors.surfaceDark : Colors.white,
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide.none,
+                        ),
+                        prefixIcon: const Icon(Icons.event_outlined),
+                      ),
+                      items: List.generate(31, (index) => index + 1).map((day) {
+                        return DropdownMenuItem(
+                          value: day,
+                          child: Text(day.toString(), style: GoogleFonts.montserrat(fontSize: AppColors.bodyMedium)),
+                        );
+                      }).toList(),
+                      onChanged: _isLoading ? null : (value) => setState(() => _fechaLimitePago = value),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 4),
+                child: Row(
+                  children: [
+                    Icon(Icons.info_outline, size: 14, color: Colors.grey[600]),
+                    const SizedBox(width: 6),
+                    Expanded(
+                      child: Text(
+                        'Opcional. Las fechas ayudan a hacer proyecciones y generar alertas.',
+                        style: GoogleFonts.montserrat(fontSize: 11, color: Colors.grey[600]),
+                      ),
+                    ),
+                  ],
                 ),
               ),
               const SizedBox(height: 16),

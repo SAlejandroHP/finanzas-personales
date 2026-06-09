@@ -465,7 +465,8 @@ class _TransactionFormSheetState extends ConsumerState<TransactionFormSheet> {
         recurringRule: _isRecurring ? _recurringRule : null,
         autoComplete: _isRecurring ? _autoComplete : false,
         weekendAdjustment: _isRecurring ? _weekendAdjustment : false,
-        // nextOccurrence y lastOccurrence se calculan en el repositorio
+        nextOccurrence: widget.transaction?.nextOccurrence,
+        lastOccurrence: widget.transaction?.lastOccurrence,
       );
 
       if (widget.transaction != null) {

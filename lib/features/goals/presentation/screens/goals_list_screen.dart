@@ -240,15 +240,21 @@ class GoalsListScreen extends ConsumerWidget {
             ),
           ),
           const SizedBox(height: 24),
-          ElevatedButton(
-            onPressed: () => _showGoalForm(context, ref),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.primary,
-              foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: AppColors.pagePadding),
+            child: SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: () => _showGoalForm(context, ref),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.primary,
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                ),
+                child: const Text('Crear mi primera meta', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+              ),
             ),
-            child: const Text('Crear mi primera meta'),
           ),
         ],
       ),

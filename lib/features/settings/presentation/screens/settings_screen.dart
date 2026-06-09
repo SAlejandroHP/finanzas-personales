@@ -9,6 +9,7 @@ import '../../../../core/network/supabase_client.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../../transactions/presentation/screens/recurring_transactions_screen.dart';
 import '../../../../core/widgets/app_toast.dart';
+import 'package:flutter_notification_listener/flutter_notification_listener.dart';
 
 /// Pantalla de configuración de la aplicación.
 /// Organizada de forma funcional con secciones de gestión, apariencia y cuenta.
@@ -138,10 +139,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             iconColor: AppColors.recurringTransactions,
             title: 'Transacciones Recurrentes',
             subtitle: 'Configura sueldos y pagos automáticos',
-            onTap: () => Navigator.push(
-              context, 
-              MaterialPageRoute(builder: (_) => RecurringTransactionsScreen()),
-            ),
+            onTap: () => context.push('/settings/recurring'),
           ),
           const SizedBox(height: 8),
           _buildNavigationCard(
@@ -162,6 +160,40 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             title: 'Mis Metas de Ahorro',
             subtitle: 'Viajes, fondos de emergencia y compras',
             onTap: () => context.push('/goals'),
+          ),
+          const SizedBox(height: 16),
+
+          // SECCIÓN: PERMISOS
+          _buildSectionHeader(context, 'Permisos'),
+          _buildNavigationCard(
+            context,
+            isDark,
+            icon: Icons.notifications_active_outlined,
+            iconColor: Colors.amber,
+            title: 'Lectura de Notificaciones',
+            subtitle: 'Permitir lectura para automatizar transacciones',
+            onTap: () async {
+              // Verifica si es web o no es Android
+              if (Theme.of(context).platform != TargetPlatform.android) {
+                showAppToast(context, message: 'Esta función solo está disponible en Android', type: ToastType.info);
+                return;
+              }
+
+              try {
+                final bool hasPermission = (await NotificationsListener.hasPermission) ?? false;
+                if (!hasPermission) {
+                  await NotificationsListener.openPermissionSettings();
+                } else {
+                  if (mounted) {
+                    showAppToast(context, message: 'El permiso ya ha sido otorgado', type: ToastType.success);
+                  }
+                }
+              } catch (e) {
+                if (mounted) {
+                  showAppToast(context, message: 'No se pudo abrir la configuración: ${e.toString()}', type: ToastType.error);
+                }
+              }
+            },
           ),
           const SizedBox(height: 16),
 

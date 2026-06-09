@@ -58,6 +58,9 @@ class TransactionModel {
   /// Indica si se debe completar automáticamente cuando llegue la fecha
   final bool autoComplete;
 
+  /// Indica si la regla recurrente está activa
+  final bool isActive;
+
   const TransactionModel({
     required this.id,
     required this.userId,
@@ -78,6 +81,7 @@ class TransactionModel {
     this.nextOccurrence,
     this.lastOccurrence,
     this.autoComplete = false,
+    this.isActive = true,
     this.weekendAdjustment = false,
   });
 
@@ -135,6 +139,7 @@ class TransactionModel {
           ? DateTime.parse(json['last_occurrence'] as String)
           : null,
       autoComplete: json['auto_complete'] as bool? ?? false,
+      isActive: json['is_active'] as bool? ?? true,
       weekendAdjustment: json['weekend_adjustment'] as bool? ?? false,
     );
   }
@@ -193,6 +198,7 @@ class TransactionModel {
     DateTime? nextOccurrence,
     DateTime? lastOccurrence,
     bool? autoComplete,
+    bool? isActive,
     bool? weekendAdjustment,
   }) {
     return TransactionModel(
@@ -215,6 +221,7 @@ class TransactionModel {
       nextOccurrence: nextOccurrence ?? this.nextOccurrence,
       lastOccurrence: lastOccurrence ?? this.lastOccurrence,
       autoComplete: autoComplete ?? this.autoComplete,
+      isActive: isActive ?? this.isActive,
       weekendAdjustment: weekendAdjustment ?? this.weekendAdjustment,
     );
   }
@@ -248,12 +255,13 @@ class TransactionModel {
         other.nextOccurrence == nextOccurrence &&
         other.lastOccurrence == lastOccurrence &&
         other.autoComplete == autoComplete &&
+        other.isActive == isActive &&
         other.weekendAdjustment == weekendAdjustment;
   }
 
   @override
   int get hashCode {
-    return Object.hash(
+    return Object.hashAll([
       id,
       userId,
       tipo,
@@ -273,7 +281,8 @@ class TransactionModel {
       nextOccurrence,
       lastOccurrence,
       autoComplete,
+      isActive,
       weekendAdjustment,
-    );
+    ]);
   }
 }

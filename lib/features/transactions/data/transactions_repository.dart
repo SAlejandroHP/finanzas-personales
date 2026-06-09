@@ -154,40 +154,65 @@ class TransactionsRepository {
         throw Exception('Usuario no autenticado');
       }
 
-      // Corrección v3: Validar estado antes de insertar (CHECK constraint)
       String estadoValido = transaction.estado;
       if (!['completa', 'pendiente'].contains(estadoValido)) {
-        estadoValido = 'completa'; // Default seguro
+        estadoValido = 'completa';
       }
 
-      // Calcular next_occurrence si es recurrente
-      DateTime? nextOccurrence = transaction.nextOccurrence;
       if (transaction.isRecurring && transaction.recurringRule != null) {
-        // La primera ocurrencia es la fecha de la transacción
-        // La siguiente se calcula a partir de esa fecha
-        nextOccurrence = _calculateNextOccurrence(
+        final nextOccurrence = _calculateNextOccurrence(
           transaction.recurringRule!,
           transaction.fecha,
           weekendAdjustment: transaction.weekendAdjustment,
         );
-      }
 
-      final txData = transaction.copyWith(
-        userId: userId,
-        createdAt: DateTime.now(),
-        estado: estadoValido, // Asegurar que es válido
-        nextOccurrence: nextOccurrence,
-      );
+        final plantilla = transaction.toJson();
+        plantilla.remove('id');
+        plantilla.remove('created_at');
+        plantilla.remove('updated_at');
+        plantilla.remove('is_recurring');
+        plantilla.remove('recurring_rule');
+        plantilla.remove('next_occurrence');
+        plantilla.remove('last_occurrence');
+        plantilla.remove('is_active');
+        
+        await _supabase.from('reglas_recurrentes').insert({
+          'id': const Uuid().v4(),
+          'user_id': userId,
+          'plantilla_transaccion': plantilla,
+          'frecuencia': transaction.recurringRule,
+          'proxima_ocurrencia': nextOccurrence.toIso8601String(),
+          'activa': transaction.isActive,
+        });
 
-      // Validador Anti-Hackeo (Repository-level)
-      await _validateDebtPaymentOverflow(txData);
+        final txData = transaction.copyWith(
+          userId: userId,
+          createdAt: DateTime.now(),
+          estado: estadoValido,
+          isRecurring: false,
+          recurringRule: null,
+          nextOccurrence: null,
+        );
 
-      // Inserta la transacción
-      await _supabase.from('transacciones').insert(txData.toJson());
+        await _validateDebtPaymentOverflow(txData);
+        await _supabase.from('transacciones').insert(txData.toJson());
 
-      // Sincronizar saldos si está completa
-      if (txData.estado == 'completa') {
-        await _syncCascadingEffects(txData);
+        if (txData.estado == 'completa') {
+          await _syncCascadingEffects(txData);
+        }
+      } else {
+        final txData = transaction.copyWith(
+          userId: userId,
+          createdAt: DateTime.now(),
+          estado: estadoValido,
+        );
+
+        await _validateDebtPaymentOverflow(txData);
+        await _supabase.from('transacciones').insert(txData.toJson());
+
+        if (txData.estado == 'completa') {
+          await _syncCascadingEffects(txData);
+        }
       }
     } catch (e) {
       throw Exception('Error al crear transacción: $e');
@@ -257,17 +282,28 @@ class TransactionsRepository {
       }
 
       final response = await _supabase
-          .from('transacciones')
+          .from('reglas_recurrentes')
           .select()
           .eq('user_id', userId)
-          .eq('is_recurring', true)
-          .order('next_occurrence', ascending: true);
+          .order('proxima_ocurrencia', ascending: true);
 
-      final transactions = (response as List)
-          .map((json) => TransactionModel.fromJson(json))
-          .toList();
+      return (response as List).map((row) {
+        final plantilla = Map<String, dynamic>.from(row['plantilla_transaccion'] as Map<String, dynamic>);
+        
+        // Inyectamos los campos obligatorios que fueron removidos al guardar la plantilla
+        plantilla['id'] = row['id'];
+        plantilla['user_id'] = row['user_id'];
+        plantilla['created_at'] = row['created_at'] ?? DateTime.now().toIso8601String();
 
-      return transactions;
+        return TransactionModel.fromJson(plantilla).copyWith(
+          id: row['id'] as String,
+          userId: row['user_id'] as String,
+          isRecurring: true,
+          recurringRule: row['frecuencia'] as String,
+          nextOccurrence: row['proxima_ocurrencia'] != null ? DateTime.parse(row['proxima_ocurrencia'] as String) : null,
+          isActive: row['activa'] as bool? ?? true,
+        );
+      }).toList();
     } catch (e) {
       throw Exception('Error al obtener transacciones recurrentes: $e');
     }
@@ -289,7 +325,49 @@ class TransactionsRepository {
         throw Exception('Usuario no autenticado');
       }
 
-      // 1. Obtener la transacción anterior para revertir efectos si era completa
+      final oldRuleData = await _supabase.from('reglas_recurrentes').select().eq('id', transaction.id).maybeSingle();
+      if (oldRuleData != null) {
+        if (!transaction.isRecurring) {
+          await _supabase.from('reglas_recurrentes').delete().eq('id', transaction.id);
+          return;
+        }
+
+        DateTime? nextOccurrence = transaction.nextOccurrence;
+        if (nextOccurrence == null) {
+          final oldProximaOcurrenciaStr = oldRuleData['proxima_ocurrencia'] as String?;
+          if (oldProximaOcurrenciaStr != null) {
+            nextOccurrence = DateTime.tryParse(oldProximaOcurrenciaStr);
+          }
+          
+          if (nextOccurrence == null || oldRuleData['frecuencia'] != transaction.recurringRule) {
+             nextOccurrence = _calculateNextOccurrence(
+               transaction.recurringRule!,
+               transaction.fecha,
+               weekendAdjustment: transaction.weekendAdjustment,
+             );
+          }
+        }
+        
+        final plantilla = transaction.toJson();
+        plantilla.remove('id');
+        plantilla.remove('created_at');
+        plantilla.remove('updated_at');
+        plantilla.remove('is_recurring');
+        plantilla.remove('recurring_rule');
+        plantilla.remove('next_occurrence');
+        plantilla.remove('last_occurrence');
+        plantilla.remove('is_active');
+        
+        await _supabase.from('reglas_recurrentes').update({
+          'plantilla_transaccion': plantilla,
+          'frecuencia': transaction.recurringRule,
+          'proxima_ocurrencia': nextOccurrence!.toIso8601String(),
+          'activa': transaction.isActive,
+          'updated_at': DateTime.now().toIso8601String(),
+        }).eq('id', transaction.id);
+        return;
+      }
+
       final oldTxData = await _supabase.from('transacciones').select().eq('id', transaction.id).single();
       final oldTx = TransactionModel.fromJson(oldTxData);
 
@@ -297,21 +375,47 @@ class TransactionsRepository {
         await _syncCascadingEffects(oldTx, isUndo: true);
       }
 
+      if (!oldTx.isRecurring && transaction.isRecurring && transaction.recurringRule != null) {
+        final nextOccurrence = _calculateNextOccurrence(
+          transaction.recurringRule!,
+          transaction.fecha,
+          weekendAdjustment: transaction.weekendAdjustment,
+        );
+        
+        final plantilla = transaction.toJson();
+        plantilla.remove('id');
+        plantilla.remove('created_at');
+        plantilla.remove('updated_at');
+        plantilla.remove('is_recurring');
+        plantilla.remove('recurring_rule');
+        plantilla.remove('next_occurrence');
+        plantilla.remove('last_occurrence');
+        plantilla.remove('is_active');
+        
+        await _supabase.from('reglas_recurrentes').insert({
+          'id': const Uuid().v4(),
+          'user_id': userId,
+          'plantilla_transaccion': plantilla,
+          'frecuencia': transaction.recurringRule,
+          'proxima_ocurrencia': nextOccurrence.toIso8601String(),
+          'activa': true,
+        });
+      }
+
       final updatedTransaction = transaction.copyWith(
         userId: userId,
         updatedAt: DateTime.now(),
+        isRecurring: false,
+        recurringRule: null,
       );
 
-      // Validador Anti-Hackeo (Repository-level)
       await _validateDebtPaymentOverflow(updatedTransaction, oldTx: oldTx);
 
-      // 2. Actualizar en la base de datos
       await _supabase
           .from('transacciones')
           .update(updatedTransaction.toJson())
           .eq('id', transaction.id);
       
-      // 3. Sincronizar efectos de la nueva versión si está completa
       if (updatedTransaction.estado == 'completa') {
         await _syncCascadingEffects(updatedTransaction);
       }
@@ -323,16 +427,16 @@ class TransactionsRepository {
   /// Elimina una transacción
   Future<void> deleteTransaction(String id) async {
     try {
-      // 1. Obtener la transacción antes de borrarla para revertir efectos en cascada
       final txData = await _supabase.from('transacciones').select().eq('id', id).maybeSingle();
       if (txData != null) {
         final tx = TransactionModel.fromJson(txData);
         if (tx.estado == 'completa') {
           await _syncCascadingEffects(tx, isUndo: true);
         }
+        await _supabase.from('transacciones').delete().eq('id', id);
+      } else {
+        await _supabase.from('reglas_recurrentes').delete().eq('id', id);
       }
-
-      await _supabase.from('transacciones').delete().eq('id', id);
     } catch (e) {
       throw Exception('Error al eliminar transacción: $e');
     }

@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../../core/constants/app_colors.dart';
+import '../../../../core/widgets/app_toast.dart';
 import '../../models/transaction_model.dart';
 import '../providers/transactions_provider.dart';
 import '../../../accounts/presentation/providers/accounts_provider.dart';
@@ -296,255 +297,243 @@ class TransactionTile extends ConsumerWidget { // Corrección v4: Cambiado a Con
     final isCompleted = transaction.estado == 'completa';
 
     return Container(
-      margin: const EdgeInsets.symmetric(
-        horizontal: AppColors.pagePadding,
-        vertical: 6,
-      ),
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
       decoration: BoxDecoration(
-        color: cardColor,
-        borderRadius: BorderRadius.circular(AppColors.radiusLarge),
+        color: isDark ? const Color(0xFF1C1C1E) : Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: isDark ? Colors.black.withOpacity(0.3) : Colors.black.withOpacity(0.04),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
         border: Border.all(
-          color: isCompleted 
-            ? Colors.transparent 
-            : (isDark ? Colors.orange.withOpacity(0.3) : Colors.orange.withOpacity(0.1)),
+          color: isDark ? Colors.white.withOpacity(0.05) : Colors.black.withOpacity(0.03),
           width: 1,
         ),
-        boxShadow: [
-          if (!isDark)
-            BoxShadow(
-              color: Colors.black.withOpacity(0.04),
-              blurRadius: 10,
-              offset: const Offset(0, 4),
-            ),
-        ],
       ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(AppColors.radiusLarge),
+      child: Material(
+        color: Colors.transparent,
         child: InkWell(
+          borderRadius: BorderRadius.circular(16),
           onTap: onEdit,
           onLongPress: onDelete,
           child: Padding(
-            padding: const EdgeInsets.all(AppColors.cardPadding),
-            child: Column(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            // 1. Icono de Categoría (Círculo)
+            Container(
+              width: 38,
+              height: 38,
+              decoration: BoxDecoration(
+                color: displayCategoryColor.withOpacity(0.12),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                displayCategoryIcon,
+                color: displayCategoryColor,
+                size: 18,
+              ),
+            ),
+            const SizedBox(width: 14),
+            
+            // 2. Información Central (Categoría, Cuenta, Descripción)
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    displayCategoryName ?? _getTipoFormatted(transaction.tipo),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: GoogleFonts.montserrat(
+                      fontWeight: FontWeight.w600,
+                      fontSize: 14,
+                      color: isDark ? Colors.white : AppColors.textPrimary,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Row(
+                    children: [
+                      Icon(
+                        Icons.account_balance_rounded,
+                        size: 11,
+                        color: isDark ? Colors.white54 : Colors.grey[500],
+                      ),
+                      const SizedBox(width: 4),
+                      Expanded(
+                        child: Text(
+                          '${displayAccountName ?? "Cuenta general"}${transaction.descripcion?.isNotEmpty == true ? " • ${transaction.descripcion}" : ""}',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: GoogleFonts.montserrat(
+                            color: isDark ? Colors.white60 : Colors.grey[600],
+                            fontSize: 11,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            
+            const SizedBox(width: 8),
+            
+            // 3. Monto y Estado
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                // Fila Superior: Icono, Categoría/Desc y Monto
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // 1. Icono de Categoría
-                    Container(
-                      width: 44,
-                      height: 44,
-                      decoration: BoxDecoration(
-                        color: displayCategoryColor.withOpacity(0.12),
-                        borderRadius: BorderRadius.circular(AppColors.radiusMedium),
-                      ),
-                      child: Icon(
-                        displayCategoryIcon,
-                        color: displayCategoryColor,
-                        size: 22,
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    
-                    // Información Central (Categoría y Descripción)
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          // 2. Nombre de la categoría o tipo
-                          Text(
-                            displayCategoryName ?? _getTipoFormatted(transaction.tipo),
-                            style: GoogleFonts.montserrat(
-                              fontWeight: FontWeight.w700,
-                              fontSize: 15,
-                              color: isDark ? Colors.white : AppColors.textPrimary,
-                            ),
-                          ),
-                          const SizedBox(height: 2),
-                          // 3. Descripción
-                          if (transaction.descripcion != null && transaction.descripcion!.isNotEmpty)
-                            Text(
-                              transaction.descripcion!,
-                              maxLines: 2,
-                              overflow: TextOverflow.ellipsis,
-                              style: GoogleFonts.montserrat(
-                                color: isDark ? Colors.white60 : AppColors.textPrimary.withOpacity(0.6),
-                                fontSize: 13,
-                              ),
-                            ),
-                        ],
-                      ),
-                    ),
-                    
-                    const SizedBox(width: 8),
-                    
-                    // 6. Monto (Alineado arriba a la derecha)
-                    Text(
-                      _formatCurrency(transaction.monto, displayCurrencySymbol),
-                      style: GoogleFonts.montserrat(
-                        fontSize: 16,
-                        color: _getAmountColor(),
-                        fontWeight: FontWeight.w800,
-                      ),
-                    ),
-                  ],
+                Text(
+                  _formatCurrency(transaction.monto, displayCurrencySymbol),
+                  style: GoogleFonts.montserrat(
+                    fontSize: 14,
+                    color: _getAmountColor(),
+                    fontWeight: FontWeight.w700,
+                  ),
                 ),
-                
-                const SizedBox(height: 12),
-                
-                // Línea divisoria sutil
-                Divider(
-                  height: 1, 
-                  color: isDark ? Colors.white10 : Colors.grey.withOpacity(0.1),
-                ),
-                
-                const SizedBox(height: 12),
-
-                // Fila Inferior: Banco, Fecha y Controles
-                Row(
-                  children: [
-                    // Columna de Metadatos (Banco y Fecha)
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          // 4. Banco
-                          Row(
-                            children: [
-                              Icon(
-                                Icons.account_balance_rounded,
-                                size: 14,
-                                color: isDark ? Colors.white70 : Colors.grey[600],
-                              ),
-                              const SizedBox(width: 6),
-                              Expanded(
-                                child: Text(
-                                  displayAccountName ?? 'Cuenta general',
-                                  style: GoogleFonts.montserrat(
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.w600,
-                                    color: isDark ? Colors.white70 : Colors.grey[700],
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 6),
-                          // 5. Fecha
-                          Row(
-                            children: [
-                              Icon(
-                                Icons.calendar_today_rounded,
-                                size: 14,
-                                color: Colors.grey[500],
-                              ),
-                              const SizedBox(width: 6),
-                              Expanded(
-                                child: Text(
-                                  _formatDate(transaction.fecha),
-                                  style: GoogleFonts.montserrat(
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.w500,
-                                    color: Colors.grey[600],
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-                    ),
-                    
-                    // 7. Switch y 8. Opciones
-                    Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        // Switch de estado
-                        if (!isCompleted)
-                          Padding(
-                            padding: const EdgeInsets.only(right: 8),
-                            child: Text(
-                              'PENDIENTE',
-                              style: GoogleFonts.montserrat(
-                                fontSize: 9,
-                                fontWeight: FontWeight.w700,
-                                color: Colors.orange,
-                                letterSpacing: 0.5,
-                              ),
-                            ),
-                          ),
-                        SizedBox(
-                          height: 28,
-                          width: 44,
-                          child: Transform.scale(
-                            scale: 0.75,
-                            child: Switch(
-                              value: isCompleted,
-                              activeColor: Colors.white,
-                              activeTrackColor: AppColors.primary,
-                              inactiveThumbColor: Colors.grey[400],
-                              inactiveTrackColor: Colors.grey[200],
-                              onChanged: (value) async {
-                                if (value) {
-                                  await ref.read(transactionsNotifierProvider.notifier).markAsComplete(transaction);
-                                } else {
-                                  await ref.read(transactionsNotifierProvider.notifier).markAsPending(transaction);
-                                }
-                              },
-                            ),
-                          ),
-                        ),
-                        Material(
-                          color: Colors.transparent,
-                          child: PopupMenuButton<String>(
-                            icon: Icon(
-                              Icons.more_vert_rounded,
-                              size: 20,
-                              color: isDark ? Colors.white38 : AppColors.textPrimary.withOpacity(0.3),
-                            ),
-                            padding: EdgeInsets.zero,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(AppColors.radiusMedium),
-                            ),
-                            onSelected: (value) {
-                              if (value == 'edit') onEdit?.call();
-                              if (value == 'delete') onDelete?.call();
-                            },
-                            itemBuilder: (context) => [
-                              PopupMenuItem(
-                                value: 'edit',
-                                child: Row(
-                                  children: [
-                                    const Icon(Icons.edit_outlined, size: 18),
-                                    const SizedBox(width: 8),
-                                    Text('Editar', style: GoogleFonts.montserrat(fontSize: AppColors.bodySmall)),
-                                  ],
-                                ),
-                              ),
-                              PopupMenuItem(
-                                value: 'delete',
-                                child: Row(
-                                  children: [
-                                    const Icon(Icons.delete_outline, size: 18, color: AppColors.error),
-                                    const SizedBox(width: 8),
-                                    Text('Eliminar', style: GoogleFonts.montserrat(fontSize: AppColors.bodySmall, color: AppColors.error)),
-                                  ],
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
+                const SizedBox(height: 2),
+                _TransactionStatusButton(
+                  transaction: transaction,
+                  isDark: isDark,
+                  isCompleted: isCompleted,
                 ),
               ],
             ),
+            
+            const SizedBox(width: 4),
+
+            // 4. Opciones (Extrema derecha alineado)
+            Material(
+              color: Colors.transparent,
+              child: PopupMenuButton<String>(
+                icon: Icon(
+                  Icons.more_vert_rounded,
+                  size: 18,
+                  color: isDark ? Colors.white38 : AppColors.textPrimary.withOpacity(0.3),
+                ),
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(AppColors.radiusMedium),
+                ),
+                onSelected: (value) {
+                  if (value == 'edit') onEdit?.call();
+                  if (value == 'delete') onDelete?.call();
+                },
+                itemBuilder: (context) => [
+                  PopupMenuItem(
+                    value: 'edit',
+                    child: Row(
+                      children: [
+                        const Icon(Icons.edit_outlined, size: 18),
+                        const SizedBox(width: 8),
+                        Text('Editar', style: GoogleFonts.montserrat(fontSize: AppColors.bodySmall)),
+                      ],
+                    ),
+                  ),
+                  PopupMenuItem(
+                    value: 'delete',
+                    child: Row(
+                      children: [
+                        const Icon(Icons.delete_outline, size: 18, color: AppColors.error),
+                        const SizedBox(width: 8),
+                        Text('Eliminar', style: GoogleFonts.montserrat(fontSize: AppColors.bodySmall, color: AppColors.error)),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
           ),
         ),
       ),
     );
   }
 }
+class _TransactionStatusButton extends ConsumerStatefulWidget {
+  final TransactionModel transaction;
+  final bool isDark;
+  final bool isCompleted;
 
+  const _TransactionStatusButton({
+    Key? key,
+    required this.transaction,
+    required this.isDark,
+    required this.isCompleted,
+  }) : super(key: key);
+
+  @override
+  ConsumerState<_TransactionStatusButton> createState() => _TransactionStatusButtonState();
+}
+
+class _TransactionStatusButtonState extends ConsumerState<_TransactionStatusButton> {
+  bool? _optimisticIsCompleted;
+
+  @override
+  void didUpdateWidget(covariant _TransactionStatusButton oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.isCompleted != widget.isCompleted) {
+      _optimisticIsCompleted = null;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isCompleted = _optimisticIsCompleted ?? widget.isCompleted;
+
+    return SizedBox(
+      height: 16,
+      child: TextButton.icon(
+        onPressed: () async {
+          // Actualización optimista inmediata
+          setState(() {
+            _optimisticIsCompleted = !isCompleted;
+          });
+
+          // Pequeño retardo visual para que el usuario alcance a ver
+          // que el botón cambió a verde/naranja antes de que la lista se reorganice
+          await Future.delayed(const Duration(milliseconds: 700));
+
+          // Operación en segundo plano (silenciosa)
+          if (!isCompleted) {
+            ref.read(transactionsNotifierProvider.notifier).markAsComplete(widget.transaction);
+            if (mounted) showAppToast(context, message: 'Marcado como PAGADO', type: ToastType.success);
+          } else {
+            ref.read(transactionsNotifierProvider.notifier).markAsPending(widget.transaction);
+            if (mounted) showAppToast(context, message: 'Marcado como PENDIENTE', type: ToastType.warning);
+          }
+        },
+        icon: Icon(
+          isCompleted ? Icons.check_circle_rounded : Icons.schedule_rounded,
+          size: 11,
+        ),
+        label: Text(
+          isCompleted ? 'Pagado' : 'Pendiente',
+          style: GoogleFonts.montserrat(
+            fontSize: 10,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        style: TextButton.styleFrom(
+          backgroundColor: Colors.transparent,
+          foregroundColor: isCompleted 
+              ? (widget.isDark ? Colors.greenAccent : Colors.green[700]) 
+              : (widget.isDark ? Colors.orange[300] : Colors.orange[800]),
+          padding: EdgeInsets.zero,
+          minimumSize: Size.zero,
+          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+          elevation: 0,
+        ),
+      ),
+    );
+  }
+}

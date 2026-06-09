@@ -6,8 +6,8 @@ import '../providers/transaction_filters_provider.dart';
 import '../../../accounts/presentation/providers/accounts_provider.dart';
 import '../../../categories/presentation/providers/categories_provider.dart';
 
-class TransactionFiltersBar extends ConsumerWidget {
-  const TransactionFiltersBar({Key? key}) : super(key: key);
+class TransactionFiltersSheet extends ConsumerWidget {
+  const TransactionFiltersSheet({Key? key}) : super(key: key);
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -16,99 +16,132 @@ class TransactionFiltersBar extends ConsumerWidget {
     final categoriesAsync = ref.watch(categoriesListProvider);
 
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final bgColor = isDark 
-            ? const Color(0xFF121212) 
-            : AppColors.backgroundColor;
+    final bgColor = isDark ? const Color(0xFF1E1E1E) : Colors.white;
 
     return Container(
-      width: double.infinity,
+      padding: EdgeInsets.only(
+        bottom: MediaQuery.of(context).padding.bottom + 20,
+        top: 16,
+        left: 20,
+        right: 20,
+      ),
       decoration: BoxDecoration(
         color: bgColor,
-        // Eliminado el borde inferior según preferencia de diseño sin bordes
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
       ),
-      child: SingleChildScrollView(
-        scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: AppColors.md, vertical: 12),
-        physics: const BouncingScrollPhysics(),
-        child: Row(
-          children: [
-            // Botón para limpiar filtros
-            if (_hasAnyFilter(filters))
-              Padding(
-                padding: const EdgeInsets.only(right: 8.0),
-                child: GestureDetector(
-                  onTap: () => ref.read(transactionFiltersProvider.notifier).state = TransactionFilters(),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                    decoration: BoxDecoration(
-                      color: Colors.redAccent.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(20),
-                      border: Border.all(color: Colors.redAccent.withOpacity(0.3)),
-                    ),
-                    child: Row(
-                      children: [
-                        const Icon(Icons.clear_rounded, size: 14, color: Colors.redAccent),
-                        const SizedBox(width: 4),
-                        Text(
-                          'Limpiar',
-                          style: GoogleFonts.montserrat(
-                            color: Colors.redAccent,
-                            fontSize: AppColors.bodySmall,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 40,
+            height: 4,
+            decoration: BoxDecoration(
+              color: isDark ? Colors.white24 : Colors.black12,
+              borderRadius: BorderRadius.circular(2),
+            ),
+          ),
+          const SizedBox(height: 24),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'Filtros',
+                style: GoogleFonts.montserrat(
+                  fontSize: 20,
+                  fontWeight: FontWeight.w700,
+                  color: isDark ? Colors.white : AppColors.textPrimary,
                 ),
               ),
-
-            // Filtro de Estatus
-            _FilterChip(
-              label: _getStatusLabel(filters.status),
-              isActive: filters.status != null,
-              icon: Icons.filter_alt_outlined,
-              onPressed: () => _showStatusPicker(context, ref),
-            ),
-            const SizedBox(width: 8),
-
-            // Filtro de Cuenta
-            _FilterChip(
-              label: _getAccountName(filters.accountId, accountsAsync),
-              isActive: filters.accountId != null,
-              icon: Icons.account_balance_wallet_outlined,
-              onPressed: () => _showAccountPicker(context, ref, accountsAsync),
-            ),
-            const SizedBox(width: 8),
-
-            // Filtro de Categoría
-            _FilterChip(
-              label: _getCategoryName(filters.categoryId, categoriesAsync),
-              isActive: filters.categoryId != null,
-              icon: Icons.category_outlined,
-              onPressed: () => _showCategoryPicker(context, ref, categoriesAsync),
-            ),
-            const SizedBox(width: 8),
-
-            // Filtro de Monto
-            _FilterChip(
-              label: _getAmountLabel(filters),
-              isActive: filters.minAmount != null || filters.maxAmount != null,
-              icon: Icons.payments_outlined,
-              onPressed: () => _showAmountFilter(context, ref),
-            ),
-            const SizedBox(width: 8),
-
-            // Filtro de Fecha
-            _FilterChip(
-              label: _getDateLabel(filters),
-              isActive: filters.dateRange != null,
-              icon: Icons.event_outlined,
-              onPressed: () => _showDatePicker(context, ref),
-            ),
-          ],
-        ),
+              if (_hasAnyFilter(filters))
+                TextButton(
+                  onPressed: () {
+                    ref.read(transactionFiltersProvider.notifier).state = TransactionFilters();
+                    Navigator.pop(context);
+                  },
+                  child: Text('Limpiar Todo', style: GoogleFonts.montserrat(color: AppColors.error, fontWeight: FontWeight.w600)),
+                ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          _buildFilterRow(
+            context: context,
+            icon: Icons.filter_alt_outlined,
+            label: 'Estatus',
+            value: _getStatusLabel(filters.status),
+            onTap: () => _showStatusPicker(context, ref),
+            isDark: isDark,
+          ),
+          _buildFilterRow(
+            context: context,
+            icon: Icons.account_balance_wallet_outlined,
+            label: 'Cuenta',
+            value: _getAccountName(filters.accountId, accountsAsync),
+            onTap: () => _showAccountPicker(context, ref, accountsAsync),
+            isDark: isDark,
+          ),
+          _buildFilterRow(
+            context: context,
+            icon: Icons.category_outlined,
+            label: 'Categoría',
+            value: _getCategoryName(filters.categoryId, categoriesAsync),
+            onTap: () => _showCategoryPicker(context, ref, categoriesAsync),
+            isDark: isDark,
+          ),
+          _buildFilterRow(
+            context: context,
+            icon: Icons.payments_outlined,
+            label: 'Monto',
+            value: _getAmountLabel(filters),
+            onTap: () => _showAmountFilter(context, ref),
+            isDark: isDark,
+          ),
+          _buildFilterRow(
+            context: context,
+            icon: Icons.event_outlined,
+            label: 'Fecha',
+            value: _getDateLabel(filters),
+            onTap: () => _showDatePicker(context, ref),
+            isDark: isDark,
+          ),
+        ],
       ),
+    );
+  }
+
+  Widget _buildFilterRow({
+    required BuildContext context,
+    required IconData icon,
+    required String label,
+    required String value,
+    required VoidCallback onTap,
+    required bool isDark,
+  }) {
+    return ListTile(
+      contentPadding: EdgeInsets.zero,
+      leading: Container(
+        padding: const EdgeInsets.all(8),
+        decoration: BoxDecoration(
+          color: isDark ? Colors.white.withOpacity(0.05) : AppColors.primary.withOpacity(0.1),
+          shape: BoxShape.circle,
+        ),
+        child: Icon(icon, color: AppColors.primary, size: 20),
+      ),
+      title: Text(label, style: GoogleFonts.montserrat(fontWeight: FontWeight.w600, fontSize: 15)),
+      trailing: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            value,
+            style: GoogleFonts.montserrat(
+              color: value != label && value != 'Monto' && value != 'Fecha' && value != 'Estatus' && value != 'Cuenta' && value != 'Categoría' ? AppColors.primary : Colors.grey,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+          const SizedBox(width: 8),
+          Icon(Icons.arrow_forward_ios_rounded, size: 14, color: Colors.grey.withOpacity(0.5)),
+        ],
+      ),
+      onTap: onTap,
     );
   }
 
@@ -460,77 +493,5 @@ class TransactionFiltersBar extends ConsumerWidget {
     };
     
     return iconMap[iconName] ?? Icons.label_outline;
-  }
-}
-
-class _FilterChip extends StatelessWidget {
-  final String label;
-  final bool isActive;
-  final IconData icon;
-  final VoidCallback onPressed;
-
-  const _FilterChip({
-    required this.label,
-    required this.isActive,
-    required this.icon,
-    required this.onPressed,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    
-    return InkWell(
-      onTap: onPressed,
-      borderRadius: BorderRadius.circular(20),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-        decoration: BoxDecoration(
-          color: isActive 
-              ? AppColors.primary 
-              : (isDark ? Colors.white.withOpacity(0.05) : Colors.white),
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(
-            color: isActive 
-                ? AppColors.primary 
-                : (isDark ? Colors.white.withOpacity(0.1) : Colors.grey.withOpacity(0.2)),
-            width: 1,
-          ),
-          boxShadow: [
-            if (!isActive && !isDark)
-              BoxShadow(
-                color: Colors.black.withOpacity(0.03),
-                blurRadius: 4,
-                offset: const Offset(0, 2),
-              ),
-          ],
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              icon,
-              size: 14,
-              color: isActive ? Colors.white : (isDark ? Colors.white70 : AppColors.textPrimary.withOpacity(0.7)),
-            ),
-            const SizedBox(width: 6),
-            Text(
-              label,
-              style: GoogleFonts.montserrat(
-                color: isActive ? Colors.white : (isDark ? Colors.white70 : AppColors.textPrimary),
-                fontSize: AppColors.bodySmall,
-                fontWeight: isActive ? FontWeight.w600 : FontWeight.w500,
-              ),
-            ),
-            const SizedBox(width: 4),
-            Icon(
-              Icons.keyboard_arrow_down_outlined,
-              size: 10,
-              color: isActive ? Colors.white.withOpacity(0.7) : Colors.grey,
-            ),
-          ],
-        ),
-      ),
-    );
   }
 }

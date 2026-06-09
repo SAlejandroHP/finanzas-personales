@@ -114,7 +114,7 @@ class _GoalFormBottomSheetState extends ConsumerState<GoalFormBottomSheet> {
     }
 
     final title = _titleController.text.trim();
-    final amount = double.tryParse(_amountController.text) ?? 0;
+    final amount = double.tryParse(_amountController.text.replaceAll(',', '')) ?? 0;
     final description = _descriptionController.text.trim();
 
     final goal = widget.goal?.copyWith(

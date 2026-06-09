@@ -338,6 +338,7 @@ class _RecurringTransactionCard extends StatelessWidget {
     
     Color color = transaction.tipo == 'ingreso' ? Colors.green : Colors.redAccent;
     IconData categoryIcon = Icons.repeat_rounded;
+    String categoryName = 'Desconocida';
     
     categoriesAsync.whenData((categories) {
       if (transaction.categoriaId != null) {
@@ -345,9 +346,12 @@ class _RecurringTransactionCard extends StatelessWidget {
         if (cat != null) {
           color = _getColorFromHex(cat.color);
           categoryIcon = _getIcon(cat.icono);
+          categoryName = cat.nombre;
         }
       }
     });
+    
+    final bool isIncome = transaction.tipo == 'ingreso';
     
     return Container(
       padding: const EdgeInsets.all(14),
@@ -363,8 +367,10 @@ class _RecurringTransactionCard extends StatelessWidget {
             ),
         ],
       ),
-      child: Column(
-        children: [
+      child: Opacity(
+        opacity: transaction.isActive ? 1.0 : 0.6,
+        child: Column(
+          children: [
           Row(
             children: [
               Container(
@@ -384,17 +390,54 @@ class _RecurringTransactionCard extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      transaction.descripcion ?? 'Sin descripción',
-                      style: GoogleFonts.montserrat(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w700,
-                        color: isDark ? Colors.white : AppColors.textPrimary,
-                        letterSpacing: -0.3,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
+                    Row(
+                      children: [
+                        Flexible(
+                          child: Text(
+                            categoryName,
+                            style: GoogleFonts.montserrat(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w700,
+                              color: isDark ? Colors.white : AppColors.textPrimary,
+                              letterSpacing: -0.3,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                        if (!transaction.isActive)
+                          Container(
+                            margin: const EdgeInsets.only(left: 8),
+                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: Colors.orange.withOpacity(0.2),
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                            child: Text(
+                              'PAUSADA',
+                              style: GoogleFonts.montserrat(
+                                fontSize: 8,
+                                fontWeight: FontWeight.w800,
+                                color: Colors.orange,
+                              ),
+                            ),
+                          ),
+                      ],
                     ),
+                    if (transaction.descripcion != null && transaction.descripcion!.isNotEmpty)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 2, bottom: 2),
+                        child: Text(
+                          transaction.descripcion!,
+                          style: GoogleFonts.montserrat(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w500,
+                            color: isDark ? Colors.white70 : Colors.black87,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
                     Text(
                       _getFrequencyLabel(transaction.recurringRule),
                       style: GoogleFonts.montserrat(
@@ -409,12 +452,29 @@ class _RecurringTransactionCard extends StatelessWidget {
               Column(
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                    margin: const EdgeInsets.only(bottom: 4),
+                    decoration: BoxDecoration(
+                      color: isIncome ? Colors.green.withOpacity(0.1) : Colors.redAccent.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                    child: Text(
+                      isIncome ? 'INGRESO' : 'GASTO',
+                      style: GoogleFonts.montserrat(
+                        fontSize: 8,
+                        fontWeight: FontWeight.w800,
+                        color: isIncome ? Colors.green : Colors.redAccent,
+                        letterSpacing: 0.5,
+                      ),
+                    ),
+                  ),
                   Text(
-                    _formatCurrency(transaction.monto),
+                    '${isIncome ? '+' : '-'}${_formatCurrency(transaction.monto)}',
                     style: GoogleFonts.montserrat(
                       fontSize: 15,
                       fontWeight: FontWeight.w800,
-                      color: isDark ? Colors.white : AppColors.textPrimary,
+                      color: isIncome ? Colors.green : (isDark ? Colors.white : AppColors.textPrimary),
                       letterSpacing: -0.5,
                     ),
                   ),
@@ -476,18 +536,42 @@ class _RecurringTransactionCard extends StatelessWidget {
                   }
                 },
               ),
-              AppButton(
-                label: 'Editar Regla',
-                icon: Icons.edit_rounded,
-                onPressed: () => showTransactionFormSheet(context, transaction: transaction)
-                    .then((_) => ref.read(financeServiceProvider).refreshAll()),
-                variant: 'primary',
-                size: 'small',
-                height: 32,
+              Row(
+                children: [
+                  AppButton(
+                    label: transaction.isActive ? 'Pausar' : 'Reactivar',
+                    icon: transaction.isActive ? Icons.pause_rounded : Icons.play_arrow_rounded,
+                    onPressed: () async {
+                      try {
+                        await TransactionsRepository(supabase: supabaseClient)
+                            .updateTransaction(transaction.copyWith(isActive: !transaction.isActive));
+                        ref.read(financeServiceProvider).refreshAll();
+                      } catch (e) {
+                        if (context.mounted) {
+                          showAppToast(context, message: 'Error: $e', type: ToastType.error);
+                        }
+                      }
+                    },
+                    variant: 'outlined',
+                    size: 'small',
+                    height: 32,
+                  ),
+                  const SizedBox(width: 8),
+                  AppButton(
+                    label: 'Editar',
+                    icon: Icons.edit_rounded,
+                    onPressed: () => showTransactionFormSheet(context, transaction: transaction)
+                        .then((_) => ref.read(financeServiceProvider).refreshAll()),
+                    variant: 'primary',
+                    size: 'small',
+                    height: 32,
+                  ),
+                ],
               ),
             ],
           ),
         ],
+      ),
       ),
     );
   }

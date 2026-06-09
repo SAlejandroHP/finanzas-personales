@@ -87,6 +87,31 @@ class FinanceService {
     refreshAll(ref);
   }
 
+  /// Coordina el pago anticipado de una transacción recurrente
+  Future<void> processRecurringPayment(String ruleId) async {
+    // 1. Obtener la regla recurrente por su ID
+    final repository = _ref.read(transactionsRepositoryProvider);
+    final recurringRules = await repository.getRecurringTransactions();
+    
+    TransactionModel? rule;
+    for (final r in recurringRules) {
+      if (r.id == ruleId) {
+        rule = r;
+        break;
+      }
+    }
+
+    if (rule == null) {
+      throw Exception('Regla recurrente no encontrada o inactiva');
+    }
+
+    // 2. Procesar el pago anticipado (Crea la transacción y actualiza la regla)
+    await repository.payRecurringEarly(rule);
+
+    // 3. Refrescar los providers
+    refreshAll();
+  }
+
   /// Invalida todos los providers relacionados usando el Ref interno seguro o uno externo
   void refreshAll([Ref? ref]) {
     // Audit v5: Centralizamos aquí los refrescos que antes estaban dispersos.

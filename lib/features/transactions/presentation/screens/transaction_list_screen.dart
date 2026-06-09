@@ -8,7 +8,7 @@ import '../../models/transaction_model.dart';
 import '../providers/transactions_provider.dart';
 import '../widgets/transaction_form_sheet.dart';
 import '../widgets/transaction_tile.dart';
-import '../widgets/transaction_filters_bar.dart';
+import '../widgets/transaction_filters_bar.dart'; // Mantengo el archivo, pero usará TransactionFiltersSheet
 import '../providers/transaction_filters_provider.dart';
 import '../../../../core/services/finance_service.dart';
 
@@ -50,7 +50,7 @@ class _TransactionListScreenState extends ConsumerState<TransactionListScreen> {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final backgroundColor = isDark ? const Color(0xFF121212) : AppColors.backgroundColor;
+    final backgroundColor = isDark ? const Color(0xFF121212) : Colors.white;
     final transactionsAsync = ref.watch(filteredTransactionsProvider);
 
     return Scaffold(
@@ -61,7 +61,7 @@ class _TransactionListScreenState extends ConsumerState<TransactionListScreen> {
           SafeArea(
             bottom: false,
             child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
@@ -81,7 +81,7 @@ class _TransactionListScreenState extends ConsumerState<TransactionListScreen> {
                       Text(
                         'Movimientos',
                         style: GoogleFonts.montserrat(
-                          fontSize: 24,
+                          fontSize: 22,
                           fontWeight: FontWeight.w800,
                           color: isDark ? Colors.white : AppColors.textPrimary,
                           letterSpacing: -0.5,
@@ -89,17 +89,35 @@ class _TransactionListScreenState extends ConsumerState<TransactionListScreen> {
                       ),
                     ],
                   ),
-                  _HeaderAction(
-                    onTap: () async {
-                      final transactions = transactionsAsync.asData?.value;
-                      if (transactions != null && transactions.isNotEmpty) {
-                         await showSearch(
-                          context: context,
-                          delegate: _TransactionSearchDelegate(transactions, ref),
-                        );
-                      }
-                    },
-                    icon: Icons.search_rounded,
+                  Row(
+                    children: [
+                      _HeaderAction(
+                        onTap: () {
+                          showModalBottomSheet(
+                            context: context,
+                            isScrollControlled: true,
+                            backgroundColor: Colors.transparent,
+                            useRootNavigator: true,
+                            builder: (context) => const TransactionFiltersSheet(),
+                          );
+                        },
+                        icon: Icons.filter_alt_outlined,
+                        hasBadge: _hasAnyFilter(ref.watch(transactionFiltersProvider)),
+                      ),
+                      const SizedBox(width: 8),
+                      _HeaderAction(
+                        onTap: () async {
+                          final transactions = transactionsAsync.asData?.value;
+                          if (transactions != null && transactions.isNotEmpty) {
+                             await showSearch(
+                              context: context,
+                              delegate: _TransactionSearchDelegate(transactions, ref),
+                            );
+                          }
+                        },
+                        icon: Icons.search_rounded,
+                      ),
+                    ],
                   ),
                 ],
               ),
@@ -131,7 +149,6 @@ class _TransactionListScreenState extends ConsumerState<TransactionListScreen> {
             final hasFilters = _hasAnyFilter(ref.watch(transactionFiltersProvider));
             return Column(
               children: [
-                const TransactionFiltersBar(),
                 Expanded(
                   child: _buildEmptyStateBox(context, hasFilters, isDark),
                 ),
@@ -141,16 +158,14 @@ class _TransactionListScreenState extends ConsumerState<TransactionListScreen> {
 
           return Column(
             children: [
-              const TransactionFiltersBar(), // Fijo arriba
-              
               // Indicadores (Tabs) fijos arriba del PageView
               if (hasPending) ...[
                 const SizedBox(height: 8),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    _buildTabDot(0, 'Transacciones Generales', isDark),
-                    _buildTabDot(1, 'Transacciones Pendientes', isDark),
+                    _buildTabDot(0, 'General', isDark),
+                    _buildTabDot(1, 'Pendientes', isDark),
                   ],
                 ),
                 const SizedBox(height: 8),
@@ -175,7 +190,7 @@ class _TransactionListScreenState extends ConsumerState<TransactionListScreen> {
                             AppColors.primary.withRed(30).withGreen(100),
                           ],
                         ),
-                        const SizedBox(height: 8),
+                        const SizedBox(height: 4),
                         Expanded(child: _buildTransactionList(displayedTransactions, isDark, ref, archivedCount: archivedTransactions.length)),
                       ],
                     ),
@@ -201,10 +216,9 @@ class _TransactionListScreenState extends ConsumerState<TransactionListScreen> {
             ],
           );
         },
-        loading: () => Column(
+        loading: () => const Column(
           children: [
-            const TransactionFiltersBar(),
-            const Expanded(
+            Expanded(
               child: Center(
                 child: CircularProgressIndicator(color: AppColors.primary),
               ),
@@ -213,7 +227,6 @@ class _TransactionListScreenState extends ConsumerState<TransactionListScreen> {
         ),
         error: (error, stackTrace) => Column(
           children: [
-            const TransactionFiltersBar(),
             Expanded(
               child: Center(
                 child: Column(
@@ -331,7 +344,7 @@ class _TransactionListScreenState extends ConsumerState<TransactionListScreen> {
     }
     
     return ListView.builder(
-      padding: const EdgeInsets.only(top: 8, bottom: 120),
+      padding: const EdgeInsets.only(top: 4, bottom: 80),
       physics: const BouncingScrollPhysics(),
       itemCount: transactions.length + (archivedCount > 0 ? 1 : 0),
       itemBuilder: (context, index) {
@@ -373,18 +386,19 @@ class _TransactionListScreenState extends ConsumerState<TransactionListScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Padding(
-                padding: const EdgeInsets.only(left: 20, top: 12, bottom: 4),
+                padding: const EdgeInsets.only(left: 20, top: 4, bottom: 0),
                 child: Text(
                   _formatDateHeader(transaction.fecha),
                   style: GoogleFonts.montserrat(
                     fontWeight: FontWeight.w700,
-                    fontSize: 12,
+                    fontSize: 11,
                     color: isDark ? Colors.white54 : AppColors.textPrimary.withOpacity(0.5),
                     letterSpacing: 1.0,
                   ),
                 ),
               ),
               TransactionTile(
+                key: ValueKey('header_${transaction.id}'),
                 transaction: transaction,
                 currencySymbol: '\$',
                 onEdit: () {
@@ -402,6 +416,7 @@ class _TransactionListScreenState extends ConsumerState<TransactionListScreen> {
         }
         
         return TransactionTile(
+          key: ValueKey(transaction.id),
           transaction: transaction,
           currencySymbol: '\$',
           onEdit: () {
@@ -429,36 +444,18 @@ class _TransactionListScreenState extends ConsumerState<TransactionListScreen> {
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
         decoration: BoxDecoration(
           color: isSelected ? AppColors.primary.withOpacity(0.15) : Colors.transparent,
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(20),
           border: Border.all(
-            color: isSelected ? AppColors.primary.withOpacity(0.5) : Colors.transparent,
+            color: isSelected ? AppColors.primary.withOpacity(0.5) : (isDark ? Colors.white12 : Colors.black12),
           ),
         ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              width: 6,
-              height: 6,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: isSelected 
-                    ? AppColors.primary 
-                    : (isDark ? Colors.white24 : Colors.grey.withOpacity(0.4)),
-              ),
-            ),
-            if (isSelected) ...[
-              const SizedBox(width: 6),
-              Text(
-                label,
-                style: GoogleFonts.montserrat(
-                  fontSize: 10,
-                  fontWeight: FontWeight.w700,
-                  color: AppColors.primary,
-                ),
-              ),
-            ]
-          ],
+        child: Text(
+          label,
+          style: GoogleFonts.montserrat(
+            fontSize: 11,
+            fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
+            color: isSelected ? AppColors.primary : (isDark ? Colors.white60 : Colors.black54),
+          ),
         ),
       ),
     );
@@ -477,9 +474,9 @@ class _TransactionListScreenState extends ConsumerState<TransactionListScreen> {
     
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16),
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(AppColors.radiusXLarge),
+        borderRadius: BorderRadius.circular(16),
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
@@ -488,8 +485,8 @@ class _TransactionListScreenState extends ConsumerState<TransactionListScreen> {
         boxShadow: [
           BoxShadow(
             color: gradient[0].withOpacity(0.35),
-            blurRadius: 15,
-            offset: const Offset(0, 5),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
           ),
         ],
       ),
@@ -516,7 +513,7 @@ class _TransactionListScreenState extends ConsumerState<TransactionListScreen> {
                   child: Text(
                     currencyFormatter.format(total),
                     style: GoogleFonts.montserrat(
-                      fontSize: 22,
+                      fontSize: 20,
                       fontWeight: FontWeight.w800,
                       color: Colors.white,
                       letterSpacing: -0.5,
@@ -527,9 +524,9 @@ class _TransactionListScreenState extends ConsumerState<TransactionListScreen> {
             ),
           ),
           Container(
-            height: 40, // Unificado a 40
+            height: 30, // Unificado a 30
             width: 1,
-            margin: const EdgeInsets.symmetric(horizontal: 16),
+            margin: const EdgeInsets.symmetric(horizontal: 12),
             color: Colors.white.withOpacity(0.2),
           ),
           Expanded(
@@ -543,7 +540,7 @@ class _TransactionListScreenState extends ConsumerState<TransactionListScreen> {
                   color: Colors.greenAccent,
                   icon: Icons.add_circle_outline,
                 ),
-                const SizedBox(height: 8), // Gap para la pila
+                const SizedBox(height: 4), // Gap para la pila
                 _buildCompactSummaryItem(
                   amount: expenses,
                   color: Colors.white.withOpacity(0.9),
@@ -570,7 +567,7 @@ class _TransactionListScreenState extends ConsumerState<TransactionListScreen> {
     
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16),
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
       decoration: BoxDecoration(
         color: cardBgColor,
         borderRadius: BorderRadius.circular(AppColors.radiusXLarge),
@@ -609,7 +606,7 @@ class _TransactionListScreenState extends ConsumerState<TransactionListScreen> {
                   child: Text(
                     currencyFormatter.format(total),
                     style: GoogleFonts.montserrat(
-                      fontSize: 22,
+                      fontSize: 20,
                       fontWeight: FontWeight.w800,
                       color: isDark ? Colors.white : AppColors.textPrimary,
                       letterSpacing: -0.5,
@@ -620,9 +617,9 @@ class _TransactionListScreenState extends ConsumerState<TransactionListScreen> {
             ),
           ),
           Container(
-            height: 40,
+            height: 30,
             width: 1,
-            margin: const EdgeInsets.symmetric(horizontal: 16),
+            margin: const EdgeInsets.symmetric(horizontal: 12),
             color: isDark ? Colors.white10 : Colors.grey.withOpacity(0.1),
           ),
           Expanded(
@@ -636,7 +633,7 @@ class _TransactionListScreenState extends ConsumerState<TransactionListScreen> {
                   color: isDark ? const Color(0xFF81C784) : const Color(0xFF2E7D32),
                   icon: Icons.add_circle_outline,
                 ),
-                const SizedBox(height: 8),
+                const SizedBox(height: 4),
                 _buildCompactSummaryItem(
                   amount: expenses,
                   color: AppColors.secondary,
@@ -681,7 +678,7 @@ class _TransactionListScreenState extends ConsumerState<TransactionListScreen> {
         Text(
           formattedText,
           style: GoogleFonts.montserrat(
-            fontSize: 16,
+            fontSize: 14,
             fontWeight: FontWeight.w700,
             color: color,
             letterSpacing: -0.2,
@@ -868,21 +865,47 @@ class _TransactionSearchDelegate extends SearchDelegate {
 class _HeaderAction extends StatelessWidget {
   final VoidCallback onTap;
   final IconData icon;
+  final bool hasBadge;
 
-  const _HeaderAction({required this.onTap, required this.icon});
+  const _HeaderAction({
+    required this.onTap, 
+    required this.icon,
+    this.hasBadge = false,
+  });
 
   @override
   Widget build(BuildContext context) {
     return IconButton(
-      icon: Container(
-        padding: const EdgeInsets.all(6),
-        decoration: BoxDecoration(
-          color: AppColors.primary.withOpacity(0.15),
-          shape: BoxShape.circle,
-        ),
-        child: Icon(icon, size: 20, color: AppColors.primary),
+      icon: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(6),
+            decoration: BoxDecoration(
+              color: AppColors.primary.withOpacity(0.15),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(icon, size: 20, color: AppColors.primary),
+          ),
+          if (hasBadge)
+            Positioned(
+              right: 0,
+              top: 0,
+              child: Container(
+                width: 10,
+                height: 10,
+                decoration: BoxDecoration(
+                  color: AppColors.secondary,
+                  shape: BoxShape.circle,
+                  border: Border.all(color: isDark(context) ? const Color(0xFF121212) : Colors.white, width: 2),
+                ),
+              ),
+            ),
+        ],
       ),
       onPressed: onTap,
     );
   }
+
+  bool isDark(BuildContext context) => Theme.of(context).brightness == Brightness.dark;
 }
