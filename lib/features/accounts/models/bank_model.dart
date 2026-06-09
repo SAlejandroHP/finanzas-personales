@@ -1,6 +1,6 @@
-/// Modelo simple para representar un banco disponible en Belvo
+/// Modelo simple para representar un banco disponible en Supabase
 class BankModel {
-  final int id;
+  final String id;
   final String name;
   final String displayName;
   final String? logo;
@@ -24,7 +24,7 @@ class BankModel {
 
   factory BankModel.fromJson(Map<String, dynamic> json) {
     return BankModel(
-      id: json['id'] as int,
+      id: json['id'] as String,
       name: json['name'] as String,
       displayName: json['display_name'] as String,
       logo: json['logo'] as String?,

@@ -1,19 +1,19 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../models/bank_model.dart';
-import '../../../../core/network/belvo_client.dart';
+import '../../../../core/network/supabase_client.dart';
 
-/// Provider para obtener la lista de bancos disponibles de Belvo
-/// Filtrado por país y tipo
+/// Provider para obtener la lista de bancos disponibles desde Supabase
+/// Filtrado por país
 final banksProvider = FutureProvider.family<List<BankModel>, String>(
   (ref, countryCode) async {
     try {
-      final institutionsData = await BelvoClient.getInstitutions(
-        countryCode: countryCode,
-        type: 'bank',
-        status: 'healthy',
-      );
+      final response = await supabaseClient
+          .from('bancos')
+          .select()
+          .contains('country_codes', [countryCode])
+          .eq('status', 'active');
 
-      final banks = institutionsData
+      final banks = (response as List)
           .map((json) => BankModel.fromJson(json))
           .toList();
       
@@ -23,7 +23,6 @@ final banksProvider = FutureProvider.family<List<BankModel>, String>(
         return banks;
       }
       
-      // Si la lista está vacía, retorna lista vacía
       return [];
     } catch (e) {
       // Si hay error, retorna lista vacía
@@ -33,36 +32,21 @@ final banksProvider = FutureProvider.family<List<BankModel>, String>(
 );
 
 /// Provider para obtener un banco específico por ID
-final bankByIdProvider = FutureProvider.family<BankModel?, int>(
+final bankByIdProvider = FutureProvider.family<BankModel?, String>(
   (ref, bankId) async {
     try {
-      final allBanks = await ref.watch(banksProvider('MX').future);
-      return allBanks.firstWhere(
-        (bank) => bank.id == bankId,
-        orElse: () => throw Exception('Banco no encontrado'),
-      );
+      final response = await supabaseClient
+          .from('bancos')
+          .select()
+          .eq('id', bankId)
+          .maybeSingle();
+
+      if (response != null) {
+        return BankModel.fromJson(response);
+      }
+      return null;
     } catch (e) {
       return null;
-    }
-  },
-);
-
-/// Provider para obtener bancos de múltiples países
-final banksByCountriesProvider = FutureProvider.family<List<BankModel>, List<String>>(
-  (ref, countryCodes) async {
-    try {
-      final institutionsData = await BelvoClient.getInstitutionsByCountries(
-        countryCodes: countryCodes,
-        type: 'bank',
-        status: 'healthy',
-      );
-
-      return institutionsData
-          .map((json) => BankModel.fromJson(json))
-          .toList()
-        ..sort((a, b) => a.displayName.compareTo(b.displayName));
-    } catch (e) {
-      return [];
     }
   },
 );

@@ -6,7 +6,7 @@ import '../../../../core/constants/app_colors.dart';
 import '../../../../core/widgets/app_toast.dart';
 import '../../../../core/widgets/loading_indicator.dart';
 import '../providers/accounts_provider.dart';
-import '../widgets/account_card.dart';
+import '../widgets/bank_group_card.dart';
 import '../../../../core/widgets/bank_logo.dart';
 import '../widgets/account_form_bottom_sheet.dart';
 import '../providers/currencies_provider.dart';
@@ -97,39 +97,58 @@ class AccountsListScreen extends ConsumerWidget {
 
                 _buildSectionHeader(context, 'Tus activos'),
 
-                GridView.builder(
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  padding: const EdgeInsets.fromLTRB(AppColors.pagePadding, 0, AppColors.pagePadding, 120),
-                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 2,
-                    crossAxisSpacing: AppColors.contentGap,
-                    mainAxisSpacing: AppColors.contentGap,
-                    childAspectRatio: 1.0,
-                  ),
-                  itemCount: accounts.length,
-                  itemBuilder: (context, index) {
-                    final account = accounts[index];
-                    return Consumer(
-                      builder: (context, ref, child) {
-                        final currencyAsync = ref.watch(currencyByIdProvider(account.monedaId));
-                        final symbol = currencyAsync.asData?.value?.simbolo ?? '\$';
+                Consumer(
+                  builder: (context, ref, child) {
+                    final Map<String, List<AccountModel>> accountsByBank = {};
+                    
+                    for (final acc in accounts) {
+                      final bankName = acc.bancoNombre ?? 'Otras cuentas';
+                      if (!accountsByBank.containsKey(bankName)) {
+                        accountsByBank[bankName] = [];
+                      }
+                      accountsByBank[bankName]!.add(acc);
+                    }
 
-                        return AccountCard(
-                          account: account,
-                          currencySymbol: symbol,
-                          onEdit: () {
-                            ref.read(selectedAccountProvider.notifier).state = account;
-                            _showAccountForm(context, ref);
-                          },
-                          onDelete: () async {
-                            final confirmed = await _showDeleteDialog(context, account.nombre);
-                            if (confirmed && context.mounted) {
-                              _handleDelete(context, ref, account.id);
-                            }
-                          },
-                        );
-                      },
+                    // Sort so "Otras cuentas" goes to the bottom
+                    final sortedBanks = accountsByBank.keys.toList()..sort((a, b) {
+                      if (a == 'Otras cuentas') return 1;
+                      if (b == 'Otras cuentas') return -1;
+                      return a.compareTo(b);
+                    });
+
+                    return Padding(
+                      padding: const EdgeInsets.fromLTRB(AppColors.pagePadding, 0, AppColors.pagePadding, 120),
+                      child: Column(
+                        children: sortedBanks.map((bankName) {
+                          final bankAccounts = accountsByBank[bankName]!;
+                          final currencyAsync = ref.watch(currencyByIdProvider(bankAccounts.first.monedaId));
+                          final symbol = currencyAsync.asData?.value?.simbolo ?? '\$';
+                          
+                          // Buscamos si hay logo
+                          final bankLogo = bankAccounts.firstWhere((a) => a.bancoLogo != null, orElse: () => bankAccounts.first).bancoLogo;
+
+                          return BankGroupCard(
+                            bankName: bankName,
+                            bankLogo: bankLogo,
+                            primaryColor: '#000000', // Default fallback for BankLogo
+                            accounts: bankAccounts,
+                            currencySymbol: symbol,
+                            onEdit: (account) {
+                              ref.read(selectedAccountProvider.notifier).state = account;
+                              _showAccountForm(context, ref);
+                            },
+                            onDelete: (account) async {
+                              final confirmed = await _showDeleteDialog(context, account.nombre);
+                              if (confirmed && context.mounted) {
+                                _handleDelete(context, ref, account.id);
+                              }
+                            },
+                            onTap: (account) {
+                              // If you want navigation: context.push('/accounts/detail/${account.id}');
+                            },
+                          );
+                        }).toList(),
+                      ),
                     );
                   },
                 ),

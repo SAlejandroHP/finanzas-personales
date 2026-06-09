@@ -380,6 +380,10 @@ class _AccountFormBottomSheetState extends ConsumerState<AccountFormBottomSheet>
                             const SizedBox(height: 12),
                             _buildTipoSelector(isDark),
                             const SizedBox(height: 24),
+                            _buildSectionTitle('BANCO (OPCIONAL)', isDark),
+                            const SizedBox(height: 12),
+                            _buildBankSelectorInRow(context, isDark),
+                            const SizedBox(height: 24),
                             _buildSectionTitle('DETALLE FINANCIERO', isDark),
                             const SizedBox(height: 16),
                             if (_selectedTipo == 'tarjeta_credito') ...[
