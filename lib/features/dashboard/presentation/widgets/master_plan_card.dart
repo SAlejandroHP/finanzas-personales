@@ -337,38 +337,40 @@ class _MasterPlanCardState extends State<MasterPlanCard> {
     String? note,
     bool isLastInSection = false,
   }) {
-    return IntrinsicHeight(
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Timeline graphics
-          Column(
-            children: [
-              Container(
-                width: 12,
-                height: 12,
-                margin: const EdgeInsets.only(top: 4),
-                decoration: BoxDecoration(
-                  color: isDark ? Colors.white24 : Colors.black26,
-                  shape: BoxShape.circle,
-                  border: Border.all(
-                    color: isDark ? AppColors.surfaceDark : Colors.white,
-                    width: 2,
-                  ),
+    return Stack(
+      children: [
+        // Timeline graphics line
+        if (!isLastInSection)
+          Positioned(
+            left: 5, // center of the 12px dot
+            top: 16, // dot height + margin
+            bottom: 0,
+            child: Container(
+              width: 2,
+              color: isDark ? Colors.white10 : Colors.black12,
+            ),
+          ),
+        // Content
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Timeline dot
+            Container(
+              width: 12,
+              height: 12,
+              margin: const EdgeInsets.only(top: 4),
+              decoration: BoxDecoration(
+                color: isDark ? Colors.white24 : Colors.black26,
+                shape: BoxShape.circle,
+                border: Border.all(
+                  color: isDark ? AppColors.surfaceDark : Colors.white,
+                  width: 2,
                 ),
               ),
-              if (!isLastInSection)
-                Expanded(
-                  child: Container(
-                    width: 2,
-                    color: isDark ? Colors.white10 : Colors.black12,
-                  ),
-                ),
-            ],
-          ),
-          const SizedBox(width: 16),
-          // Content
-          Expanded(
+            ),
+            const SizedBox(width: 16),
+            // Main content column
+            Expanded(
             child: Padding(
               padding: const EdgeInsets.only(bottom: 24),
               child: Column(
@@ -426,9 +428,9 @@ class _MasterPlanCardState extends State<MasterPlanCard> {
                 ],
               ),
             ),
-          ),
-        ],
-      ),
+          ],
+        ),
+      ],
     );
   }
 
@@ -440,26 +442,27 @@ class _MasterPlanCardState extends State<MasterPlanCard> {
         borderRadius: BorderRadius.circular(6),
         border: Border.all(color: color.withOpacity(0.2)),
       ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Text(
-            '$label: ',
-            style: GoogleFonts.montserrat(
-              fontSize: 10,
-              fontWeight: FontWeight.w700,
-              color: color,
+      child: RichText(
+        text: TextSpan(
+          children: [
+            TextSpan(
+              text: '$label: ',
+              style: GoogleFonts.montserrat(
+                fontSize: 10,
+                fontWeight: FontWeight.w700,
+                color: color,
+              ),
             ),
-          ),
-          Text(
-            value,
-            style: GoogleFonts.montserrat(
-              fontSize: 11,
-              fontWeight: FontWeight.w800,
-              color: isDark ? Colors.white : AppColors.textPrimary,
+            TextSpan(
+              text: value,
+              style: GoogleFonts.montserrat(
+                fontSize: 11,
+                fontWeight: FontWeight.w800,
+                color: isDark ? Colors.white : AppColors.textPrimary,
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
