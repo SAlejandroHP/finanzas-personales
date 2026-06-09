@@ -35,10 +35,20 @@ class BankGroupCard extends StatefulWidget {
 class _BankGroupCardState extends State<BankGroupCard> {
   bool _isExpanded = false;
 
+  Color _parseColor(String hexColor) {
+    try {
+      final hex = hexColor.replaceAll('#', '');
+      return Color(int.parse('FF$hex', radix: 16));
+    } catch (e) {
+      return Colors.blueGrey;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final cardColor = isDark ? const Color(0xFF1E1E1E) : Colors.white;
+    final baseColor = isDark ? const Color(0xFF1E1E1E) : Colors.white;
+    final bankColor = _parseColor(widget.primaryColor);
 
     // Calcular saldos
     double totalEfectivo = 0;
@@ -62,18 +72,27 @@ class _BankGroupCardState extends State<BankGroupCard> {
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       decoration: BoxDecoration(
-        color: cardColor,
+        color: baseColor,
+        gradient: LinearGradient(
+          colors: [
+            bankColor.withOpacity(isDark ? 0.15 : 0.05),
+            baseColor,
+          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          stops: const [0.0, 0.4],
+        ),
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
           if (!isDark)
             BoxShadow(
-              color: Colors.black.withOpacity(0.04),
-              blurRadius: 10,
+              color: bankColor.withOpacity(0.08),
+              blurRadius: 12,
               offset: const Offset(0, 4),
             ),
         ],
         border: Border.all(
-          color: isDark ? Colors.white.withOpacity(0.05) : Colors.transparent,
+          color: isDark ? Colors.white.withOpacity(0.05) : bankColor.withOpacity(0.1),
           width: 1,
         ),
       ),
@@ -94,26 +113,11 @@ class _BankGroupCardState extends State<BankGroupCard> {
                   child: Row(
                     children: [
                       // Logo del Banco
-                      if (widget.bankLogo != null && widget.bankLogo!.isNotEmpty)
-                        BankLogo(
-                          bankName: widget.bankName,
-                          primaryColor: widget.primaryColor.replaceAll('#', ''),
-                          size: 48,
-                        )
-                      else
-                        Container(
-                          width: 48,
-                          height: 48,
-                          decoration: BoxDecoration(
-                            color: isDark ? Colors.white10 : Colors.grey[100],
-                            borderRadius: BorderRadius.circular(16),
-                          ),
-                          child: Icon(
-                            Icons.account_balance_rounded,
-                            color: isDark ? Colors.white38 : Colors.grey[400],
-                            size: 24,
-                          ),
-                        ),
+                      BankLogo(
+                        bankName: widget.bankName,
+                        primaryColor: widget.primaryColor.replaceAll('#', ''),
+                        size: 48,
+                      ),
                       const SizedBox(width: 16),
                       // Info del Banco
                       Expanded(
