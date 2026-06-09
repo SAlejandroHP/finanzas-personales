@@ -1,4 +1,3 @@
-import 'dart:ui';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -75,15 +74,13 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
       );
     });
 
-    final size = MediaQuery.of(context).size;
-
     return Scaffold(
       backgroundColor: isDark ? const Color(0xFF0F0F12) : AppColors.backgroundColor,
       body: SafeArea(
         child: Center(
               child: SingleChildScrollView(
                 physics: const BouncingScrollPhysics(),
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 32),
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -143,41 +140,19 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
                     _buildPillSwitch(isDark),
                     const SizedBox(height: 32),
 
-                    // Tarjeta principal (Sólida en lugar de Glassmorphism)
-                    Container(
-                      decoration: BoxDecoration(
-                        color: isDark ? AppColors.surfaceDark : Colors.white,
-                        borderRadius: const BorderRadius.only(
-                          topLeft: Radius.circular(40),
-                          bottomRight: Radius.circular(40),
-                          topRight: Radius.circular(15),
-                          bottomLeft: Radius.circular(15),
-                        ),
-                        boxShadow: [
-                          if (!isDark)
-                            BoxShadow(
-                              color: Colors.black.withValues(alpha: 0.05),
-                              blurRadius: 30,
-                              offset: const Offset(0, 15),
-                            ),
-                        ],
+                    // Formulario sin card — directo sobre el fondo
+                    AnimatedSize(
+                      duration: const Duration(milliseconds: 300),
+                      curve: Curves.easeInOutCubic,
+                      child: AnimatedSwitcher(
+                        duration: const Duration(milliseconds: 300),
+                        switchInCurve: Curves.easeOut,
+                        switchOutCurve: Curves.easeIn,
+                        child: _currentIndex == 0
+                            ? _buildLoginForm(isDark, canUseBiometrics, isLoading)
+                            : _buildSignupForm(isDark, isLoading),
                       ),
-                      child: Padding(
-                            padding: const EdgeInsets.all(32),
-                            child: AnimatedSize(
-                              duration: const Duration(milliseconds: 300),
-                              curve: Curves.easeInOutCubic,
-                              child: AnimatedSwitcher(
-                                duration: const Duration(milliseconds: 300),
-                                switchInCurve: Curves.easeOut,
-                                switchOutCurve: Curves.easeIn,
-                                child: _currentIndex == 0
-                                    ? _buildLoginForm(isDark, canUseBiometrics, isLoading)
-                                    : _buildSignupForm(isDark, isLoading),
-                              ),
-                            ),
-                          ),
-                        ),
+                    ),
                   ],
                 ),
               ),
@@ -350,7 +325,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
           onPressed: isLoading ? null : _handleEmailLogin,
           isFullWidth: true,
           isLoading: isLoading,
-          height: 56,
+          height: 48,
         ),
         const SizedBox(height: 16),
 
@@ -364,7 +339,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
               onPressed: isLoading ? null : _handleBiometricLogin,
               variant: 'outlined',
               isFullWidth: true,
-              height: 56,
+              height: 48,
             );
           },
           loading: () => const SizedBox.shrink(),
@@ -451,7 +426,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
           onPressed: isLoading ? null : _handleEmailSignup,
           isFullWidth: true,
           isLoading: isLoading,
-          height: 56,
+          height: 48,
         ),
       ],
     );

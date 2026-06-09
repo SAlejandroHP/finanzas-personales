@@ -344,7 +344,7 @@ class _TransactionListScreenState extends ConsumerState<TransactionListScreen> {
     }
     
     return ListView.builder(
-      padding: const EdgeInsets.only(top: 4, bottom: 80),
+      padding: const EdgeInsets.only(top: 4, bottom: 160),
       physics: const BouncingScrollPhysics(),
       itemCount: transactions.length + (archivedCount > 0 ? 1 : 0),
       itemBuilder: (context, index) {

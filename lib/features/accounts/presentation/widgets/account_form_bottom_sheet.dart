@@ -55,6 +55,7 @@ class _AccountFormBottomSheetState extends ConsumerState<AccountFormBottomSheet>
   BankModel? _selectedBank;
   bool _isLoading = false;
   bool _isDefault = false;
+  bool _showAdvancedOptions = false;
   int? _fechaCorte;
   int? _fechaLimitePago;
 
@@ -379,25 +380,6 @@ class _AccountFormBottomSheetState extends ConsumerState<AccountFormBottomSheet>
                             const SizedBox(height: 12),
                             _buildTipoSelector(isDark),
                             const SizedBox(height: 24),
-                            _buildSectionTitle('CONFIGURACIÓN', isDark),
-                            const SizedBox(height: 12),
-                            currenciesAsync.when(
-                              loading: () => const Center(key: ValueKey('c_loading'), child: CircularProgressIndicator(strokeWidth: 2)),
-                              error: (_, __) => const Icon(key: ValueKey('c_error'), Icons.error_outline),
-                              data: (currencies) => _buildCurrencyDropdown(currencies, isDark),
-                            ),
-                            const SizedBox(height: 16),
-                            _buildBankSelectorInRow(context, isDark),
-                            const SizedBox(height: 16),
-                            SwitchListTile.adaptive(
-                              contentPadding: EdgeInsets.zero,
-                              title: Text('Establecer como cuenta por default', style: GoogleFonts.montserrat(fontSize: 12, fontWeight: FontWeight.w600, color: isDark ? Colors.white70 : AppColors.textPrimary)),
-                              subtitle: Text('Esta cuenta se seleccionará automáticamente al crear transacciones.', style: GoogleFonts.montserrat(fontSize: 10, color: isDark ? Colors.white38 : Colors.grey[500])),
-                              activeColor: AppColors.primary,
-                              value: _isDefault,
-                              onChanged: _isLoading ? null : (val) => setState(() => _isDefault = val),
-                            ),
-                            const SizedBox(height: 24),
                             _buildSectionTitle('DETALLE FINANCIERO', isDark),
                             const SizedBox(height: 16),
                             if (_selectedTipo == 'tarjeta_credito') ...[
@@ -452,74 +434,144 @@ class _AccountFormBottomSheetState extends ConsumerState<AccountFormBottomSheet>
                               _buildInfoBox('Este monto se establecerá como tu saldo actual.', isDark, isHelp: true),
                             ],
                             const SizedBox(height: 24),
-                            _buildSectionTitle('IDENTIFICACIÓN Y TAGS (IA)', isDark),
-                            const SizedBox(height: 12),
-                            AppTextField(
-                              label: 'Últimos 4 dígitos',
-                              controller: _lastFourController,
-                              keyboardType: TextInputType.number,
-                              maxLength: 4,
-                              prefixIcon: Icons.pin_outlined,
-                              hintText: '1234',
-                              suffixIcon: IconButton(
-                                icon: const Icon(Icons.camera_alt_outlined, color: AppColors.primary),
-                                onPressed: (_isLoading || _isNavigating) ? null : () async {
-                                  setState(() => _isNavigating = true);
-                                  try {
-                                    final lastFour = await Navigator.push<String>(
-                                      context,
-                                      MaterialPageRoute(builder: (_) => const CardScannerScreen()),
-                                    );
-                                    if (lastFour != null && lastFour.isNotEmpty && mounted) {
-                                      setState(() {
-                                        _lastFourController.text = lastFour;
-                                      });
-                                      showAppToast(context, message: '¡Tarjeta escaneada!', type: ToastType.success);
-                                    }
-                                  } finally {
-                                    if (mounted) setState(() => _isNavigating = false);
+                            
+                            // Opciones Avanzadas Toggle
+                            Material(
+                              color: Colors.transparent,
+                              child: InkWell(
+                                borderRadius: BorderRadius.circular(AppColors.radiusMedium),
+                                onTap: () {
+                                  setState(() {
+                                    _showAdvancedOptions = !_showAdvancedOptions;
+                                  });
+                                  if (_showAdvancedOptions) {
+                                    _scrollToBottom();
                                   }
                                 },
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
+                                  decoration: BoxDecoration(
+                                    border: Border.all(color: isDark ? Colors.white10 : Colors.grey[200]!),
+                                    borderRadius: BorderRadius.circular(AppColors.radiusMedium),
+                                  ),
+                                  child: Row(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      Icon(
+                                        _showAdvancedOptions ? Icons.keyboard_arrow_up_rounded : Icons.keyboard_arrow_down_rounded,
+                                        color: AppColors.primary,
+                                      ),
+                                      const SizedBox(width: 8),
+                                      Text(
+                                        'Opciones Avanzadas',
+                                        style: GoogleFonts.montserrat(
+                                          fontSize: 14,
+                                          fontWeight: FontWeight.w600,
+                                          color: AppColors.primary,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
                               ),
                             ),
-                            const SizedBox(height: 16),
-                            AppTextField(
-                              label: 'Alias / Tags (IA)',
-                              controller: _tagsController,
-                              focusNode: _tagsFocusNode,
-                              prefixIcon: Icons.tag_outlined,
-                              hintText: 'Ej: Personal, Nu, Nómina...',
-                              helperText: 'Presiona Enter para agregar un tag',
-                              onSubmitted: (value) => _addTag(value),
-                            ),
-                            if (_tags.isNotEmpty) ...[
-                              const SizedBox(height: 12),
-                              Wrap(
-                                spacing: 8,
-                                runSpacing: 4,
-                                children: _tags.map((tag) => Chip(
-                                  label: Text(
-                                    tag,
-                                    style: GoogleFonts.montserrat(
-                                      fontSize: 11,
-                                      fontWeight: FontWeight.w600,
-                                      color: isDark ? Colors.white : AppColors.textPrimary,
+                            
+                            AnimatedCrossFade(
+                              firstChild: const SizedBox(width: double.infinity, height: 0),
+                              secondChild: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  const SizedBox(height: 24),
+                                  _buildSectionTitle('CONFIGURACIÓN', isDark),
+                                  const SizedBox(height: 12),
+                                  currenciesAsync.when(
+                                    loading: () => const Center(key: ValueKey('c_loading'), child: CircularProgressIndicator(strokeWidth: 2)),
+                                    error: (_, __) => const Icon(key: ValueKey('c_error'), Icons.error_outline),
+                                    data: (currencies) => _buildCurrencyDropdown(currencies, isDark),
+                                  ),
+                                  const SizedBox(height: 16),
+                                  SwitchListTile.adaptive(
+                                    contentPadding: EdgeInsets.zero,
+                                    title: Text('Establecer como cuenta por default', style: GoogleFonts.montserrat(fontSize: 12, fontWeight: FontWeight.w600, color: isDark ? Colors.white70 : AppColors.textPrimary)),
+                                    subtitle: Text('Esta cuenta se seleccionará automáticamente al crear transacciones.', style: GoogleFonts.montserrat(fontSize: 10, color: isDark ? Colors.white38 : Colors.grey[500])),
+                                    activeColor: AppColors.primary,
+                                    value: _isDefault,
+                                    onChanged: _isLoading ? null : (val) => setState(() => _isDefault = val),
+                                  ),
+                                  const SizedBox(height: 24),
+                                  _buildSectionTitle('IDENTIFICACIÓN Y TAGS (IA)', isDark),
+                                  const SizedBox(height: 12),
+                                  AppTextField(
+                                    label: 'Últimos 4 dígitos',
+                                    controller: _lastFourController,
+                                    keyboardType: TextInputType.number,
+                                    maxLength: 4,
+                                    prefixIcon: Icons.pin_outlined,
+                                    hintText: '1234',
+                                    suffixIcon: IconButton(
+                                      icon: const Icon(Icons.camera_alt_outlined, color: AppColors.primary),
+                                      onPressed: (_isLoading || _isNavigating) ? null : () async {
+                                        setState(() => _isNavigating = true);
+                                        try {
+                                          final lastFour = await Navigator.push<String>(
+                                            context,
+                                            MaterialPageRoute(builder: (_) => const CardScannerScreen()),
+                                          );
+                                          if (lastFour != null && lastFour.isNotEmpty && mounted) {
+                                            setState(() {
+                                              _lastFourController.text = lastFour;
+                                            });
+                                            showAppToast(context, message: '¡Tarjeta escaneada!', type: ToastType.success);
+                                          }
+                                        } finally {
+                                          if (mounted) setState(() => _isNavigating = false);
+                                        }
+                                      },
                                     ),
                                   ),
-                                  backgroundColor: isDark 
-                                      ? AppColors.primary.withOpacity(0.2) 
-                                      : AppColors.primary.withOpacity(0.1),
-                                  deleteIcon: const Icon(Icons.close, size: 14),
-                                  onDeleted: () => _removeTag(tag),
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(8),
-                                    side: BorderSide(
-                                      color: AppColors.primary.withOpacity(0.3),
-                                    ),
+                                  const SizedBox(height: 16),
+                                  AppTextField(
+                                    label: 'Alias / Tags (IA)',
+                                    controller: _tagsController,
+                                    focusNode: _tagsFocusNode,
+                                    prefixIcon: Icons.tag_outlined,
+                                    hintText: 'Ej: Personal, Nu, Nómina...',
+                                    helperText: 'Presiona Enter para agregar un tag',
+                                    onSubmitted: (value) => _addTag(value),
                                   ),
-                                )).toList(),
+                                  if (_tags.isNotEmpty) ...[
+                                    const SizedBox(height: 12),
+                                    Wrap(
+                                      spacing: 8,
+                                      runSpacing: 4,
+                                      children: _tags.map((tag) => Chip(
+                                        label: Text(
+                                          tag,
+                                          style: GoogleFonts.montserrat(
+                                            fontSize: 11,
+                                            fontWeight: FontWeight.w600,
+                                            color: isDark ? Colors.white : AppColors.textPrimary,
+                                          ),
+                                        ),
+                                        backgroundColor: isDark 
+                                            ? AppColors.primary.withOpacity(0.2) 
+                                            : AppColors.primary.withOpacity(0.1),
+                                        deleteIcon: const Icon(Icons.close, size: 14),
+                                        onDeleted: () => _removeTag(tag),
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius: BorderRadius.circular(8),
+                                          side: BorderSide(
+                                            color: AppColors.primary.withOpacity(0.3),
+                                          ),
+                                        ),
+                                      )).toList(),
+                                    ),
+                                  ],
+                                ],
                               ),
-                            ],
+                              crossFadeState: _showAdvancedOptions ? CrossFadeState.showSecond : CrossFadeState.showFirst,
+                              duration: const Duration(milliseconds: 300),
+                            ),
                           ],
                         ),
                       ),
