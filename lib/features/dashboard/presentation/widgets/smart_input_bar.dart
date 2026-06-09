@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:speech_to_text/speech_to_text.dart' as stt;
@@ -31,26 +32,27 @@ class SmartInputBar extends ConsumerStatefulWidget {
 class _SmartInputBarState extends ConsumerState<SmartInputBar> {
   final TextEditingController _controller = TextEditingController();
   late final IAService _iaService;
-  late final stt.SpeechToText _speech;
+  // Nullable para evitar LateInitializationError en Web donde STT no está soportado
+  stt.SpeechToText? _speech;
   
   bool _isLoading = false;
   bool _isListening = false;
   bool _speechEnabled = false;
-  bool _speechInstantiated = false;
 
   @override
   void initState() {
     super.initState();
     _iaService = IAService();
-    try {
-      _speech = stt.SpeechToText();
-      _speechInstantiated = true;
-    } catch (e) {
-      _speechEnabled = false;
-      _speechInstantiated = false;
-      debugPrint('SpeechToText could not be instantiated: $e');
+    // STT solo disponible en plataformas nativas (iOS/Android)
+    if (!kIsWeb) {
+      try {
+        _speech = stt.SpeechToText();
+        _initSpeech();
+      } catch (e) {
+        debugPrint('SpeechToText could not be instantiated: $e');
+        _speech = null;
+      }
     }
-    _initSpeech();
     // Escucha cambios en el texto para notificar al FAB sobre ocultarse
     _controller.addListener(_onTextChanged);
   }
@@ -67,13 +69,14 @@ class _SmartInputBarState extends ConsumerState<SmartInputBar> {
   }
 
   Future<void> _initSpeech() async {
-    if (!_speechInstantiated) return;
+    final speechInstance = _speech;
+    if (speechInstance == null) return;
     try {
-      _speechEnabled = await _speech.initialize(
+      _speechEnabled = await speechInstance.initialize(
         onStatus: (status) {
           if (status == 'done') {
             if (_isListening) {
-              setState(() => _isListening = false);
+              if (mounted) setState(() => _isListening = false);
               if (_controller.text.trim().isNotEmpty) {
                 _processInput();
               }
@@ -99,18 +102,18 @@ class _SmartInputBarState extends ConsumerState<SmartInputBar> {
   }
 
   void _listen() async {
+    final speechInstance = _speech;
+    if (speechInstance == null || kIsWeb) {
+      showAppToast(
+        context,
+        message: "El reconocimiento de voz no está disponible aquí.",
+        type: ToastType.warning,
+      );
+      return;
+    }
     try {
-      if (!_speechInstantiated) {
-        showAppToast(
-          context,
-          message: "El reconocimiento de voz no está disponible en este dispositivo.",
-          type: ToastType.warning,
-        );
-        return;
-      }
-      
       if (!_speechEnabled) {
-        bool initSuccess = await _speech.initialize();
+        bool initSuccess = await speechInstance.initialize();
         if (!initSuccess) {
           if (mounted) {
             showAppToast(
@@ -126,14 +129,14 @@ class _SmartInputBarState extends ConsumerState<SmartInputBar> {
       }
 
       if (_isListening) {
-        await _speech.stop();
+        await speechInstance.stop();
         setState(() => _isListening = false);
         if (_controller.text.trim().isNotEmpty) {
           _processInput();
         }
       } else {
         _controller.clear();
-        await _speech.listen(
+        await speechInstance.listen(
           onResult: (result) {
             setState(() {
               _controller.text = result.recognizedWords;
@@ -169,7 +172,7 @@ class _SmartInputBarState extends ConsumerState<SmartInputBar> {
 
   Future<void> _processInput() async {
     if (_isListening) {
-      await _speech.stop();
+      await _speech?.stop();
       setState(() => _isListening = false);
     }
 
