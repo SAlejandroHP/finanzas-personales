@@ -144,7 +144,7 @@ class _AppTextFieldState extends State<AppTextField> {
                 : Colors.grey,
           ),
           decoration: InputDecoration(
-            hintText: widget.hintText ?? widget.label,
+            hintText: widget.hintText,
             errorText: widget.errorText,
             hintStyle: GoogleFonts.montserrat(
               fontSize: AppColors.bodyMedium,
