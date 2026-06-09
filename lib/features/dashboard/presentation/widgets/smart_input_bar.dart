@@ -31,7 +31,7 @@ class SmartInputBar extends ConsumerStatefulWidget {
 
 class _SmartInputBarState extends ConsumerState<SmartInputBar> {
   final TextEditingController _controller = TextEditingController();
-  late final IAService _iaService;
+  IAService? _iaService;
   // Nullable para evitar LateInitializationError en Web donde STT no está soportado
   stt.SpeechToText? _speech;
   
@@ -42,7 +42,12 @@ class _SmartInputBarState extends ConsumerState<SmartInputBar> {
   @override
   void initState() {
     super.initState();
-    _iaService = IAService();
+    try {
+      _iaService = IAService();
+    } catch (e) {
+      debugPrint('[SmartInputBar] IAService no disponible: $e');
+      // IAService fallará gracefully cuando se use, no en el build
+    }
     // STT solo disponible en plataformas nativas (iOS/Android)
     if (!kIsWeb) {
       try {
@@ -187,8 +192,13 @@ class _SmartInputBarState extends ConsumerState<SmartInputBar> {
       final accounts = ref.read(accountsWithBalanceProvider).valueOrNull ?? [];
       final categories = ref.read(categoriesListProvider).valueOrNull ?? [];
       final debts = ref.read(debtsListProvider).valueOrNull ?? [];
+
+      final service = _iaService;
+      if (service == null) {
+        throw Exception('El asistente de IA no está configurado en este entorno.');
+      }
       
-      final draft = await _iaService.parseTransactionIntent(
+      final draft = await service.parseTransactionIntent(
         input, 
         accounts,
         categories,

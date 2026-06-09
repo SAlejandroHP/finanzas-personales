@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'groq_service.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import '../../features/accounts/models/account_model.dart';
@@ -152,13 +153,17 @@ class IATransactionDraft {
 /// Servicio principal para la Inteligencia Artificial
 /// Actúa como puente entre la app y el modelo LLM, retornando borradores estructurados.
 class IAService {
-  late final GenerativeModel _model;
-  late final String _apiKey;
+  GenerativeModel? _model;
+  String _apiKey = '';
+  bool get isAvailable => _apiKey.isNotEmpty;
 
   IAService({String? apiKey}) {
-    final key = apiKey ?? dotenv.env['GROQ_API_KEY'] ?? '';
+    final key = apiKey ?? dotenv.maybeGet('GROQ_API_KEY') ?? '';
     if (key.isEmpty) {
-      throw Exception('GROQ_API_KEY no encontrada.');
+      // No lanzar excepción — el servicio simplemente no estará disponible.
+      // Esto evita que un .env faltante en producción colapse el dashboard.
+      debugPrint('[IAService] GROQ_API_KEY no encontrada. El asistente de IA estará deshabilitado.');
+      return;
     }
     _apiKey = key;
 
@@ -176,6 +181,7 @@ class IAService {
     required String systemInstruction,
     List<Content>? history,
   }) {
+    if (!isAvailable) throw Exception('Servicio de IA no disponible: GROQ_API_KEY faltante.');
     return GenerativeModel(
       model: 'openai/gpt-oss-120b',
       apiKey: _apiKey,
@@ -190,6 +196,9 @@ class IAService {
     List<CategoryModel> userCategories,
     List<DebtModel> userDebts,
   ) async {
+    if (!isAvailable || _model == null) {
+      throw Exception('El asistente de IA no está disponible (API key no configurada en este entorno).');
+    }
     try {
       // 1. Preparación del contexto para el LLM
       final cuentasContext = userAccounts.map((c) => {
@@ -224,7 +233,7 @@ class IAService {
 
       // 2. Llamada real al LLM de Gemini
       final content = [Content.text(fullPrompt)];
-      final response = await _model.generateContent(content);
+      final response = await _model!.generateContent(content);
       
       final responseText = response.text;
       if (responseText == null || responseText.isEmpty) {
