@@ -69,131 +69,92 @@ class _BankGroupCardState extends State<BankGroupCard> {
       decimalDigits: 2,
     );
 
-    return Container(
-      margin: const EdgeInsets.only(bottom: 16),
-      decoration: BoxDecoration(
-        color: baseColor,
-        borderRadius: BorderRadius.circular(24),
-        boxShadow: [
-          if (!isDark)
-            BoxShadow(
-              color: bankColor.withOpacity(0.08),
-              blurRadius: 12,
-              offset: const Offset(0, 4),
-            ),
-        ],
-        border: Border.all(
-          color: isDark ? Colors.white.withOpacity(0.05) : bankColor.withOpacity(0.1),
-          width: 1,
-        ),
-      ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(24),
-        child: Column(
-          children: [
-            Material(
-              color: Colors.transparent,
-              child: InkWell(
-                onTap: () {
-                  setState(() {
-                    _isExpanded = !_isExpanded;
-                  });
-                },
-                child: Padding(
-                  padding: const EdgeInsets.all(20.0),
-                  child: Row(
-                    children: [
-                      // Logo del Banco
-                      BankLogo(
-                        bankName: widget.bankName,
-                        primaryColor: widget.primaryColor.replaceAll('#', ''),
-                        size: 48,
-                      ),
-                      const SizedBox(width: 16),
-                      // Info del Banco
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              widget.bankName,
-                              style: GoogleFonts.montserrat(
-                                fontSize: 16,
-                                fontWeight: FontWeight.w800,
-                                color: isDark ? Colors.white : AppColors.textPrimary,
-                                letterSpacing: -0.3,
-                              ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              '${widget.accounts.length} producto${widget.accounts.length != 1 ? 's' : ''}',
-                              style: GoogleFonts.montserrat(
-                                fontSize: 12,
-                                fontWeight: FontWeight.w500,
-                                color: isDark ? Colors.white54 : Colors.grey[600],
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      // Saldo Consolidado
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.end,
-                        children: [
-                          Text(
-                            currencyFormatter.format(totalNeto),
-                            style: GoogleFonts.montserrat(
-                              fontSize: 18,
-                              fontWeight: FontWeight.w800,
-                              color: totalNeto < 0 
-                                  ? Colors.redAccent 
-                                  : (isDark ? Colors.white : AppColors.textPrimary),
-                              letterSpacing: -0.5,
-                            ),
-                          ),
-                          AnimatedRotation(
-                            turns: _isExpanded ? 0.5 : 0.0,
-                            duration: const Duration(milliseconds: 300),
-                            child: Icon(
-                              Icons.keyboard_arrow_down_rounded,
-                              color: isDark ? Colors.white38 : Colors.grey[400],
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
+    return Column(
+      children: [
+        Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: () {
+              setState(() {
+                _isExpanded = !_isExpanded;
+              });
+            },
+            borderRadius: BorderRadius.circular(12),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 12.0, horizontal: 8.0),
+              child: Row(
+                children: [
+                  // Logo del Banco
+                  BankLogo(
+                    bankName: widget.bankName,
+                    primaryColor: widget.primaryColor.replaceAll('#', ''),
+                    size: 32,
                   ),
-                ),
+                  const SizedBox(width: 12),
+                  // Info del Banco
+                  Expanded(
+                    child: Text(
+                      widget.bankName,
+                      style: GoogleFonts.montserrat(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w700,
+                        color: isDark ? Colors.white : AppColors.textPrimary,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  // Saldo Consolidado
+                  Text(
+                    currencyFormatter.format(totalNeto),
+                    style: GoogleFonts.montserrat(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w700,
+                      color: totalNeto < 0 
+                          ? Colors.redAccent 
+                          : (isDark ? Colors.white : AppColors.textPrimary),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  AnimatedRotation(
+                    turns: _isExpanded ? 0.5 : 0.0,
+                    duration: const Duration(milliseconds: 300),
+                    child: Icon(
+                      Icons.keyboard_arrow_down_rounded,
+                      color: isDark ? Colors.white38 : Colors.grey[400],
+                      size: 20,
+                    ),
+                  ),
+                ],
               ),
             ),
-            // Contenido expandible
-            AnimatedSize(
-              duration: const Duration(milliseconds: 350),
-              curve: Curves.easeInOutCubic,
-              child: Container(
-                constraints: _isExpanded
-                    ? const BoxConstraints(maxHeight: 1000)
-                    : const BoxConstraints(maxHeight: 0),
-                child: Column(
-                  children: [
-                    Divider(height: 1, color: isDark ? Colors.white10 : Colors.grey[100]),
-                    ...widget.accounts.map((acc) => AccountListTile(
-                          account: acc,
-                          currencySymbol: widget.currencySymbol,
-                          onEdit: () => widget.onEdit(acc),
-                          onDelete: () => widget.onDelete(acc),
-                          onTap: () => widget.onTap(acc),
-                        )),
-                    const SizedBox(height: 8), // Padding inferior
-                  ],
-                ),
-              ),
-            ),
-          ],
+          ),
         ),
-      ),
+        // Contenido expandible
+        AnimatedSize(
+          duration: const Duration(milliseconds: 250),
+          curve: Curves.easeInOut,
+          child: Container(
+            constraints: _isExpanded
+                ? const BoxConstraints(maxHeight: 2000)
+                : const BoxConstraints(maxHeight: 0),
+            margin: const EdgeInsets.only(left: 16),
+            child: Column(
+              children: [
+                ...widget.accounts.map((acc) => AccountListTile(
+                      account: acc,
+                      currencySymbol: widget.currencySymbol,
+                      onEdit: () => widget.onEdit(acc),
+                      onDelete: () => widget.onDelete(acc),
+                      onTap: () => widget.onTap(acc),
+                    )),
+                const SizedBox(height: 8),
+              ],
+            ),
+          ),
+        ),
+        Divider(height: 1, color: isDark ? Colors.white10 : Colors.grey[200]),
+      ],
     );
   }
 }
