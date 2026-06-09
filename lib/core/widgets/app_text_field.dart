@@ -108,11 +108,21 @@ class _AppTextFieldState extends State<AppTextField> {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final fillColor = isDark ? Colors.white.withOpacity(0.05) : Colors.grey[50];
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        Text(
+          widget.label,
+          style: GoogleFonts.montserrat(
+            fontSize: AppColors.bodySmall,
+            fontWeight: FontWeight.w600,
+            color: widget.isError 
+                ? AppColors.error 
+                : (isDark ? Colors.white70 : Colors.grey[700]),
+          ),
+        ),
+        const SizedBox(height: 4),
         TextFormField(
           controller: widget.controller,
           focusNode: _effectiveFocusNode,
@@ -134,28 +144,16 @@ class _AppTextFieldState extends State<AppTextField> {
                 : Colors.grey,
           ),
           decoration: InputDecoration(
-            labelText: widget.label,
-            hintText: widget.hintText,
+            hintText: widget.hintText ?? widget.label,
             errorText: widget.errorText,
-            labelStyle: GoogleFonts.montserrat(
-              fontSize: AppColors.bodyMedium,
-              color: widget.isError
-                  ? AppColors.error
-                  : (isDark ? Colors.white70 : Colors.grey[600]),
-            ),
             hintStyle: GoogleFonts.montserrat(
               fontSize: AppColors.bodyMedium,
-              color: isDark ? Colors.white54 : Colors.grey[400],
+              color: isDark ? Colors.white30 : Colors.grey[400],
             ),
-            floatingLabelStyle: GoogleFonts.montserrat(
-              fontSize: AppColors.bodySmall,
-              color: widget.isError ? AppColors.error : AppColors.primary,
-            ),
-            filled: true,
-            fillColor: fillColor,
+            filled: false,
             isDense: true,
             contentPadding: const EdgeInsets.symmetric(
-              horizontal: 16,
+              horizontal: 0,
               vertical: 12,
             ),
             prefixIcon: widget.prefixIcon != null
@@ -181,43 +179,37 @@ class _AppTextFieldState extends State<AppTextField> {
                     },
                   )
                 : widget.suffixIcon,
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
+            border: UnderlineInputBorder(
               borderSide: BorderSide(
-                color: isDark ? Colors.white12 : Colors.grey[300]!,
+                color: isDark ? Colors.white24 : Colors.grey[300]!,
                 width: 1,
               ),
             ),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
+            enabledBorder: UnderlineInputBorder(
               borderSide: BorderSide(
-                color: isDark ? Colors.white12 : Colors.grey[200]!,
+                color: isDark ? Colors.white24 : Colors.grey[300]!,
                 width: 1,
               ),
             ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
+            focusedBorder: UnderlineInputBorder(
               borderSide: BorderSide(
                 color: widget.isError ? AppColors.error : AppColors.primary,
                 width: 2,
               ),
             ),
-            errorBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(
+            errorBorder: const UnderlineInputBorder(
+              borderSide: BorderSide(
                 color: AppColors.error,
                 width: 2,
               ),
             ),
-            focusedErrorBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(
+            focusedErrorBorder: const UnderlineInputBorder(
+              borderSide: BorderSide(
                 color: AppColors.error,
                 width: 2,
               ),
             ),
-            disabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
+            disabledBorder: const UnderlineInputBorder(
               borderSide: BorderSide.none,
             ),
           ),
