@@ -246,10 +246,10 @@ class _AppShellState extends ConsumerState<AppShell> {
                               ),
                               // Óvalo indicador de activo integrado al navbar
                               Positioned(
-                                left: (animIndex * itemWidth) + (itemWidth / 2) - 32, // Centro menos la mitad del ancho (64/2)
+                                left: (animIndex * itemWidth) + 10, // Margen de 10px siempre, garantizando simetría perfecta con el borde exterior (radio 30) y top de 10
                                 top: 10, // Centrado verticalmente (60 - 40) / 2
                                 child: Container(
-                                  width: 64,
+                                  width: itemWidth - 20, // Su ancho se adapta dinámicamente para dejar siempre 10px de margen horizontal
                                   height: 40,
                                   decoration: BoxDecoration(
                                     color: AppColors.primary,
