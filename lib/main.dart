@@ -468,66 +468,161 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            colors: [Color(0xFF0A7075), Color(0xFF0D9BA1)],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
+      body: Stack(
+        children: [
+          // Fondo oscuro premium
+          Container(
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(
+                colors: [Color(0xFF07484B), Color(0xFF032224)],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+            ),
           ),
-        ),
-        child: Center(
-          child: FadeTransition(
-            opacity: _fadeAnimation,
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                // Ícono de la app con animación
-                Image.asset(
-                  'icono-finanzas.png',
-                  width: 120,
-                  height: 120,
-                ),
-                const SizedBox(height: 24),
-                
-                // Título
-                Text(
-                  'Finanzas Personal',
-                  style: GoogleFonts.montserrat(
-                    fontSize  : 36,
-                    fontWeight: FontWeight.w700,
-                    color     : Colors.white,
-                  ),
-                ),
-                const SizedBox(height: 40),
-                
-                // Indicador de carga
-                const SizedBox(
-                  width: 30,
-                  height: 30,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 3,
-                    valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                  ),
-                ),
-                const SizedBox(height: 16),
-                
-                // Mensaje cambiante
-                AnimatedSwitcher(
-                  duration: const Duration(milliseconds: 300),
-                  child: Text(
-                    _messages[_messageIndex],
-                    key: ValueKey<int>(_messageIndex),
-                    style: GoogleFonts.montserrat(
-                      fontSize: AppColors.bodyMedium,
-                      color: Colors.white70,
+          // Orbe decorativo superior izquierdo
+          Positioned(
+            top: -100,
+            left: -100,
+            child: Container(
+              width: 300,
+              height: 300,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: const Color(0xFF0A7075).withValues(alpha: 0.6),
+              ),
+            ),
+          ),
+          // Orbe decorativo inferior derecho
+          Positioned(
+            bottom: -150,
+            right: -50,
+            child: Container(
+              width: 400,
+              height: 400,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: const Color(0xFF14C8CC).withValues(alpha: 0.3),
+              ),
+            ),
+          ),
+          // Filtro de desenfoque masivo para los orbes
+          Positioned.fill(
+            child: BackdropFilter(
+              filter: ImageFilter.blur(sigmaX: 80, sigmaY: 80),
+              child: Container(
+                color: Colors.transparent,
+              ),
+            ),
+          ),
+          // Tarjeta Glassmorphism central
+          Center(
+            child: FadeTransition(
+              opacity: _fadeAnimation,
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(32),
+                child: BackdropFilter(
+                  filter: ImageFilter.blur(sigmaX: 30, sigmaY: 30),
+                  child: Container(
+                    width: 320,
+                    padding: const EdgeInsets.symmetric(vertical: 48, horizontal: 24),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(32),
+                      border: Border.all(
+                        color: Colors.white.withValues(alpha: 0.2),
+                        width: 1.5,
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.2),
+                          blurRadius: 30,
+                          offset: const Offset(0, 10),
+                        ),
+                      ],
+                    ),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        // Ícono de la app con sombra
+                        Container(
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withValues(alpha: 0.3),
+                                blurRadius: 20,
+                                offset: const Offset(0, 8),
+                              ),
+                            ],
+                          ),
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(24),
+                            child: Image.asset(
+                              'icono-finanzas.png',
+                              width: 100,
+                              height: 100,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 32),
+                        
+                        // Título
+                        Text(
+                          'Finanzas',
+                          style: GoogleFonts.montserrat(
+                            fontSize: 32,
+                            fontWeight: FontWeight.w800,
+                            color: Colors.white,
+                            letterSpacing: 1.2,
+                          ),
+                        ),
+                        Text(
+                          'Personal',
+                          style: GoogleFonts.montserrat(
+                            fontSize: 24,
+                            fontWeight: FontWeight.w400,
+                            color: Colors.white70,
+                            letterSpacing: 2.0,
+                          ),
+                        ),
+                        const SizedBox(height: 48),
+                        
+                        // Indicador de carga estilizado
+                        const SizedBox(
+                          width: 40,
+                          height: 40,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 3,
+                            valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF14C8CC)),
+                            backgroundColor: Colors.white12,
+                          ),
+                        ),
+                        const SizedBox(height: 24),
+                        
+                        // Mensaje cambiante
+                        AnimatedSwitcher(
+                          duration: const Duration(milliseconds: 300),
+                          child: Text(
+                            _messages[_messageIndex],
+                            key: ValueKey<int>(_messageIndex),
+                            style: GoogleFonts.montserrat(
+                              fontSize: AppColors.bodyMedium,
+                              color: Colors.white60,
+                              fontWeight: FontWeight.w500,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 ),
-              ],
+              ),
             ),
           ),
-        ),
+        ],
       ),
     );
   }
