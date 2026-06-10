@@ -133,8 +133,8 @@ flutter_launcher_icons:
   image_path: "icono-finanzas.png"
 
 flutter_native_splash:
-  color: "#0A7075"
+  color: "#121212"
   image: "icono-finanzas.png"
   android_12:
     image: "icono-finanzas.png"
-    icon_background_color: "#0A7075"
+    icon_background_color: "#121212"
