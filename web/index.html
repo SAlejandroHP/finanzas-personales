@@ -38,17 +38,64 @@
     body {
       margin: 0;
       min-height: 100%;
-      background-color: #0A7075;
-          background-size: 100% 100%;
+      background: linear-gradient(135deg, #07484B 0%, #032224 100%);
+      background-size: 100% 100%;
+      overflow: hidden;
+      position: relative;
     }
 
-    .center {
+    /* Orbes decorativos puros en CSS para la pantalla de carga web */
+    .orb-top {
+      position: absolute;
+      top: -100px;
+      left: -100px;
+      width: 300px;
+      height: 300px;
+      background: rgba(10, 112, 117, 0.6);
+      border-radius: 50%;
+      filter: blur(80px);
+      z-index: 0;
+    }
+
+    .orb-bottom {
+      position: absolute;
+      bottom: -150px;
+      right: -50px;
+      width: 400px;
+      height: 400px;
+      background: rgba(20, 200, 204, 0.3);
+      border-radius: 50%;
+      filter: blur(80px);
+      z-index: 0;
+    }
+
+    /* Efecto Glass en la imagen central */
+    .glass-card {
       margin: 0;
       position: absolute;
       top: 50%;
       left: 50%;
-      -ms-transform: translate(-50%, -50%);
       transform: translate(-50%, -50%);
+      z-index: 10;
+      background: rgba(255, 255, 255, 0.1);
+      backdrop-filter: blur(30px);
+      -webkit-backdrop-filter: blur(30px);
+      border: 1.5px solid rgba(255, 255, 255, 0.2);
+      border-radius: 32px;
+      padding: 48px 24px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      width: 270px;
+    }
+
+    .center {
+      width: 100px;
+      height: 100px;
+      border-radius: 24px;
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
     }
 
     .contain {
@@ -98,12 +145,14 @@
   <meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" name="viewport">
 </head>
 <body>
-  <picture id="splash">
-      <source srcset="splash/img/light-1x.png 1x, splash/img/light-2x.png 2x, splash/img/light-3x.png 3x, splash/img/light-4x.png 4x" media="(prefers-color-scheme: light)">
-      <source srcset="splash/img/dark-1x.png 1x, splash/img/dark-2x.png 2x, splash/img/dark-3x.png 3x, splash/img/dark-4x.png 4x" media="(prefers-color-scheme: dark)">
-      <img class="center" aria-hidden="true" src="splash/img/light-1x.png" alt="">
-  </picture>
+  <div class="orb-top"></div>
+  <div class="orb-bottom"></div>
+  <div class="glass-card" id="splash-branding">
+    <picture id="splash">
+        <source srcset="splash/img/light-1x.png 1x, splash/img/light-2x.png 2x, splash/img/light-3x.png 3x, splash/img/light-4x.png 4x" media="(prefers-color-scheme: light)">
+        <source srcset="splash/img/dark-1x.png 1x, splash/img/dark-2x.png 2x, splash/img/dark-3x.png 3x, splash/img/dark-4x.png 4x" media="(prefers-color-scheme: dark)">
+        <img class="center" aria-hidden="true" src="splash/img/light-1x.png" alt="">
+    </picture>
+  </div>
   <script src="flutter_bootstrap.js" async=""></script>
-
-
 </body></html>
