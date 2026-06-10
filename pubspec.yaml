@@ -125,6 +125,11 @@ flutter_launcher_icons:
   android: "launcher_icon"
   ios: true
   remove_alpha_ios: true
+  web:
+    generate: true
+    image_path: "icono-finanzas.png"
+    background_color: "#0A7075"
+    theme_color: "#0A7075"
   image_path: "icono-finanzas.png"
 
 flutter_native_splash:
