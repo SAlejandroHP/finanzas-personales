@@ -69,12 +69,21 @@ final masterPlanProvider = Provider<List<PlanPhase>>((ref) {
 
         // Apalancamiento al día siguiente
         final apalancamientoDate = cDate.add(const Duration(days: 1));
+        
+        // Calcular los días exactos de apalancamiento
+        DateTime nextCDate = DateTime(cDate.year, cDate.month + 1, account.fechaCorte!);
+        DateTime nextPagoDate = DateTime(nextCDate.year, nextCDate.month, account.fechaLimitePago!);
+        if (nextPagoDate.isBefore(nextCDate) || nextPagoDate.difference(nextCDate).inDays < 5) {
+          nextPagoDate = DateTime(nextCDate.year, nextCDate.month + 1, account.fechaLimitePago!);
+        }
+        final diasApalancamiento = nextPagoDate.difference(apalancamientoDate).inDays;
+
         _addMilestoneAction(
           apalancamientoDate,
           'Apalancamiento ${account.nombre}',
           PlanAction(
             label: 'Estrategia',
-            description: 'Ganas ~50 días para pagar',
+            description: 'Ganas $diasApalancamiento días para pagar',
             type: ActionType.leverage,
           ),
           note: 'Ventana de oro para hacer compras necesarias sin descapitalizarte hoy.',

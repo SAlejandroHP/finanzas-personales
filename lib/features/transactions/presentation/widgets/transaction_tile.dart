@@ -10,19 +10,18 @@ import '../../../accounts/presentation/providers/accounts_provider.dart';
 import '../../../categories/presentation/providers/categories_provider.dart';
 import '../../../accounts/presentation/providers/currencies_provider.dart';
 import '../../../accounts/models/account_model.dart';
+import 'transaction_details_sheet.dart';
 
 /// Widget reutilizable para mostrar una transacción de forma compacta.
 /// Muestra ícono por tipo, descripción + fecha, monto coloreado, y botones de edición/eliminación.
 /// Corrección v4: Ahora incluye toggle de estado, banco/cuenta y categoría con íconos
-class TransactionTile extends ConsumerWidget { // Corrección v4: Cambiado a ConsumerWidget
+class TransactionTile extends ConsumerWidget {
   final TransactionModel transaction;
   final String? accountName;
   final String? categoryName;
   final String? categoryIcon;
   final Color? categoryColor;
   final String currencySymbol;
-  final VoidCallback? onEdit;
-  final VoidCallback? onDelete;
 
   const TransactionTile({
     Key? key,
@@ -32,8 +31,6 @@ class TransactionTile extends ConsumerWidget { // Corrección v4: Cambiado a Con
     this.categoryIcon,
     this.categoryColor,
     this.currencySymbol = '\$',
-    this.onEdit,
-    this.onDelete,
   }) : super(key: key);
 
   /// Retorna el ícono correspondiente al tipo de transacción
@@ -317,8 +314,9 @@ class TransactionTile extends ConsumerWidget { // Corrección v4: Cambiado a Con
         color: Colors.transparent,
         child: InkWell(
           borderRadius: BorderRadius.circular(16),
-          onTap: onEdit,
-          onLongPress: onDelete,
+          onTap: () {
+            showTransactionDetailsSheet(context, transaction: transaction);
+          },
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             child: Row(
@@ -407,50 +405,7 @@ class TransactionTile extends ConsumerWidget { // Corrección v4: Cambiado a Con
               ],
             ),
             
-            const SizedBox(width: 4),
-
-            // 4. Opciones (Extrema derecha alineado)
-            Material(
-              color: Colors.transparent,
-              child: PopupMenuButton<String>(
-                icon: Icon(
-                  Icons.more_vert_rounded,
-                  size: 18,
-                  color: isDark ? Colors.white38 : AppColors.textPrimary.withOpacity(0.3),
-                ),
-                padding: EdgeInsets.zero,
-                constraints: const BoxConstraints(),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(AppColors.radiusMedium),
-                ),
-                onSelected: (value) {
-                  if (value == 'edit') onEdit?.call();
-                  if (value == 'delete') onDelete?.call();
-                },
-                itemBuilder: (context) => [
-                  PopupMenuItem(
-                    value: 'edit',
-                    child: Row(
-                      children: [
-                        const Icon(Icons.edit_outlined, size: 18),
-                        const SizedBox(width: 8),
-                        Text('Editar', style: GoogleFonts.montserrat(fontSize: AppColors.bodySmall)),
-                      ],
-                    ),
-                  ),
-                  PopupMenuItem(
-                    value: 'delete',
-                    child: Row(
-                      children: [
-                        const Icon(Icons.delete_outline, size: 18, color: AppColors.error),
-                        const SizedBox(width: 8),
-                        Text('Eliminar', style: GoogleFonts.montserrat(fontSize: AppColors.bodySmall, color: AppColors.error)),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
+            const SizedBox(width: 12),
           ],
         ),
           ),

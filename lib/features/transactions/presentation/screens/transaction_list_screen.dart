@@ -11,6 +11,8 @@ import '../widgets/transaction_tile.dart';
 import '../widgets/transaction_filters_bar.dart'; // Mantengo el archivo, pero usará TransactionFiltersSheet
 import '../providers/transaction_filters_provider.dart';
 import '../../../../core/services/finance_service.dart';
+import '../../../../core/utils/download_helper.dart';
+import 'dart:convert';
 
 // Función de utilidad para formatear la fecha del encabezado
 String _formatDateHeader(DateTime date) {
@@ -117,6 +119,8 @@ class _TransactionListScreenState extends ConsumerState<TransactionListScreen> {
                         },
                         icon: Icons.search_rounded,
                       ),
+                      const SizedBox(width: 8),
+                      _buildExportMenu(context),
                     ],
                   ),
                 ],
@@ -401,15 +405,6 @@ class _TransactionListScreenState extends ConsumerState<TransactionListScreen> {
                 key: ValueKey('header_${transaction.id}'),
                 transaction: transaction,
                 currencySymbol: '\$',
-                onEdit: () {
-                  showTransactionFormSheet(
-                    context,
-                    transaction: transaction,
-                  );
-                },
-                onDelete: () {
-                  _showDeleteDialog(context, ref, transaction.id);
-                },
               ),
             ],
           );
@@ -419,15 +414,6 @@ class _TransactionListScreenState extends ConsumerState<TransactionListScreen> {
           key: ValueKey(transaction.id),
           transaction: transaction,
           currencySymbol: '\$',
-          onEdit: () {
-            showTransactionFormSheet(
-              context,
-              transaction: transaction,
-            );
-          },
-          onDelete: () {
-            _showDeleteDialog(context, ref, transaction.id);
-          },
         );
       },
     );
@@ -748,6 +734,109 @@ class _TransactionListScreenState extends ConsumerState<TransactionListScreen> {
         ],
       ),
     );
+    );
+  }
+
+  Widget _buildExportMenu(BuildContext context) {
+    return PopupMenuButton<String>(
+      tooltip: 'Exportar',
+      icon: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(6),
+            decoration: BoxDecoration(
+              color: AppColors.primary.withOpacity(0.15),
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(Icons.download_rounded, size: 20, color: AppColors.primary),
+          ),
+        ],
+      ),
+      padding: EdgeInsets.zero,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      onSelected: _exportTransactions,
+      itemBuilder: (context) => [
+        PopupMenuItem(
+          value: 'csv',
+          child: Row(
+            children: [
+              const Icon(Icons.table_chart_outlined, size: 18),
+              const SizedBox(width: 8),
+              Text('Export as CSV', style: GoogleFonts.montserrat(fontSize: AppColors.bodyMedium)),
+            ],
+          ),
+        ),
+        PopupMenuItem(
+          value: 'json',
+          child: Row(
+            children: [
+              const Icon(Icons.data_object_rounded, size: 18),
+              const SizedBox(width: 8),
+              Text('Export as JSON', style: GoogleFonts.montserrat(fontSize: AppColors.bodyMedium)),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  void _exportTransactions(String format) {
+    final transactionsAsync = ref.read(filteredTransactionsProvider);
+    final allTransactions = transactionsAsync.asData?.value ?? [];
+    
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    
+    final activeTransactions = allTransactions.where((t) {
+      return !(t.fecha.isBefore(today.add(const Duration(days: 1))) && 
+              (t.estado == 'completada' || t.estado == 'pagada'));
+    }).toList();
+    
+    final displayedTransactions = _showArchived ? allTransactions : activeTransactions;
+    final exportTransactions = _currentPage == 1 
+        ? displayedTransactions.where((t) => t.estado == 'pendiente').toList()
+        : displayedTransactions;
+
+    if (exportTransactions.isEmpty) {
+      showAppToast(context, message: 'No hay transacciones para exportar', type: ToastType.warning);
+      return;
+    }
+    
+    final tabName = _currentPage == 0 ? 'General' : 'Pendientes';
+    final dateStr = DateFormat('yyyy-MM-dd').format(DateTime.now());
+    final filename = 'finanzas_${tabName.toLowerCase()}_$dateStr';
+
+    try {
+      if (format == 'csv') {
+        final header = 'ID,Fecha,Monto,Tipo,CategoriaID,CuentaID,Estado,Descripcion\n';
+        final buffer = StringBuffer(header);
+        for (final t in exportTransactions) {
+          final date = DateFormat('yyyy-MM-dd HH:mm').format(t.fecha);
+          final desc = t.descripcion?.replaceAll('"', '""') ?? '';
+          final line = '${t.id},$date,${t.monto},${t.tipo},${t.categoriaId ?? ""},${t.cuentaOrigenId ?? ""},${t.estado},"$desc"\n';
+          buffer.write(line);
+        }
+        downloadFile('$filename.csv', buffer.toString(), 'text/csv');
+      } else if (format == 'json') {
+        final jsonList = exportTransactions.map((t) => {
+          'id': t.id,
+          'fecha': t.fecha.toIso8601String(),
+          'monto': t.monto,
+          'tipo': t.tipo,
+          'categoria_id': t.categoriaId,
+          'cuenta_id': t.cuentaOrigenId,
+          'estado': t.estado,
+          'descripcion': t.descripcion,
+        }).toList();
+        final jsonStr = const JsonEncoder.withIndent('  ').convert(jsonList);
+        downloadFile('$filename.json', jsonStr, 'application/json');
+      }
+      
+      showAppToast(context, message: 'Exportación iniciada', type: ToastType.success);
+    } catch (e) {
+      showAppToast(context, message: 'Error al exportar: $e', type: ToastType.error);
+    }
   }
 }
 

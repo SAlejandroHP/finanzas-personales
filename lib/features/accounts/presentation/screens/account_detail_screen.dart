@@ -443,15 +443,6 @@ class AccountDetailScreen extends ConsumerWidget {
                 final transaction = transactions[index];
                 return TransactionTile(
                   transaction: transaction,
-                  onEdit: () {
-                    showTransactionFormSheet(
-                      context,
-                      transaction: transaction,
-                    );
-                  },
-                  onDelete: () {
-                    _showDeleteDialog(context, ref, transaction.id);
-                  },
                 );
               },
             );
