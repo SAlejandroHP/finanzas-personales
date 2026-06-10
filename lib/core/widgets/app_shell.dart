@@ -205,29 +205,55 @@ class _AppShellState extends ConsumerState<AppShell> {
                           return Stack(
                             clipBehavior: Clip.none,
                             children: [
-                              // Fondo del Nav Island con el hueco central móvil
+                              // Fondo Liquid Glass del Nav Island
                               Positioned.fill(
-                                child: CustomPaint(
-                                  painter: _CurvedBarPainter(
-                                    index: animIndex,
-                                    itemWidth: itemWidth,
-                                    color: isDark 
-                                        ? AppColors.surfaceDark.withOpacity(0.95) 
-                                        : AppColors.surfaceLight.withOpacity(0.95),
+                                child: Container(
+                                  decoration: BoxDecoration(
+                                    borderRadius: BorderRadius.circular(30.0),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: Colors.black.withValues(alpha: 0.05),
+                                        blurRadius: 24,
+                                      ),
+                                      BoxShadow(
+                                        color: Colors.black.withValues(alpha: 0.10),
+                                        blurRadius: 12,
+                                        offset: const Offset(0, 6),
+                                      ),
+                                    ],
+                                  ),
+                                  child: ClipRRect(
+                                    borderRadius: BorderRadius.circular(30.0),
+                                    child: BackdropFilter(
+                                      filter: ImageFilter.blur(sigmaX: 24.0, sigmaY: 24.0),
+                                      child: Container(
+                                        decoration: BoxDecoration(
+                                          color: isDark 
+                                              ? const Color(0xFF1E1E1E).withValues(alpha: 0.45)
+                                              : Colors.white.withValues(alpha: 0.40),
+                                          border: Border.all(
+                                            color: isDark 
+                                                ? Colors.white.withValues(alpha: 0.20) 
+                                                : Colors.white.withValues(alpha: 0.60),
+                                            width: 1.5,
+                                          ),
+                                          borderRadius: BorderRadius.circular(30.0),
+                                        ),
+                                      ),
+                                    ),
                                   ),
                                 ),
                               ),
-                              // Círculo indicador de activo integrado al navbar
+                              // Óvalo indicador de activo integrado al navbar
                               Positioned(
-                                left: (animIndex * itemWidth) + (itemWidth / 2) - 24,
-                                top: 6, // Centrado verticalmente (60 - 48) / 2
+                                left: (animIndex * itemWidth) + (itemWidth / 2) - 32, // Centro menos la mitad del ancho (64/2)
+                                top: 10, // Centrado verticalmente (60 - 40) / 2
                                 child: Container(
-                                  width: 48,
-                                  height: 48,
-                                  decoration: const BoxDecoration(
+                                  width: 64,
+                                  height: 40,
+                                  decoration: BoxDecoration(
                                     color: AppColors.primary,
-                                    shape: BoxShape.circle,
-                                    // Sombra eliminada de las opciones
+                                    borderRadius: BorderRadius.circular(20), // Forma de óvalo/píldora
                                   ),
                                 ),
                               ),
@@ -359,100 +385,5 @@ class _AppShellState extends ConsumerState<AppShell> {
     showTransactionFormSheet(context).then((_) {
       ref.read(isCanvasOpenProvider.notifier).state = false;
     });
-  }
-}
-
-class _CurvedBarPainter extends CustomPainter {
-  final double index;
-  final double itemWidth;
-  final Color color;
-
-  _CurvedBarPainter({
-    required this.index,
-    required this.itemWidth,
-    required this.color,
-  });
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = color
-      ..style = PaintingStyle.fill;
-
-    // Sombra principal fuerte
-    final dropShadowPaint = Paint()
-      ..color = Colors.black.withOpacity(0.20) // Sombra más oscura para destacar la barra
-      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 12);
-      
-    // Sombra ambiental suave
-    final ambientShadowPaint = Paint()
-      ..color = Colors.black.withOpacity(0.10)
-      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 24);
-
-    // 1. Base shape
-    final RRect hostRRect = RRect.fromRectAndRadius(
-      Rect.fromLTWH(0, 0, size.width, size.height),
-      const Radius.circular(30.0), // Radio aumentado a 30 (píldora completa) para coincidir con las opciones
-    );
-    final Path hostPath = Path()..addRRect(hostRRect);
-
-    // 2. Exact center of the current selected notch/bump
-    final double notchCenter = (index * itemWidth) + (itemWidth / 2);
-
-    double clampX(double x) => x < 0 ? 0 : (x > size.width ? size.width : x);
-
-    // 3. Crear el path de la "jorobita" (pansita)
-    final Path bumpPath = Path();
-    // Empezamos profundo y clampado a los bordes para fusionarse suavemente con las esquinas
-    bumpPath.moveTo(clampX(notchCenter - 40), 30); 
-    
-    // Curva sutil y ancha sobre el círculo
-    bumpPath.cubicTo(
-      clampX(notchCenter - 28), 10,   
-      clampX(notchCenter - 26), -4,   
-      notchCenter, -4,        
-    );
-    
-    // Curva de bajada
-    bumpPath.cubicTo(
-      clampX(notchCenter + 26), -4,
-      clampX(notchCenter + 28), 10,
-      clampX(notchCenter + 40), 30,
-    );
-    
-    bumpPath.close(); // Se cierra a lo largo de y=30
-
-    // 4. Unir la jorobita al rectángulo principal
-    final Path finalPath = Path.combine(
-      PathOperation.union,
-      hostPath,
-      bumpPath,
-    );
-
-    // Shadow
-    canvas.save();
-    // Ambient Shadow (centrada)
-    canvas.drawPath(finalPath, ambientShadowPaint);
-    // Drop Shadow (hacia abajo)
-    canvas.translate(0, 6);
-    canvas.drawPath(finalPath, dropShadowPaint);
-    canvas.restore();
-
-    // Solid bar
-    canvas.drawPath(finalPath, paint);
-    
-    // Subtle border
-    final borderPaint = Paint()
-      ..color = Colors.grey.withOpacity(0.15)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 0.5;
-    canvas.drawPath(finalPath, borderPaint);
-  }
-
-  @override
-  bool shouldRepaint(covariant _CurvedBarPainter oldDelegate) {
-    return oldDelegate.index != index || 
-           oldDelegate.itemWidth != itemWidth ||
-           oldDelegate.color != color;
   }
 }

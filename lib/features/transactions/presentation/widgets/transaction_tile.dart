@@ -445,8 +445,16 @@ class _TransactionStatusButtonState extends ConsumerState<_TransactionStatusButt
   Widget build(BuildContext context) {
     final isCompleted = _optimisticIsCompleted ?? widget.isCompleted;
 
+    final fgColor = isCompleted 
+        ? (widget.isDark ? Colors.greenAccent : Colors.green[800]) 
+        : (widget.isDark ? Colors.orange[300] : Colors.orange[900]);
+        
+    final bgColor = isCompleted
+        ? (widget.isDark ? Colors.greenAccent.withValues(alpha: 0.15) : Colors.green[100])
+        : (widget.isDark ? Colors.orange[300]!.withValues(alpha: 0.15) : Colors.orange[100]);
+
     return SizedBox(
-      height: 16,
+      height: 22,
       child: TextButton.icon(
         onPressed: () async {
           // Actualización optimista inmediata
@@ -479,14 +487,15 @@ class _TransactionStatusButtonState extends ConsumerState<_TransactionStatusButt
           ),
         ),
         style: TextButton.styleFrom(
-          backgroundColor: Colors.transparent,
-          foregroundColor: isCompleted 
-              ? (widget.isDark ? Colors.greenAccent : Colors.green[700]) 
-              : (widget.isDark ? Colors.orange[300] : Colors.orange[800]),
-          padding: EdgeInsets.zero,
+          backgroundColor: bgColor,
+          foregroundColor: fgColor,
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 0),
           minimumSize: Size.zero,
           tapTargetSize: MaterialTapTargetSize.shrinkWrap,
           elevation: 0,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(11), // Forma de píldora
+          ),
         ),
       ),
     );

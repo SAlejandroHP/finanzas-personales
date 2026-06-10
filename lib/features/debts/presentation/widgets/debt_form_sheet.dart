@@ -897,6 +897,7 @@ class _DebtFormSheetState extends ConsumerState<DebtFormSheet> {
   void _showAccountSelector(BuildContext context, AsyncValue<List<AccountModel>> accounts) {
     accounts.whenData((list) {
       showModalBottomSheet(
+    useRootNavigator: true,
         context: context,
         backgroundColor: Colors.transparent,
         builder: (context) {

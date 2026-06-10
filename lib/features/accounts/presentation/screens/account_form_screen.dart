@@ -1021,6 +1021,7 @@ class _AccountFormScreenState extends ConsumerState<AccountFormScreen> {
     bool isDark,
   ) {
     showModalBottomSheet(
+    useRootNavigator: true,
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,

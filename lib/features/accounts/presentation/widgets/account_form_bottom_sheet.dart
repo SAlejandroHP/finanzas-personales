@@ -961,6 +961,7 @@ class _AccountFormBottomSheetState extends ConsumerState<AccountFormBottomSheet>
     });
     
     await showModalBottomSheet(
+    useRootNavigator: true,
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,

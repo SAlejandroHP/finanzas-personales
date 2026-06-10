@@ -1693,6 +1693,7 @@ class _TransactionFormSheetState extends ConsumerState<TransactionFormSheet> {
   ) {
     accounts.whenData((list) {
       showModalBottomSheet(
+    useRootNavigator: true,
         context: context,
         backgroundColor: Colors.transparent,
         isScrollControlled: true,
@@ -1866,6 +1867,7 @@ class _TransactionFormSheetState extends ConsumerState<TransactionFormSheet> {
           .toList();
 
       showModalBottomSheet(
+    useRootNavigator: true,
         context: context,
         isScrollControlled:
             true, // Permite que el modal crezca según el contenido
@@ -1943,6 +1945,7 @@ class _TransactionFormSheetState extends ConsumerState<TransactionFormSheet> {
     final activeDebts = debts.where((d) => d.estado == 'activa').toList();
 
     showModalBottomSheet(
+    useRootNavigator: true,
       context: context,
       backgroundColor: Colors.transparent,
       isScrollControlled: true,
@@ -2108,6 +2111,7 @@ class _TransactionFormSheetState extends ConsumerState<TransactionFormSheet> {
     }).toList();
 
     showModalBottomSheet(
+    useRootNavigator: true,
       context: context,
       backgroundColor: Colors.transparent,
       isScrollControlled: true,

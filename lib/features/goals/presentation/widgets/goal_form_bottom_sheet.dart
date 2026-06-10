@@ -606,6 +606,7 @@ class _GoalFormBottomSheetState extends ConsumerState<GoalFormBottomSheet> {
     ];
 
     showModalBottomSheet(
+    useRootNavigator: true,
       context: context,
       shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
       builder: (context) => Container(

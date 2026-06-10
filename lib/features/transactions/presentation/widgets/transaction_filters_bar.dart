@@ -198,6 +198,7 @@ class TransactionFiltersSheet extends ConsumerWidget {
 
   void _showStatusPicker(BuildContext context, WidgetRef ref) {
     showModalBottomSheet(
+    useRootNavigator: true,
       context: context,
       shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
       builder: (context) => SafeArea(
@@ -243,6 +244,7 @@ class TransactionFiltersSheet extends ConsumerWidget {
   void _showAccountPicker(BuildContext context, WidgetRef ref, AsyncValue<List<dynamic>> accountsAsync) {
     accountsAsync.whenData((accounts) {
       showModalBottomSheet(
+    useRootNavigator: true,
         context: context,
         shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
         builder: (context) => SafeArea(
@@ -284,6 +286,7 @@ class TransactionFiltersSheet extends ConsumerWidget {
   void _showCategoryPicker(BuildContext context, WidgetRef ref, AsyncValue<List<dynamic>> categoriesAsync) {
     categoriesAsync.whenData((categories) {
       showModalBottomSheet(
+    useRootNavigator: true,
         context: context,
         shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
         builder: (context) => SafeArea(

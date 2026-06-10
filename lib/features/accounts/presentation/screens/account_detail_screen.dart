@@ -217,6 +217,7 @@ class AccountDetailScreen extends ConsumerWidget {
             variant: 'outlined',
             onPressed: () {
               showModalBottomSheet(
+    useRootNavigator: true,
                 context: context,
                 isScrollControlled: true,
                 shape: const RoundedRectangleBorder(

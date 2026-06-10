@@ -250,7 +250,7 @@ class GoalsListScreen extends ConsumerWidget {
                   backgroundColor: AppColors.primary,
                   foregroundColor: Colors.white,
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  minimumSize: const Size(double.infinity, AppColors.interactiveHeight),
                 ),
                 child: const Text('Crear mi primera meta', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
               ),
