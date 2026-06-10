@@ -734,7 +734,6 @@ class _TransactionListScreenState extends ConsumerState<TransactionListScreen> {
         ],
       ),
     );
-    );
   }
 
   Widget _buildExportMenu(BuildContext context) {
@@ -918,31 +917,6 @@ class _TransactionSearchDelegate extends SearchDelegate {
           final transaction = results[index];
           return TransactionTile(
             transaction: transaction,
-            onEdit: () {
-              close(context, null);
-              showTransactionFormSheet(context, transaction: transaction);
-            },
-            onDelete: () {
-              // Confirmación simplificada para no duplicar código complejo
-               showDialog(
-                context: context,
-                builder: (ctx) => AlertDialog(
-                  title: const Text('Eliminar'),
-                  content: const Text('¿Eliminar esta transacción?'),
-                  actions: [
-                    TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancelar')),
-                    TextButton(
-                      onPressed: () async {
-                        Navigator.pop(ctx);
-                        close(context, null); // Cerrar búsqueda
-                        await ref.read(transactionsNotifierProvider.notifier).deleteTransaction(transaction.id);
-                      },
-                      child: const Text('Eliminar', style: TextStyle(color: Colors.red)),
-                    ),
-                  ],
-                ),
-              );
-            },
           );
         },
       ),
