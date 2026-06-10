@@ -482,11 +482,11 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                // Ícono de wallet con animación
-                const Icon(
-                  Icons.account_balance_outlined,
-                  size: 64,
-                  color: Colors.grey,
+                // Ícono de la app con animación
+                Image.asset(
+                  'icono-finanzas.png',
+                  width: 120,
+                  height: 120,
                 ),
                 const SizedBox(height: 24),
                 
