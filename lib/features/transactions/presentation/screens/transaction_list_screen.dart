@@ -8,7 +8,7 @@ import '../../models/transaction_model.dart';
 import '../providers/transactions_provider.dart';
 import '../widgets/transaction_form_sheet.dart';
 import '../widgets/transaction_tile.dart';
-import '../widgets/transaction_filters_bar.dart'; // Mantengo el archivo, pero usará TransactionFiltersSheet
+import '../widgets/spotlight_search_overlay.dart';
 import '../providers/transaction_filters_provider.dart';
 import '../../../../core/services/finance_service.dart';
 import '../../../../core/utils/download_helper.dart';
@@ -42,6 +42,24 @@ class _TransactionListScreenState extends ConsumerState<TransactionListScreen> {
   final PageController _pageController = PageController();
   int _currentPage = 0;
   bool _showArchived = false;
+  bool _isSpotlightOpen = false;
+
+  void _openSpotlight() {
+    if (_isSpotlightOpen) return;
+    _isSpotlightOpen = true;
+    
+    Navigator.of(context).push(
+      PageRouteBuilder(
+        opaque: false,
+        pageBuilder: (context, _, __) => const SpotlightSearchOverlay(),
+        transitionsBuilder: (context, animation, secondaryAnimation, child) {
+          return FadeTransition(opacity: animation, child: child);
+        },
+      ),
+    ).then((_) {
+      _isSpotlightOpen = false;
+    });
+  }
 
   @override
   void dispose() {
@@ -94,29 +112,7 @@ class _TransactionListScreenState extends ConsumerState<TransactionListScreen> {
                   Row(
                     children: [
                       _HeaderAction(
-                        onTap: () {
-                          showModalBottomSheet(
-                            context: context,
-                            isScrollControlled: true,
-                            backgroundColor: Colors.transparent,
-                            useRootNavigator: true,
-                            builder: (context) => const TransactionFiltersSheet(),
-                          );
-                        },
-                        icon: Icons.filter_alt_outlined,
-                        hasBadge: _hasAnyFilter(ref.watch(transactionFiltersProvider)),
-                      ),
-                      const SizedBox(width: 8),
-                      _HeaderAction(
-                        onTap: () async {
-                          final transactions = transactionsAsync.asData?.value;
-                          if (transactions != null && transactions.isNotEmpty) {
-                             await showSearch(
-                              context: context,
-                              delegate: _TransactionSearchDelegate(transactions, ref),
-                            );
-                          }
-                        },
+                        onTap: _openSpotlight,
                         icon: Icons.search_rounded,
                       ),
                       const SizedBox(width: 8),
@@ -162,6 +158,27 @@ class _TransactionListScreenState extends ConsumerState<TransactionListScreen> {
 
           return Column(
             children: [
+              // Hint for Spotlight
+              Center(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 4.0),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.keyboard_arrow_down_rounded, size: 16, color: isDark ? Colors.white54 : Colors.grey),
+                      const SizedBox(width: 4),
+                      Text(
+                        'Desliza para buscar',
+                        style: GoogleFonts.montserrat(
+                          fontSize: 11,
+                          color: isDark ? Colors.white54 : Colors.grey,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
               // Indicadores (Tabs) fijos arriba del PageView
               if (hasPending) ...[
                 const SizedBox(height: 8),
@@ -176,10 +193,17 @@ class _TransactionListScreenState extends ConsumerState<TransactionListScreen> {
               ],
 
               Expanded(
-                child: PageView(
-                  controller: _pageController,
-                  onPageChanged: (index) => setState(() => _currentPage = index),
-                  children: [
+                child: NotificationListener<ScrollUpdateNotification>(
+                  onNotification: (notification) {
+                    if (notification.metrics.pixels < -60 && notification.dragDetails != null && !_isSpotlightOpen) {
+                      _openSpotlight();
+                    }
+                    return false;
+                  },
+                  child: PageView(
+                    controller: _pageController,
+                    onPageChanged: (index) => setState(() => _currentPage = index),
+                    children: [
                     // --- PESTAÑA 1: Balance del Periodo y Todas las transacciones ---
                     Column(
                       children: [
