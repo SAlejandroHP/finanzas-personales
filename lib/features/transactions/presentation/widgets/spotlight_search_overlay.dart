@@ -27,8 +27,8 @@ class _SpotlightSearchOverlayState extends ConsumerState<SpotlightSearchOverlay>
       });
     });
     
-    // Forzar apertura del teclado al iniciar la pantalla
-    WidgetsBinding.instance.addPostFrameCallback((_) {
+    // Forzar apertura del teclado asegurando que la animación haya terminado
+    Future.delayed(const Duration(milliseconds: 200), () {
       if (mounted) {
         _focusNode.requestFocus();
       }
