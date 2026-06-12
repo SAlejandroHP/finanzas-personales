@@ -241,6 +241,7 @@ class _TransactionListScreenState extends ConsumerState<TransactionListScreen> {
                   ],
                 ),
               ),
+              ),
             ],
           );
         },

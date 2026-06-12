@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../../core/constants/app_colors.dart';
-import '../../models/transaction_model.dart';
 import '../providers/transactions_provider.dart';
 import 'transaction_tile.dart';
 
@@ -18,15 +17,21 @@ class _SpotlightSearchOverlayState extends ConsumerState<SpotlightSearchOverlay>
   final TextEditingController _searchController = TextEditingController();
   final FocusNode _focusNode = FocusNode();
   String _searchQuery = '';
-  String _selectedFilter = 'Todos'; // Todos, Ingresos, Gastos, Pendientes
 
   @override
   void initState() {
     super.initState();
     _searchController.addListener(() {
       setState(() {
-        _searchQuery = _searchController.text.toLowerCase();
+        _searchQuery = _searchController.text.toLowerCase().trim();
       });
+    });
+    
+    // Forzar apertura del teclado al iniciar la pantalla
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        _focusNode.requestFocus();
+      }
     });
   }
 
@@ -39,208 +44,209 @@ class _SpotlightSearchOverlayState extends ConsumerState<SpotlightSearchOverlay>
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
     final transactionsAsync = ref.watch(transactionsListProvider);
+    final hasSearch = _searchQuery.isNotEmpty;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    // Theme adaptive colors
+    final glassColor = isDark ? const Color(0xFF282828).withOpacity(0.75) : Colors.white.withOpacity(0.9);
+    final borderColor = isDark ? Colors.white.withOpacity(0.15) : Colors.black.withOpacity(0.08);
+    final textColor = isDark ? Colors.white : Colors.black87;
+    final hintColor = isDark ? Colors.white.withOpacity(0.4) : Colors.black45;
+    final iconColor = isDark ? Colors.white.withOpacity(0.7) : Colors.black54;
+    final closeBtnBgColor = isDark ? Colors.white.withOpacity(0.15) : Colors.black.withOpacity(0.08);
+    final closeBtnIconColor = isDark ? Colors.white : Colors.black87;
+    final dividerColor = isDark ? Colors.white.withOpacity(0.1) : Colors.black.withOpacity(0.05);
 
     return Scaffold(
       backgroundColor: Colors.transparent,
       body: Stack(
         children: [
-          // Blur background
+          // Background - Subtle darken
           Positioned.fill(
             child: GestureDetector(
               onTap: () => Navigator.of(context).pop(),
-              child: BackdropFilter(
-                filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-                child: Container(
-                  color: isDark ? Colors.black.withOpacity(0.6) : Colors.white.withOpacity(0.8),
-                ),
+              child: Container(
+                color: Colors.black.withOpacity(0.2),
               ),
             ),
           ),
           
-          // Content
+          // Content - Floating in the upper middle
           SafeArea(
-            child: Column(
-              children: [
-                const SizedBox(height: 20),
-                // Search Bar
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 20),
-                  child: Hero(
-                    tag: 'search_bar_spotlight',
-                    child: Material(
-                      color: Colors.transparent,
-                      child: Container(
-                        decoration: BoxDecoration(
-                          color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
-                          borderRadius: BorderRadius.circular(16),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withOpacity(0.1),
-                              blurRadius: 10,
-                              offset: const Offset(0, 4),
-                            ),
-                          ],
-                        ),
-                        child: TextField(
-                          controller: _searchController,
-                          focusNode: _focusNode,
-                          autofocus: true,
-                          style: GoogleFonts.montserrat(
-                            fontSize: 18,
-                            color: isDark ? Colors.white : AppColors.textPrimary,
-                          ),
-                          decoration: InputDecoration(
-                            hintText: 'Buscar transacciones...',
-                            hintStyle: GoogleFonts.montserrat(
-                              color: isDark ? Colors.white54 : Colors.grey,
-                            ),
-                            prefixIcon: const Icon(Icons.search_rounded, color: AppColors.primary),
-                            suffixIcon: _searchQuery.isNotEmpty
-                                ? IconButton(
-                                    icon: const Icon(Icons.clear_rounded, color: Colors.grey),
-                                    onPressed: () {
+            child: Align(
+              alignment: const Alignment(0, -0.75), // Higher up, closer to iOS style
+              child: Container(
+                margin: const EdgeInsets.symmetric(horizontal: 16),
+                constraints: BoxConstraints(
+                  maxHeight: MediaQuery.of(context).size.height * 0.65,
+                ),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(16), 
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(isDark ? 0.4 : 0.1),
+                      blurRadius: 30,
+                      spreadRadius: -5,
+                      offset: const Offset(0, 15),
+                    ),
+                  ],
+                ),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(16),
+                  child: BackdropFilter(
+                    filter: ImageFilter.blur(sigmaX: 30, sigmaY: 30),
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: glassColor,
+                        border: Border.all(color: borderColor, width: 1),
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min, // Hug content
+                        children: [
+                          // Custom Symmetrical Search Bar
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                            child: Row(
+                              crossAxisAlignment: CrossAxisAlignment.center,
+                              children: [
+                                Icon(Icons.search_rounded, color: iconColor, size: 20),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: TextField(
+                                    controller: _searchController,
+                                    focusNode: _focusNode,
+                                    autofocus: true,
+                                    cursorColor: AppColors.primary,
+                                    style: GoogleFonts.montserrat(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w400,
+                                      color: textColor,
+                                      letterSpacing: -0.3,
+                                      height: 1.2, // Keeps text and cursor centered
+                                    ),
+                                    decoration: InputDecoration(
+                                      hintText: 'Búsqueda...',
+                                      hintStyle: GoogleFonts.montserrat(
+                                        color: hintColor,
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.w400,
+                                        letterSpacing: -0.3,
+                                        height: 1.2,
+                                      ),
+                                      filled: true,
+                                      fillColor: Colors.transparent, // Fixes white box in HTML renderer
+                                      hoverColor: Colors.transparent,
+                                      border: InputBorder.none,
+                                      focusedBorder: InputBorder.none,
+                                      enabledBorder: InputBorder.none,
+                                      contentPadding: const EdgeInsets.symmetric(vertical: 12), // Vertical padding instead of isDense
+                                    ),
+                                  ),
+                                ),
+                                if (hasSearch) ...[
+                                  const SizedBox(width: 12),
+                                  GestureDetector(
+                                    onTap: () {
                                       _searchController.clear();
                                     },
-                                  )
-                                : null,
-                            border: InputBorder.none,
-                            contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                                    child: Container(
+                                      padding: const EdgeInsets.all(4),
+                                      decoration: BoxDecoration(
+                                        color: closeBtnBgColor,
+                                        shape: BoxShape.circle,
+                                      ),
+                                      child: Icon(Icons.close_rounded, color: closeBtnIconColor, size: 14),
+                                    ),
+                                  ),
+                                ]
+                              ],
+                            ),
                           ),
-                        ),
+                          
+                          // Divider if showing results
+                          if (hasSearch)
+                            Container(
+                              height: 1,
+                              color: dividerColor,
+                              margin: EdgeInsets.zero,
+                            ),
+                          
+                          // Results List
+                          if (hasSearch)
+                            Flexible(
+                              child: transactionsAsync.when(
+                                data: (transactions) {
+                                  final results = transactions.where((t) {
+                                    final descMatch = t.descripcion?.toLowerCase().contains(_searchQuery) ?? false;
+                                    final amountMatch = t.monto.toString().contains(_searchQuery);
+                                    final typeMatch = t.tipo.toLowerCase().contains(_searchQuery);
+                                    final categoryMatch = t.categoriaId?.toLowerCase().contains(_searchQuery) ?? false;
+                                    return descMatch || amountMatch || typeMatch || categoryMatch;
+                                  }).toList();
+
+                                  results.sort((a, b) => b.fecha.compareTo(a.fecha));
+
+                                  if (results.isEmpty) {
+                                    return Padding(
+                                      padding: const EdgeInsets.symmetric(vertical: 30.0),
+                                      child: Column(
+                                        mainAxisSize: MainAxisSize.min,
+                                        mainAxisAlignment: MainAxisAlignment.center,
+                                        children: [
+                                          Text(
+                                            'Sin resultados',
+                                            style: GoogleFonts.montserrat(
+                                              color: hintColor,
+                                              fontSize: 14,
+                                              fontWeight: FontWeight.w500,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    );
+                                  }
+
+                                  return ListView.builder(
+                                    // Removed horizontal padding since TransactionTile already has margin
+                                    padding: const EdgeInsets.symmetric(vertical: 4), 
+                                    physics: const BouncingScrollPhysics(),
+                                    shrinkWrap: true,
+                                    itemCount: results.length,
+                                    itemBuilder: (context, index) {
+                                      return Material(
+                                        color: Colors.transparent,
+                                        child: Transform.scale(
+                                          scale: 0.96, // Slightly scale down the tiles to fit better in the overlay
+                                          child: TransactionTile(
+                                            transaction: results[index],
+                                            currencySymbol: '\$',
+                                          ),
+                                        ),
+                                      );
+                                    },
+                                  );
+                                },
+                                loading: () => Padding(
+                                  padding: const EdgeInsets.symmetric(vertical: 30.0),
+                                  child: Center(child: CircularProgressIndicator(color: AppColors.primary, strokeWidth: 2)),
+                                ),
+                                error: (e, _) => Padding(
+                                  padding: const EdgeInsets.symmetric(vertical: 30.0),
+                                  child: Center(child: Text('Error: $e', style: const TextStyle(color: Colors.redAccent))),
+                                ),
+                              ),
+                            ),
+                        ],
                       ),
                     ),
                   ),
                 ),
-                
-                const SizedBox(height: 16),
-                
-                // Quick Filters
-                SingleChildScrollView(
-                  scrollDirection: Axis.horizontal,
-                  padding: const EdgeInsets.symmetric(horizontal: 20),
-                  child: Row(
-                    children: [
-                      _buildFilterChip('Todos', isDark),
-                      const SizedBox(width: 8),
-                      _buildFilterChip('Ingresos', isDark),
-                      const SizedBox(width: 8),
-                      _buildFilterChip('Gastos', isDark),
-                      const SizedBox(width: 8),
-                      _buildFilterChip('Pendientes', isDark),
-                    ],
-                  ),
-                ),
-                
-                const SizedBox(height: 16),
-                
-                // Results List
-                Expanded(
-                  child: transactionsAsync.when(
-                    data: (transactions) {
-                      final results = transactions.where((t) {
-                        // Apply Text Search
-                        final descMatch = t.descripcion?.toLowerCase().contains(_searchQuery) ?? false;
-                        final amountMatch = t.monto.toString().contains(_searchQuery);
-                        final typeMatch = t.tipo.toLowerCase().contains(_searchQuery);
-                        final matchesSearch = _searchQuery.isEmpty || descMatch || amountMatch || typeMatch;
-                        
-                        // Apply Chip Filter
-                        bool matchesFilter = true;
-                        if (_selectedFilter == 'Ingresos') {
-                          matchesFilter = t.tipo == 'ingreso';
-                        } else if (_selectedFilter == 'Gastos') {
-                          matchesFilter = t.tipo == 'gasto';
-                        } else if (_selectedFilter == 'Pendientes') {
-                          matchesFilter = t.estado == 'pendiente';
-                        }
-                        
-                        return matchesSearch && matchesFilter;
-                      }).toList();
-
-                      // Sort by date descending
-                      results.sort((a, b) => b.fecha.compareTo(a.fecha));
-
-                      if (results.isEmpty) {
-                        return Center(
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(Icons.search_off_rounded, size: 64, color: Colors.grey.withOpacity(0.5)),
-                              const SizedBox(height: 16),
-                              Text(
-                                'No se encontraron resultados',
-                                style: GoogleFonts.montserrat(
-                                  color: Colors.grey,
-                                  fontSize: 16,
-                                ),
-                              ),
-                            ],
-                          ),
-                        );
-                      }
-
-                      return ListView.builder(
-                        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8).copyWith(bottom: 40),
-                        physics: const BouncingScrollPhysics(),
-                        itemCount: results.length,
-                        itemBuilder: (context, index) {
-                          return Padding(
-                            padding: const EdgeInsets.only(bottom: 8),
-                            child: Material(
-                              color: Colors.transparent,
-                              child: TransactionTile(
-                                transaction: results[index],
-                                currencySymbol: '\$',
-                              ),
-                            ),
-                          );
-                        },
-                      );
-                    },
-                    loading: () => const Center(child: CircularProgressIndicator(color: AppColors.primary)),
-                    error: (e, _) => Center(child: Text('Error: $e')),
-                  ),
-                ),
-              ],
+              ),
             ),
           ),
         ],
-      ),
-    );
-  }
-
-  Widget _buildFilterChip(String label, bool isDark) {
-    final isSelected = _selectedFilter == label;
-    return GestureDetector(
-      onTap: () {
-        setState(() {
-          _selectedFilter = label;
-        });
-      },
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        decoration: BoxDecoration(
-          color: isSelected 
-              ? AppColors.primary 
-              : (isDark ? Colors.white.withOpacity(0.1) : Colors.black.withOpacity(0.05)),
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(
-            color: isSelected ? AppColors.primary : Colors.transparent,
-          ),
-        ),
-        child: Text(
-          label,
-          style: GoogleFonts.montserrat(
-            fontSize: 13,
-            fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
-            color: isSelected 
-                ? Colors.white 
-                : (isDark ? Colors.white70 : AppColors.textPrimary.withOpacity(0.7)),
-          ),
-        ),
       ),
     );
   }
