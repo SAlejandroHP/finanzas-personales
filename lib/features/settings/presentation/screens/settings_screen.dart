@@ -10,6 +10,8 @@ import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../../transactions/presentation/screens/recurring_transactions_screen.dart';
 import '../../../../core/widgets/app_toast.dart';
 import 'package:flutter_notification_listener/flutter_notification_listener.dart';
+import 'dart:convert';
+import 'package:image_picker/image_picker.dart';
 
 /// Pantalla de configuración de la aplicación.
 /// Organizada de forma funcional con secciones de gestión, apariencia y cuenta.
@@ -54,6 +56,114 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         showAppToast(context, message: 'Error: ${e.toString()}', type: ToastType.error);
       }
     }
+  }
+
+  Future<void> _updateProfilePicture(ImageSource source) async {
+    try {
+      final picker = ImagePicker();
+      final image = await picker.pickImage(
+        source: source,
+        maxWidth: 250,
+        maxHeight: 250,
+        imageQuality: 50,
+      );
+
+      if (image == null) return;
+
+      final bytes = await image.readAsBytes();
+      final base64String = base64Encode(bytes);
+      final avatarData = 'data:image/jpeg;base64,$base64String';
+
+      final supabase = Supabase.instance.client;
+      await supabase.auth.updateUser(
+        UserAttributes(
+          data: {
+            'avatar_url': avatarData,
+          },
+        ),
+      );
+
+      ref.invalidate(currentUserProvider);
+
+      if (mounted) {
+        showAppToast(context, message: 'Foto de perfil actualizada', type: ToastType.success);
+      }
+    } catch (e) {
+      if (mounted) {
+        showAppToast(context, message: 'Error al actualizar foto: $e', type: ToastType.error);
+      }
+    }
+  }
+
+  void _showProfilePictureOptions() {
+    showModalBottomSheet(
+      context: context,
+      useRootNavigator: true,
+      backgroundColor: Theme.of(context).brightness == Brightness.dark ? const Color(0xFF1E1E1E) : Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) {
+        final isDark = Theme.of(context).brightness == Brightness.dark;
+        return SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const SizedBox(height: 12),
+              Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: isDark ? Colors.white24 : Colors.black12,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              const SizedBox(height: 20),
+              Text(
+                'Foto de perfil',
+                style: GoogleFonts.montserrat(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w700,
+                  color: isDark ? Colors.white : Colors.black87,
+                ),
+              ),
+              const SizedBox(height: 20),
+              ListTile(
+                leading: Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: AppColors.primary.withOpacity(0.1),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(Icons.camera_alt_rounded, color: AppColors.primary),
+                ),
+                title: Text('Tomar foto', style: GoogleFonts.montserrat(fontWeight: FontWeight.w600)),
+                onTap: () {
+                  Navigator.pop(context);
+                  _updateProfilePicture(ImageSource.camera);
+                },
+              ),
+              ListTile(
+                leading: Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: AppColors.secondary.withOpacity(0.1),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(Icons.photo_library_rounded, color: AppColors.secondary),
+                ),
+                title: Text('Elegir de la galería', style: GoogleFonts.montserrat(fontWeight: FontWeight.w600)),
+                onTap: () {
+                  Navigator.pop(context);
+                  _updateProfilePicture(ImageSource.gallery);
+                },
+              ),
+              const SizedBox(height: 20),
+            ],
+          ),
+        );
+      },
+    );
   }
 
   @override
@@ -350,6 +460,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
 
   /// Tarjeta de perfil del usuario con edición integrada (Rediseño Premium)
   Widget _buildProfileCard(BuildContext context, User user, bool isDark) {
+    final String? avatarUrl = user.userMetadata?['avatar_url'] as String?;
+
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: AppColors.lg),
       padding: const EdgeInsets.all(AppColors.lg),
@@ -367,16 +479,28 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       ),
       child: Row(
         children: [
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: AppColors.primary.withOpacity(0.15),
-              borderRadius: BorderRadius.circular(10), // Squircle homologado
-            ),
-            child: const Icon(
-              Icons.person_outline,
-              color: AppColors.primary,
-              size: 24,
+          GestureDetector(
+            onTap: _showProfilePictureOptions,
+            child: Container(
+              width: 52,
+              height: 52,
+              decoration: BoxDecoration(
+                color: AppColors.primary.withOpacity(0.15),
+                borderRadius: BorderRadius.circular(10), // Squircle homologado
+                image: avatarUrl != null
+                    ? DecorationImage(
+                        image: MemoryImage(base64Decode(avatarUrl.split(',').last)),
+                        fit: BoxFit.cover,
+                      )
+                    : null,
+              ),
+              child: avatarUrl == null
+                  ? const Icon(
+                      Icons.person_outline,
+                      color: AppColors.primary,
+                      size: 24,
+                    )
+                  : null,
             ),
           ),
           const SizedBox(width: AppColors.md),
