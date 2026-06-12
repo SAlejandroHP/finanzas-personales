@@ -31,27 +31,35 @@ abstract class AppTheme {
       // 🛠️ TAREA 2.1: Inputs (InputDecorationTheme)
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
-        fillColor: AppColors.surfaceLight,
+        fillColor: AppColors.primary.withOpacity(0.06),
         isDense: true,
         contentPadding: const EdgeInsets.symmetric(
           horizontal: 16,
-          vertical: 16.5, 
+          vertical: 16, 
         ),
         border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(AppColors.radiusMedium),
-          borderSide: BorderSide(color: AppColors.primary.withOpacity(0.1)),
+          borderRadius: BorderRadius.circular(100),
+          borderSide: BorderSide.none,
         ),
         enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(AppColors.radiusMedium),
-          borderSide: BorderSide(color: AppColors.primary.withOpacity(0.1)),
+          borderRadius: BorderRadius.circular(100),
+          borderSide: BorderSide.none,
         ),
         focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(AppColors.radiusMedium),
-          borderSide: const BorderSide(color: AppColors.primary, width: 2),
+          borderRadius: BorderRadius.circular(100),
+          borderSide: BorderSide(color: AppColors.primary.withOpacity(0.5), width: 1.5),
+        ),
+        errorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(100),
+          borderSide: const BorderSide(color: AppColors.error, width: 1.5),
+        ),
+        focusedErrorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(100),
+          borderSide: const BorderSide(color: AppColors.error, width: 1.5),
         ),
         hintStyle: GoogleFonts.montserrat(
           fontSize: AppColors.bodyMedium,
-          color: AppColors.textSecondaryLight,
+          color: AppColors.textSecondaryLight.withOpacity(0.7),
           fontWeight: FontWeight.w500,
         ),
       ),
@@ -65,7 +73,7 @@ abstract class AppTheme {
           maximumSize: const Size(double.infinity, AppColors.interactiveHeight),
           elevation: 0,
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(AppColors.radiusMedium),
+            borderRadius: BorderRadius.circular(100),
           ),
           textStyle: GoogleFonts.montserrat(
             fontSize: AppColors.bodyLarge,
@@ -135,24 +143,32 @@ abstract class AppTheme {
       
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
-        fillColor: AppColors.surfaceDark,
+        fillColor: Colors.white.withOpacity(0.08),
         isDense: true,
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16.5),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
         border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(AppColors.radiusMedium),
+          borderRadius: BorderRadius.circular(100),
           borderSide: BorderSide.none,
         ),
         enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(AppColors.radiusMedium),
+          borderRadius: BorderRadius.circular(100),
           borderSide: BorderSide.none,
         ),
         focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(AppColors.radiusMedium),
-          borderSide: const BorderSide(color: AppColors.secondary, width: 2),
+          borderRadius: BorderRadius.circular(100),
+          borderSide: BorderSide(color: AppColors.primary.withOpacity(0.5), width: 1.5),
+        ),
+        errorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(100),
+          borderSide: const BorderSide(color: AppColors.error, width: 1.5),
+        ),
+        focusedErrorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(100),
+          borderSide: const BorderSide(color: AppColors.error, width: 1.5),
         ),
         hintStyle: GoogleFonts.montserrat(
           fontSize: AppColors.bodyMedium,
-          color: AppColors.textSecondaryDark.withOpacity(0.5),
+          color: Colors.white60,
           fontWeight: FontWeight.w500,
         ),
       ),
@@ -164,7 +180,7 @@ abstract class AppTheme {
           minimumSize: const Size(double.infinity, AppColors.interactiveHeight),
           elevation: 0,
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(AppColors.radiusMedium),
+            borderRadius: BorderRadius.circular(100),
           ),
           textStyle: GoogleFonts.montserrat(
             fontSize: AppColors.bodyLarge,
