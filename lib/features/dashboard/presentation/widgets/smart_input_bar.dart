@@ -587,13 +587,6 @@ class _SiriOrbState extends State<SiriOrb> with TickerProviderStateMixin {
                     ),
                   ),
                 ),
-                
-                // Layer 5: Microphone Icon so the user knows it's the voice AI button
-                Icon(
-                  widget.isListening ? Icons.mic : Icons.mic_none_rounded,
-                  color: Colors.white.withOpacity(0.7),
-                  size: widget.size * 0.5,
-                ),
               ],
             ),
           );
