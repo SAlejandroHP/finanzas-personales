@@ -1387,9 +1387,9 @@ Widget _buildPendingInvitations(BuildContext context, WidgetRef ref, bool isDark
           }
           
           String accountName = 'Efectivo';
-          if (tx.cuentaId != null) {
+          if (tx.cuentaOrigenId != null) {
             try {
-              accountName = accounts.firstWhere((a) => a.id == tx.cuentaId).nombre;
+              accountName = accounts.firstWhere((a) => a.id == tx.cuentaOrigenId).nombre;
             } catch (_) {}
           }
           
