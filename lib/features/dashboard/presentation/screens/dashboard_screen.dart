@@ -249,7 +249,9 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
       greeting = userName != null ? 'Buenas noches, $userName' : 'Buenas noches';
     }
 
-    
+    // Fecha actual para el reloj
+    final now = DateTime.now();
+    final formattedDate = DateFormat('EEE, d MMM', 'es_MX').format(now);
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 20),
@@ -278,13 +280,135 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
               ),
             ],
           ),
-          
+          _buildDateClock(context, isDark, formattedDate),
         ],
       ),
     );
   }
 
-  Widget _buildPendingInvitations(BuildContext context, WidgetRef ref, bool isDark) {
+  /// Construye un pequeño widget con la fecha e icono de calendario
+  Widget _buildDateClock(BuildContext context, bool isDark, String date) {
+    return InkWell(
+      onTap: () {
+        final DateTime now = DateTime.now();
+        showDialog(
+          context: context,
+          builder: (context) {
+            return Theme(
+              data: Theme.of(context).copyWith(
+                colorScheme: isDark
+                    ? ColorScheme.dark(
+                        primary: AppColors.primary,
+                        onPrimary: Colors.white,
+                        surface: const Color(0xFF1E1E1E), // Slate Dark
+                        onSurface: Colors.white,
+                      )
+                    : ColorScheme.light(
+                        primary: AppColors.primary,
+                        onPrimary: Colors.white,
+                        surface: Colors.white,
+                        onSurface: AppColors.textPrimary,
+                      ),
+                textButtonTheme: TextButtonThemeData(
+                  style: TextButton.styleFrom(
+                    foregroundColor: AppColors.secondary,
+                  ),
+                ),
+              ),
+              child: Dialog(
+                backgroundColor: isDark ? const Color(0xFF1E1E1E) : Colors.white,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const SizedBox(height: 20),
+                    Text(
+                      'CALENDARIO',
+                      style: GoogleFonts.montserrat(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: 1.5,
+                        color: isDark ? Colors.white60 : Colors.black54,
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    CalendarDatePicker(
+                      initialDate: now,
+                      firstDate: now.subtract(const Duration(days: 365 * 2)),
+                      lastDate: now.add(const Duration(days: 365 * 2)),
+                      onDateChanged: (_) {}, // No hace nada por ahora
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(0, 0, 16, 16),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.end,
+                        children: [
+                          TextButton(
+                            onPressed: () => Navigator.of(context).pop(),
+                            child: Text(
+                              'CERRAR',
+                              style: GoogleFonts.montserrat(
+                                fontWeight: FontWeight.w700,
+                                fontSize: 13,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
+      borderRadius: BorderRadius.circular(AppColors.radiusLarge),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+        decoration: BoxDecoration(
+          color: isDark ? Colors.white.withOpacity(0.05) : Colors.white,
+          borderRadius: BorderRadius.circular(AppColors.radiusLarge),
+          border: Border.all(
+            color: isDark 
+                ? Colors.white.withOpacity(0.05) 
+                : Colors.black.withOpacity(0.05),
+          ),
+          boxShadow: [
+            if (!isDark)
+              BoxShadow(
+                color: Colors.black.withOpacity(0.03),
+                blurRadius: 5,
+                offset: const Offset(0, 2),
+              ),
+          ],
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              Icons.calendar_today_rounded,
+              size: 14,
+              color: isDark ? Colors.white38 : Colors.grey[600],
+            ),
+            const SizedBox(width: 6),
+            Text(
+              date.toUpperCase(),
+              style: GoogleFonts.montserrat(
+                fontSize: 10,
+                fontWeight: FontWeight.w700,
+                color: isDark ? Colors.white60 : Colors.black54,
+                letterSpacing: 0.5,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  
+Widget _buildPendingInvitations(BuildContext context, WidgetRef ref, bool isDark) {
     final invitationsAsync = ref.watch(pendingInvitationsProvider);
 
     return invitationsAsync.maybeWhen(
