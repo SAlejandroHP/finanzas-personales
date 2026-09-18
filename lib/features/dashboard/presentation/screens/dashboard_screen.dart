@@ -18,12 +18,67 @@ import '../../../debts/models/debt_model.dart';
 import '../../../goals/presentation/providers/goals_provider.dart';
 import '../../../transactions/presentation/widgets/transaction_form_sheet.dart';
 import '../../../../core/services/finance_service.dart';
-import '../widgets/smart_input_bar.dart';
 import '../widgets/master_plan_card.dart';
 import '../../../../core/widgets/app_toast.dart';
 
 /// Pantalla del dashboard que muestra un resumen financiero.
 /// Permite navegar a cuentas, categorías y transacciones.
+
+class SelectedDateNotifier extends Notifier<DateTime> {
+  bool _initialized = false;
+
+  @override
+  DateTime build() {
+    final now = DateTime.now();
+    return DateTime(now.year, now.month, now.day);
+  }
+
+  void setDate(DateTime date) {
+    state = DateTime(date.year, date.month, date.day);
+  }
+
+  void initializeWithTransactions(List<TransactionModel> transactions) {
+    if (_initialized) return;
+    _initialized = true;
+
+    final today = DateTime(DateTime.now().year, DateTime.now().month, DateTime.now().day);
+    final todayHasTx = transactions.any((tx) => 
+        DateTime(tx.fecha.year, tx.fecha.month, tx.fecha.day).isAtSameMomentAs(today));
+
+    if (!todayHasTx) {
+      final futurePendingTxs = transactions
+          .where((tx) => 
+              tx.estado == 'pendiente' && 
+              DateTime(tx.fecha.year, tx.fecha.month, tx.fecha.day).isAfter(today))
+          .toList();
+      
+      if (futurePendingTxs.isNotEmpty) {
+        futurePendingTxs.sort((a, b) => a.fecha.compareTo(b.fecha));
+        final nextTx = futurePendingTxs.first;
+        final nextDate = DateTime(nextTx.fecha.year, nextTx.fecha.month, nextTx.fecha.day);
+        
+        Future.microtask(() => state = nextDate);
+      }
+    }
+  }
+}
+
+final selectedDateProvider = NotifierProvider<SelectedDateNotifier, DateTime>(() {
+  return SelectedDateNotifier();
+});
+
+final transactionsForSelectedDateProvider = Provider<List<TransactionModel>>((ref) {
+  final selectedDate = ref.watch(selectedDateProvider);
+  final allTransactions = ref.watch(transactionsListProvider).value ?? [];
+  
+  return allTransactions.where((tx) {
+    return tx.fecha.year == selectedDate.year &&
+           tx.fecha.month == selectedDate.month &&
+           tx.fecha.day == selectedDate.day;
+  }).toList()
+    ..sort((a, b) => b.fecha.compareTo(a.fecha));
+});
+
 class DashboardScreen extends ConsumerStatefulWidget {
   const DashboardScreen({Key? key}) : super(key: key);
 
@@ -44,12 +99,25 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
         : AppColors.backgroundColor;
     final totalBalance = ref.watch(totalBalanceProvider);
     final realAvailable = ref.watch(realAvailableBalanceProvider);
-    final totalDebts = ref.watch(totalDebtsProvider);
-    final monthlyIncome = ref.watch(monthlyIncomeProvider);
-    final monthlyExpenses = ref.watch(monthlyExpensesProvider);
     final accounts = ref.watch(accountsWithBalanceProvider);
     final pendingTransactions = ref.watch(pendingTransactionsProvider);
     
+    final allTransactionsAsync = ref.watch(transactionsListProvider);
+    double paidIncome = 0.0;
+    double paidExpenses = 0.0;
+    
+    allTransactionsAsync.whenData((txs) {
+      final now = DateTime.now();
+      for (final tx in txs) {
+        if (tx.fecha.month == now.month && tx.fecha.year == now.year && tx.estado == 'completada') {
+          if (tx.tipo == 'ingreso') paidIncome += tx.monto;
+          if (tx.tipo == 'gasto') paidExpenses += tx.monto;
+        }
+      }
+    });
+    
+    final cardColor = isDark ? AppColors.surfaceDark : AppColors.surface;
+
     // Inicializar el calendario con el día más cercano de transacciones
     ref.listen(transactionsListProvider, (previous, next) {
       next.whenData((transactions) {
@@ -57,7 +125,6 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
       });
     });
 
-    final cardColor = isDark ? AppColors.surfaceDark : AppColors.surface;
 
     // Formateador de moneda estándar
     final currencyFormatter = NumberFormat.currency(
@@ -108,15 +175,13 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                       _buildPendingInvitations(context, ref, isDark),
                       _buildPendingGoalInvitations(context, ref, isDark),
                       const SizedBox(height: 12),
-                      const SmartInputBar(),
-                      const SizedBox(height: 16),
+                      
                       _buildBalanceSummaryCard(
                         context,
                         totalBalance,
                         realAvailable,
-                        totalDebts,
-                        monthlyIncome,
-                        monthlyExpenses,
+                        paidIncome,
+                        paidExpenses,
                         mxnFormatter,
                         currencyFormatter,
                         cardColor,
@@ -197,9 +262,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
       greeting = userName != null ? 'Buenas noches, $userName' : 'Buenas noches';
     }
 
-    // Fecha actual para el reloj
-    final now = DateTime.now();
-    final formattedDate = DateFormat('EEE, d MMM', 'es_MX').format(now);
+    
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 20),
@@ -228,129 +291,8 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
               ),
             ],
           ),
-          _buildDateClock(context, isDark, formattedDate),
+          
         ],
-      ),
-    );
-  }
-
-  /// Construye un pequeño widget con la fecha e icono de calendario
-  Widget _buildDateClock(BuildContext context, bool isDark, String date) {
-    return InkWell(
-      onTap: () {
-        final DateTime now = DateTime.now();
-        showDialog(
-          context: context,
-          builder: (context) {
-            return Theme(
-              data: Theme.of(context).copyWith(
-                colorScheme: isDark
-                    ? ColorScheme.dark(
-                        primary: AppColors.primary,
-                        onPrimary: Colors.white,
-                        surface: const Color(0xFF1E1E1E), // Slate Dark
-                        onSurface: Colors.white,
-                      )
-                    : ColorScheme.light(
-                        primary: AppColors.primary,
-                        onPrimary: Colors.white,
-                        surface: Colors.white,
-                        onSurface: AppColors.textPrimary,
-                      ),
-                textButtonTheme: TextButtonThemeData(
-                  style: TextButton.styleFrom(
-                    foregroundColor: AppColors.secondary,
-                  ),
-                ),
-              ),
-              child: Dialog(
-                backgroundColor: isDark ? const Color(0xFF1E1E1E) : Colors.white,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const SizedBox(height: 20),
-                    Text(
-                      'CALENDARIO',
-                      style: GoogleFonts.montserrat(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w800,
-                        letterSpacing: 1.5,
-                        color: isDark ? Colors.white60 : Colors.black54,
-                      ),
-                    ),
-                    const SizedBox(height: 10),
-                    CalendarDatePicker(
-                      initialDate: now,
-                      firstDate: now.subtract(const Duration(days: 365 * 2)),
-                      lastDate: now.add(const Duration(days: 365 * 2)),
-                      onDateChanged: (_) {}, // No hace nada por ahora
-                    ),
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(0, 0, 16, 16),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.end,
-                        children: [
-                          TextButton(
-                            onPressed: () => Navigator.of(context).pop(),
-                            child: Text(
-                              'CERRAR',
-                              style: GoogleFonts.montserrat(
-                                fontWeight: FontWeight.w700,
-                                fontSize: 13,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            );
-          },
-        );
-      },
-      borderRadius: BorderRadius.circular(AppColors.radiusLarge),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-        decoration: BoxDecoration(
-          color: isDark ? Colors.white.withOpacity(0.05) : Colors.white,
-          borderRadius: BorderRadius.circular(AppColors.radiusLarge),
-          border: Border.all(
-            color: isDark 
-                ? Colors.white.withOpacity(0.05) 
-                : Colors.black.withOpacity(0.05),
-          ),
-          boxShadow: [
-            if (!isDark)
-              BoxShadow(
-                color: Colors.black.withOpacity(0.03),
-                blurRadius: 5,
-                offset: const Offset(0, 2),
-              ),
-          ],
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              Icons.calendar_today_rounded,
-              size: 14,
-              color: isDark ? Colors.white38 : Colors.grey[600],
-            ),
-            const SizedBox(width: 6),
-            Text(
-              date.toUpperCase(),
-              style: GoogleFonts.montserrat(
-                fontSize: 10,
-                fontWeight: FontWeight.w700,
-                color: isDark ? Colors.white60 : Colors.black54,
-                letterSpacing: 0.5,
-              ),
-            ),
-          ],
-        ),
       ),
     );
   }
@@ -673,7 +615,6 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     BuildContext context,
     double balance,
     double realAvailable,
-    double totalDebts,
     double incomes,
     double expenses,
     NumberFormat balanceFormatter,
@@ -755,10 +696,6 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                 _buildFlowItem('Ingresos', incomes, Colors.green, Icons.arrow_upward_rounded, isDark),
                 const SizedBox(width: 8),
                 _buildFlowItem('Gastos', expenses, Colors.redAccent, Icons.arrow_downward_rounded, isDark),
-                if (totalDebts > 0) ...[
-                  const SizedBox(width: 8),
-                  _buildFlowItem('Deudas', totalDebts, Colors.orange, Icons.history_rounded, isDark),
-                ],
               ],
             ),
           ),
@@ -981,7 +918,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                           crossAxisAlignment: CrossAxisAlignment.end,
                           children: [
                             Text(
-                              '${isExpense ? '-' : '+'}${formatter.format(tx.monto)}',
+                              (isExpense ? "-" : "+") + formatter.format(tx.monto),
                               style: GoogleFonts.montserrat(
                                 fontSize: 12,
                                 fontWeight: FontWeight.bold,
@@ -2144,70 +2081,6 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
 
     return iconMap[iconName] ?? Icons.description_outlined;
   }
-}
-
-class _ChartLoadingSkeleton extends StatelessWidget {
-  const _ChartLoadingSkeleton({Key? key}) : super(key: key);
-
-  @override
-  Widget build(BuildContext context) {
-    return const SizedBox(
-      height: 200,
-      child: Center(child: CircularProgressIndicator()),
-    );
-  }
-}
-
-class DonutSection {
-  final double value;
-  final Color color;
-  final String title;
-  DonutSection({required this.value, required this.color, this.title = ''});
-}
-
-class DonutChartPainter extends CustomPainter {
-  final List<DonutSection> sections;
-  final double total;
-  final int touchedIndex;
-
-  DonutChartPainter({required this.sections, required this.total, required this.touchedIndex});
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final center = Offset(size.width / 2, size.height / 2);
-    // Adjusted radius calculation to accommodate varying stroke widths
-    final maxStrokeWidth = 32.0;
-    final radius = (size.width - maxStrokeWidth) / 2;
-    
-    double startAngle = -1.5708; // -90 grados en radianes
-
-    for (int i = 0; i < sections.length; i++) {
-      final section = sections[i];
-      final sweepAngle = (section.value / total) * 6.28318; // 2 * pi
-      final isTouched = i == touchedIndex;
-      final currentStrokeWidth = isTouched ? 30.0 : 20.0;
-      
-      final paint = Paint()
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = currentStrokeWidth
-        ..strokeCap = StrokeCap.round
-        ..color = isTouched ? section.color : section.color.withOpacity(touchedIndex == -1 ? 1.0 : 0.3);
-
-      canvas.drawArc(
-        Rect.fromCircle(center: center, radius: radius),
-        startAngle,
-        sweepAngle > 0.05 ? sweepAngle - 0.05 : sweepAngle, 
-        false,
-        paint,
-      );
-      
-      startAngle += sweepAngle;
-    }
-  }
-
-  @override
-  bool shouldRepaint(covariant DonutChartPainter oldDelegate) => 
-    oldDelegate.sections != sections || oldDelegate.total != total || oldDelegate.touchedIndex != touchedIndex;
 
   Widget _buildCalendarAndTransactions(
     BuildContext context,
@@ -2236,7 +2109,7 @@ class DonutChartPainter extends CustomPainter {
                 ),
               ),
               Text(
-                DateFormat('MMMM yyyy', 'es_MX').format(selectedDate).capitalize(),
+                (DateFormat('MMMM yyyy', 'es_MX').format(selectedDate).substring(0, 1).toUpperCase() + DateFormat('MMMM yyyy', 'es_MX').format(selectedDate).substring(1)),
                 style: GoogleFonts.montserrat(
                   fontSize: 12,
                   fontWeight: FontWeight.w600,
@@ -2263,7 +2136,6 @@ class DonutChartPainter extends CustomPainter {
   ) {
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
-    // Generate dates from today - 15 days to today + 30 days
     final dates = List.generate(45, (index) => today.subtract(const Duration(days: 15)).add(Duration(days: index)));
 
     return SizedBox(
@@ -2324,7 +2196,7 @@ class DonutChartPainter extends CustomPainter {
                   ),
                   if (isToday)
                     Container(
-                      margin: const EdgeInsets.top(4),
+                      margin: const EdgeInsets.only(top: 4),
                       width: 4,
                       height: 4,
                       decoration: BoxDecoration(
@@ -2459,7 +2331,7 @@ class DonutChartPainter extends CustomPainter {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        tx.descripcion,
+                        tx.descripcion ?? '',
                         style: GoogleFonts.montserrat(
                           fontWeight: FontWeight.w600,
                           fontSize: 14,
@@ -2470,7 +2342,7 @@ class DonutChartPainter extends CustomPainter {
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        tx.categoria ?? (isIngreso ? 'Ingreso' : 'Gasto'),
+                        tx.categoriaId ?? (isIngreso ? 'Ingreso' : 'Gasto'),
                         style: GoogleFonts.montserrat(
                           fontSize: 12,
                           color: isDark ? Colors.white54 : Colors.black54,
@@ -2483,7 +2355,7 @@ class DonutChartPainter extends CustomPainter {
                   crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
                     Text(
-                      '${isIngreso ? '+' : '-'}${formatter.format(tx.monto)}',
+                      (isIngreso ? "+" : "-") + formatter.format(tx.monto),
                       style: GoogleFonts.montserrat(
                         fontWeight: FontWeight.w700,
                         fontSize: 14,
@@ -2537,4 +2409,69 @@ class DonutChartPainter extends CustomPainter {
       ),
     );
   }
+
+}
+
+class _ChartLoadingSkeleton extends StatelessWidget {
+  const _ChartLoadingSkeleton({Key? key}) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return const SizedBox(
+      height: 200,
+      child: Center(child: CircularProgressIndicator()),
+    );
+  }
+}
+
+class DonutSection {
+  final double value;
+  final Color color;
+  final String title;
+  DonutSection({required this.value, required this.color, this.title = ''});
+}
+
+class DonutChartPainter extends CustomPainter {
+  final List<DonutSection> sections;
+  final double total;
+  final int touchedIndex;
+
+  DonutChartPainter({required this.sections, required this.total, required this.touchedIndex});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final center = Offset(size.width / 2, size.height / 2);
+    // Adjusted radius calculation to accommodate varying stroke widths
+    final maxStrokeWidth = 32.0;
+    final radius = (size.width - maxStrokeWidth) / 2;
+    
+    double startAngle = -1.5708; // -90 grados en radianes
+
+    for (int i = 0; i < sections.length; i++) {
+      final section = sections[i];
+      final sweepAngle = (section.value / total) * 6.28318; // 2 * pi
+      final isTouched = i == touchedIndex;
+      final currentStrokeWidth = isTouched ? 30.0 : 20.0;
+      
+      final paint = Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = currentStrokeWidth
+        ..strokeCap = StrokeCap.round
+        ..color = isTouched ? section.color : section.color.withOpacity(touchedIndex == -1 ? 1.0 : 0.3);
+
+      canvas.drawArc(
+        Rect.fromCircle(center: center, radius: radius),
+        startAngle,
+        sweepAngle > 0.05 ? sweepAngle - 0.05 : sweepAngle, 
+        false,
+        paint,
+      );
+      
+      startAngle += sweepAngle;
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant DonutChartPainter oldDelegate) => 
+    oldDelegate.sections != sections || oldDelegate.total != total || oldDelegate.touchedIndex != touchedIndex;
 }
