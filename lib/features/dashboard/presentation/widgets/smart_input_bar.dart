@@ -362,84 +362,113 @@ class _SmartInputBarState extends ConsumerState<SmartInputBar> {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final backgroundColor = isDark ? AppColors.surfaceDark : Colors.black.withOpacity(0.05);
-    final textColor = isDark ? AppColors.textSecondary : AppColors.textPrimary;
-    final hintColor = isDark ? AppColors.textSecondary.withOpacity(0.5) : AppColors.textPrimary.withOpacity(0.5);
+    final backgroundColor = isDark ? const Color(0xFF1E1E1E) : Colors.white;
+    final textColor = isDark ? Colors.white : const Color(0xFF1A1A1A);
+    final hintColor = isDark ? Colors.white38 : Colors.black38;
 
     return Container(
       decoration: BoxDecoration(
         color: backgroundColor,
-        borderRadius: BorderRadius.circular(24),
+        borderRadius: BorderRadius.circular(32),
         border: Border.all(
-          color: isDark ? Colors.white.withOpacity(0.05) : AppColors.primary.withOpacity(0.1),
-          width: 1.0,
+          color: isDark ? Colors.white.withOpacity(0.08) : Colors.black.withOpacity(0.04),
+          width: 1.5,
         ),
+        boxShadow: [
+          BoxShadow(
+            color: isDark ? Colors.black.withOpacity(0.2) : Colors.black.withOpacity(0.03),
+            blurRadius: 20,
+            offset: const Offset(0, 8),
+          ),
+        ],
       ),
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            // Botón de Micrófono transformado
-            GestureDetector(
-              onTap: _isLoading ? null : _listen,
-              child: Container(
-                width: AppColors.xl + AppColors.sm, // ~40-44 normalized
-                height: AppColors.xl + AppColors.sm,
-                decoration: BoxDecoration(
-                  color: _isListening ? AppColors.error : AppColors.primaryDark,
-                  shape: BoxShape.circle,
-                ),
-                child: _isLoading && _isListening == false
-                    ? const Padding(
-                        padding: EdgeInsets.all(AppColors.sm),
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                        ),
-                      )
-                    : Icon(
-                        _isListening ? Icons.mic : Icons.mic_none,
-                        color: Colors.white,
-                        size: AppColors.iconMedium,
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          // Botón de Micrófono minimalista
+          GestureDetector(
+            onTap: _isLoading ? null : _listen,
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 200),
+              width: 44,
+              height: 44,
+              decoration: BoxDecoration(
+                color: _isListening 
+                    ? Colors.red.withOpacity(0.15) 
+                    : (isDark ? Colors.white.withOpacity(0.05) : AppColors.primary.withOpacity(0.08)),
+                shape: BoxShape.circle,
+              ),
+              child: _isLoading && _isListening == false
+                  ? const Padding(
+                      padding: EdgeInsets.all(12),
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        valueColor: AlwaysStoppedAnimation<Color>(AppColors.primary),
                       ),
-              ),
+                    )
+                  : Icon(
+                      _isListening ? Icons.mic : Icons.mic_none_rounded,
+                      color: _isListening ? Colors.redAccent : AppColors.primary,
+                      size: 22,
+                    ),
             ),
-            const SizedBox(width: AppColors.md),
-            Expanded(
-              child: TextField(
-                controller: _controller,
-                onSubmitted: (_) => _processInput(),
-                enabled: !_isLoading,
-                style: GoogleFonts.montserrat(
-                  color: textColor,
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: TextField(
+              controller: _controller,
+              onSubmitted: (_) => _processInput(),
+              enabled: !_isLoading,
+              style: GoogleFonts.montserrat(
+                color: textColor,
+                fontWeight: FontWeight.w600,
+                fontSize: 14,
+              ),
+              decoration: InputDecoration(
+                hintText: _isListening ? 'Escuchando tu gasto...' : '✨ ¿Qué registramos hoy?',
+                hintStyle: GoogleFonts.montserrat(
+                  color: hintColor,
                   fontWeight: FontWeight.w500,
-                  fontSize: AppColors.bodyMedium,
+                  fontSize: 14,
                 ),
-                decoration: InputDecoration(
-                  hintText: _isListening ? 'Escuchando...' : '¿Qué registramos hoy?',
-                  hintStyle: GoogleFonts.montserrat(
-                    color: hintColor,
-                    fontSize: AppColors.bodyMedium,
-                  ),
-                  border: InputBorder.none,
-                  isDense: true,
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 4, vertical: 12),
-                ),
+                border: InputBorder.none,
+                isDense: true,
+                contentPadding: const EdgeInsets.symmetric(vertical: 12),
               ),
             ),
-            // Botón de envío (Varita mágica)
-            IconButton(
-              onPressed: _processInput,
-              icon: const Icon(Icons.auto_awesome),
-              color: AppColors.primary,
-              iconSize: AppColors.iconLarge,
-              tooltip: 'Procesar',
-              padding: EdgeInsets.zero,
-              constraints: const BoxConstraints(),
+          ),
+          // Botón de envío estético
+          GestureDetector(
+            onTap: _processInput,
+            child: Container(
+              width: 44,
+              height: 44,
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [AppColors.primary, AppColors.primary.withBlue(200)],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                shape: BoxShape.circle,
+                boxShadow: [
+                  BoxShadow(
+                    color: AppColors.primary.withOpacity(0.3),
+                    blurRadius: 8,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: const Icon(
+                Icons.auto_awesome_rounded,
+                color: Colors.white,
+                size: 20,
+              ),
             ),
-            const SizedBox(width: AppColors.sm),
-          ],
-        ),
+          ),
+          const SizedBox(width: 4),
+        ],
+      ),
     );
   }
 }
