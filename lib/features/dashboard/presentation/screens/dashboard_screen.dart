@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:finanzas/features/dashboard/presentation/widgets/smart_input_bar.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
@@ -195,8 +196,12 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                         isDark,
                       ),
 
-                      
-                                            const SizedBox(height: 24),
+                      const SizedBox(height: 16),
+                      const Padding(
+                        padding: EdgeInsets.symmetric(horizontal: 16),
+                        child: SmartInputBar(),
+                      ),
+                      const SizedBox(height: 24),
                       _buildCalendarAndTransactions(
                         context,
                         ref,
