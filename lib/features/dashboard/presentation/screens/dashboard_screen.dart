@@ -49,6 +49,14 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     final monthlyExpenses = ref.watch(monthlyExpensesProvider);
     final accounts = ref.watch(accountsWithBalanceProvider);
     final pendingTransactions = ref.watch(pendingTransactionsProvider);
+    
+    // Inicializar el calendario con el día más cercano de transacciones
+    ref.listen(transactionsListProvider, (previous, next) {
+      next.whenData((transactions) {
+        ref.read(selectedDateProvider.notifier).initializeWithTransactions(transactions);
+      });
+    });
+
     final cardColor = isDark ? AppColors.surfaceDark : AppColors.surface;
 
     // Formateador de moneda estándar
@@ -121,10 +129,9 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                       const SizedBox(height: 24),
                       _buildCategoryStatsCard(context, cardColor, isDark),
                       const SizedBox(height: 24),
-                      _buildRecentTransactionsCard(
+                      _buildCalendarAndTransactions(
                         context,
                         ref,
-                        pendingTransactions,
                         currencyFormatter,
                         isDark,
                         cardColor,
@@ -2201,4 +2208,333 @@ class DonutChartPainter extends CustomPainter {
   @override
   bool shouldRepaint(covariant DonutChartPainter oldDelegate) => 
     oldDelegate.sections != sections || oldDelegate.total != total || oldDelegate.touchedIndex != touchedIndex;
+
+  Widget _buildCalendarAndTransactions(
+    BuildContext context,
+    WidgetRef ref,
+    NumberFormat formatter,
+    bool isDark,
+    Color cardColor,
+  ) {
+    final selectedDate = ref.watch(selectedDateProvider);
+    final transactions = ref.watch(transactionsForSelectedDateProvider);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'Actividad y Pagos',
+                style: GoogleFonts.montserrat(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w700,
+                  color: isDark ? Colors.white : Colors.black87,
+                ),
+              ),
+              Text(
+                DateFormat('MMMM yyyy', 'es_MX').format(selectedDate).capitalize(),
+                style: GoogleFonts.montserrat(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.primary,
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 16),
+        _buildHorizontalCalendar(context, ref, selectedDate, isDark, cardColor),
+        const SizedBox(height: 16),
+        _buildTransactionsList(context, ref, transactions, formatter, isDark, cardColor),
+      ],
+    );
+  }
+
+  Widget _buildHorizontalCalendar(
+    BuildContext context,
+    WidgetRef ref,
+    DateTime selectedDate,
+    bool isDark,
+    Color cardColor,
+  ) {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    // Generate dates from today - 15 days to today + 30 days
+    final dates = List.generate(45, (index) => today.subtract(const Duration(days: 15)).add(Duration(days: index)));
+
+    return SizedBox(
+      height: 70,
+      child: ListView.builder(
+        scrollDirection: Axis.horizontal,
+        itemCount: dates.length,
+        itemBuilder: (context, index) {
+          final date = dates[index];
+          final isSelected = date.year == selectedDate.year &&
+                             date.month == selectedDate.month &&
+                             date.day == selectedDate.day;
+          
+          final isToday = date.isAtSameMomentAs(today);
+
+          return GestureDetector(
+            onTap: () {
+              ref.read(selectedDateProvider.notifier).setDate(date);
+            },
+            child: Container(
+              width: 55,
+              margin: EdgeInsets.only(
+                left: index == 0 ? 16 : 8,
+                right: index == dates.length - 1 ? 16 : 0,
+              ),
+              decoration: BoxDecoration(
+                color: isSelected ? AppColors.primary : cardColor,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(
+                  color: isSelected 
+                      ? Colors.transparent 
+                      : (isDark ? Colors.white12 : Colors.black12),
+                ),
+              ),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    DateFormat('E', 'es_MX').format(date).toUpperCase().replaceAll('.', ''),
+                    style: GoogleFonts.montserrat(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                      color: isSelected 
+                          ? Colors.white 
+                          : (isDark ? Colors.white60 : Colors.black54),
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    '${date.day}',
+                    style: GoogleFonts.montserrat(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w700,
+                      color: isSelected 
+                          ? Colors.white 
+                          : (isDark ? Colors.white : Colors.black87),
+                    ),
+                  ),
+                  if (isToday)
+                    Container(
+                      margin: const EdgeInsets.top(4),
+                      width: 4,
+                      height: 4,
+                      decoration: BoxDecoration(
+                        color: isSelected ? Colors.white : AppColors.primary,
+                        shape: BoxShape.circle,
+                      ),
+                    ),
+                ],
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildTransactionsList(
+    BuildContext context,
+    WidgetRef ref,
+    List<TransactionModel> transactions,
+    NumberFormat formatter,
+    bool isDark,
+    Color cardColor,
+  ) {
+    if (transactions.isEmpty) {
+      final selectedDate = ref.watch(selectedDateProvider);
+      final allTxs = ref.watch(transactionsListProvider).value ?? [];
+      
+      TransactionModel? nextTx;
+      
+      final today = DateTime(DateTime.now().year, DateTime.now().month, DateTime.now().day);
+      
+      final futureTxs = allTxs.where((tx) {
+        final txDate = DateTime(tx.fecha.year, tx.fecha.month, tx.fecha.day);
+        return tx.estado == 'pendiente' && txDate.isAfter(selectedDate);
+      }).toList();
+      
+      if (futureTxs.isNotEmpty) {
+        futureTxs.sort((a, b) => a.fecha.compareTo(b.fecha));
+        nextTx = futureTxs.first;
+      }
+      
+      String message = 'Sin movimientos este día';
+      String? subMessage;
+      
+      if (nextTx != null) {
+        final dateStr = DateFormat('dd MMM', 'es_MX').format(nextTx.fecha);
+        message = 'Todo libre por ahora';
+        subMessage = 'Tu próximo compromiso es el $dateStr';
+      }
+
+      return Padding(
+        padding: const EdgeInsets.symmetric(vertical: 32.0, horizontal: 16),
+        child: Center(
+          child: Column(
+            children: [
+              Icon(
+                nextTx != null ? Icons.coffee_rounded : Icons.event_available_outlined,
+                size: 48,
+                color: isDark ? Colors.white12 : Colors.black12,
+              ),
+              const SizedBox(height: 12),
+              Text(
+                message,
+                style: GoogleFonts.montserrat(
+                  color: isDark ? Colors.white54 : Colors.black54,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              if (subMessage != null) ...[
+                const SizedBox(height: 8),
+                GestureDetector(
+                  onTap: () {
+                    ref.read(selectedDateProvider.notifier).setDate(nextTx!.fecha);
+                  },
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: AppColors.primary.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Text(
+                      subMessage,
+                      style: GoogleFonts.montserrat(
+                        color: AppColors.primary,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ),
+      );
+    }
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: Column(
+        children: transactions.map((tx) {
+          final isIngreso = tx.tipo == 'ingreso';
+          final color = isIngreso ? Colors.green : Colors.red;
+          final icon = isIngreso ? Icons.arrow_downward : Icons.arrow_upward;
+          
+          return Container(
+            margin: const EdgeInsets.only(bottom: 12),
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: cardColor,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: isDark ? Colors.white.withOpacity(0.05) : Colors.black.withOpacity(0.03),
+              ),
+            ),
+            child: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: color.withOpacity(0.1),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(icon, color: color, size: 20),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        tx.descripcion,
+                        style: GoogleFonts.montserrat(
+                          fontWeight: FontWeight.w600,
+                          fontSize: 14,
+                          color: isDark ? Colors.white : Colors.black87,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        tx.categoria ?? (isIngreso ? 'Ingreso' : 'Gasto'),
+                        style: GoogleFonts.montserrat(
+                          fontSize: 12,
+                          color: isDark ? Colors.white54 : Colors.black54,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    Text(
+                      '${isIngreso ? '+' : '-'}${formatter.format(tx.monto)}',
+                      style: GoogleFonts.montserrat(
+                        fontWeight: FontWeight.w700,
+                        fontSize: 14,
+                        color: isDark ? Colors.white : Colors.black87,
+                      ),
+                    ),
+                    if (tx.estado == 'pendiente') ...[
+                      const SizedBox(height: 4),
+                      InkWell(
+                        onTap: () async {
+                          final confirm = await showDialog<bool>(
+                            context: context,
+                            builder: (context) => AlertDialog(
+                              title: const Text('Confirmar pago'),
+                              content: const Text('¿Marcar como pagado?'),
+                              actions: [
+                                TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancelar')),
+                                ElevatedButton(onPressed: () => Navigator.pop(context, true), child: const Text('Confirmar')),
+                              ],
+                            ),
+                          );
+                          if (confirm == true) {
+                            final repo = ref.read(transactionsRepositoryProvider);
+                            final updated = tx.copyWith(estado: 'completada');
+                            await repo.updateTransaction(updated);
+                          }
+                        },
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: isIngreso ? Colors.green.withOpacity(0.15) : Colors.orange.withOpacity(0.15),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Text(
+                            isIngreso ? 'COBRAR' : 'PAGAR',
+                            style: GoogleFonts.montserrat(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w700,
+                              color: isIngreso ? Colors.green : Colors.orange,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ],
+            ),
+          );
+        }).toList(),
+      ),
+    );
+  }
 }

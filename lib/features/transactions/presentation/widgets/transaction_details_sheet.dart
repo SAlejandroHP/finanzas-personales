@@ -319,7 +319,10 @@ class TransactionDetailsSheet extends ConsumerWidget {
                   Expanded(
                     child: OutlinedButton.icon(
                       onPressed: () {
-                        Navigator.pop(context); // Cerrar sheet actual
+                        final sheetNavigator = Navigator.of(context);
+                        final overlayState = Overlay.of(context); // Capturar overlay ANTES de poppear
+                        final notifier = ref.read(transactionsNotifierProvider.notifier);
+
                         showDialog(
                           context: context,
                           builder: (ctx) => AlertDialog(
@@ -329,9 +332,19 @@ class TransactionDetailsSheet extends ConsumerWidget {
                               TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancelar')),
                               TextButton(
                                 onPressed: () async {
-                                  Navigator.pop(ctx);
-                                  await ref.read(transactionsNotifierProvider.notifier).deleteTransaction(transaction.id);
-                                  if (context.mounted) showAppToast(context, message: 'Eliminada', type: ToastType.success);
+                                  Navigator.pop(ctx); // Cerrar diálogo
+                                  sheetNavigator.pop(); // Cerrar bottom sheet
+                                  
+                                  await notifier.deleteTransaction(transaction.id);
+                                  
+                                  if (overlayState != null && overlayState.mounted) {
+                                    showAppToast(
+                                      context, // No se usará para buscar Overlay, ya tenemos overlayState
+                                      message: 'Eliminada', 
+                                      type: ToastType.success,
+                                      overlayState: overlayState,
+                                    );
+                                  }
                                 },
                                 child: const Text('Eliminar', style: TextStyle(color: Colors.red)),
                               ),

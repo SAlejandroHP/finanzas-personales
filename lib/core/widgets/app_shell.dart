@@ -62,6 +62,8 @@ class _AppShellState extends ConsumerState<AppShell> {
   }
 
   void _initSharingIntentListener() {
+    if (kIsWeb) return; // avoid MissingPluginException on Web
+
     // 1. Escuchar cuando la app está en segundo plano y recibe una imagen compartida
     _intentSub = ReceiveSharingIntent.instance.getMediaStream().listen((value) {
       if (value.isNotEmpty) {
@@ -83,8 +85,17 @@ class _AppShellState extends ConsumerState<AppShell> {
   }
 
   void _handleSharedMedia(List<SharedMediaFile> files) {
+    if (files.isEmpty) return;
+
     SharedMediaFile? imageFile;
+    String? textQuery;
+
     for (final f in files) {
+      if (f.type == SharedMediaType.text || f.type == SharedMediaType.url) {
+        textQuery = f.path;
+        break;
+      }
+
       final path = f.path.toLowerCase();
       if (path.endsWith('.png') ||
           path.endsWith('.jpg') ||
@@ -96,20 +107,19 @@ class _AppShellState extends ConsumerState<AppShell> {
       }
     }
 
-    if (imageFile != null) {
+    if (imageFile != null || textQuery != null) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) {
-          /*
           showModalBottomSheet(
             context: context,
             useRootNavigator: true,
             isScrollControlled: true,
             backgroundColor: Colors.transparent,
             builder: (context) => AIAdvisorBottomSheet(
-              initialImagePath: imageFile!.path,
+              initialImagePath: imageFile?.path,
+              initialQuery: textQuery,
             ),
           );
-          */
         }
       });
     }
@@ -184,15 +194,16 @@ class _AppShellState extends ConsumerState<AppShell> {
               offset: isNavbarVisible ? Offset.zero : const Offset(0, 2),
               duration: const Duration(milliseconds: 300),
               curve: Curves.easeInOut,
-              child: Container(
-                height: 60, // Aumentado
-                width: double.infinity,
-                margin: EdgeInsets.only(
-                  left: 20, 
-                  right: 20, 
-                  bottom: bottomMargin + AppColors.pagePadding, 
-                ),
-                child: SafeArea(
+              child: SafeArea(
+                bottom: true,
+                child: Container(
+                  height: 60, // Aumentado
+                  width: double.infinity,
+                  margin: EdgeInsets.only(
+                    left: 20, 
+                    right: 20, 
+                    bottom: bottomMargin + 8.0, // Reduced from AppColors.pagePadding to lower the navbar
+                  ),
                   child: LayoutBuilder(
                     builder: (context, constraints) {
                       final double itemWidth = constraints.maxWidth / navItems.length;

@@ -78,5 +78,18 @@
 		<string>Necesitamos acceso al micrófono para que puedas dictar tus transacciones en lugar de escribirlas.</string>
 		<key>UIStatusBarHidden</key>
 		<false/>
+		<key>AppGroupId</key>
+		<string>group.com.saaksolutions.app.finanzas</string>
+		<key>CFBundleURLTypes</key>
+		<array>
+			<dict>
+				<key>CFBundleTypeRole</key>
+				<string>Editor</string>
+				<key>CFBundleURLSchemes</key>
+				<array>
+					<string>ShareMedia-com.saaksolutions.app.finanzas</string>
+				</array>
+			</dict>
+		</array>
 	</dict>
 </plist>

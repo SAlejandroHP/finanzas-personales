@@ -1,4 +1,5 @@
 import 'dart:ui';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -12,6 +13,7 @@ import 'core/network/supabase_client.dart';
 import 'core/theme/app_theme.dart';
 import 'core/widgets/app_shell.dart';
 import 'core/providers/ui_provider.dart';
+import 'package:home_widget/home_widget.dart';
 import 'core/services/notification_service.dart';
 import 'core/services/finance_service.dart';
 import 'features/auth/presentation/screens/auth_screen.dart';
@@ -110,6 +112,30 @@ void main() async {
   
   // Inicializa el servicio de notificaciones en segundo plano
   await NotificationService.initialize();
+  
+  // Sincronizar credenciales al AppGroup para el Widget en iOS
+  if (!kIsWeb) {
+    try {
+      await HomeWidget.setAppGroupId('group.com.saaksolutions.app.finanzas');
+      
+      // Guardar la URL y Key de Supabase y Groq (desde .env)
+      await HomeWidget.saveWidgetData('supabase_url', dotenv.env['SUPABASE_URL'] ?? '');
+      await HomeWidget.saveWidgetData('supabase_anon_key', dotenv.env['SUPABASE_ANON_KEY'] ?? '');
+      await HomeWidget.saveWidgetData('groq_api_key', dotenv.env['GROQ_API_KEY'] ?? '');
+      
+      // Guardar el token de sesión actual si existe
+      final session = supabaseClient.auth.currentSession;
+      if (session != null) {
+        await HomeWidget.saveWidgetData('supabase_access_token', session.accessToken);
+        await HomeWidget.saveWidgetData('user_id', session.user.id);
+      } else {
+        await HomeWidget.saveWidgetData('supabase_access_token', '');
+        await HomeWidget.saveWidgetData('user_id', '');
+      }
+    } catch (e) {
+      debugPrint('Error sincronizando al widget: $e');
+    }
+  }
   
   runApp(
     ProviderScope(

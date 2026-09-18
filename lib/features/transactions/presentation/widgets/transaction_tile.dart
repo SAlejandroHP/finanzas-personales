@@ -294,16 +294,17 @@ class TransactionTile extends ConsumerWidget {
     final isCompleted = transaction.estado == 'completa';
 
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
       decoration: BoxDecoration(
         color: isDark ? const Color(0xFF1C1C1E) : Colors.white,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(12),
         boxShadow: [
-          BoxShadow(
-            color: isDark ? Colors.black.withOpacity(0.3) : Colors.black.withOpacity(0.04),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
+          if (!isDark)
+            BoxShadow(
+              color: Colors.black.withOpacity(0.02),
+              blurRadius: 6,
+              offset: const Offset(0, 2),
+            ),
         ],
         border: Border.all(
           color: isDark ? Colors.white.withOpacity(0.05) : Colors.black.withOpacity(0.03),
@@ -313,101 +314,100 @@ class TransactionTile extends ConsumerWidget {
       child: Material(
         color: Colors.transparent,
         child: InkWell(
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(12),
           onTap: () {
             showTransactionDetailsSheet(context, transaction: transaction);
           },
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            // 1. Icono de Categoría (Círculo)
-            Container(
-              width: 38,
-              height: 38,
-              decoration: BoxDecoration(
-                color: displayCategoryColor.withOpacity(0.12),
-                shape: BoxShape.circle,
-              ),
-              child: Icon(
-                displayCategoryIcon,
-                color: displayCategoryColor,
-                size: 18,
-              ),
-            ),
-            const SizedBox(width: 14),
-            
-            // 2. Información Central (Categoría, Cuenta, Descripción)
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text(
-                    displayCategoryName ?? _getTipoFormatted(transaction.tipo),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: GoogleFonts.montserrat(
-                      fontWeight: FontWeight.w600,
-                      fontSize: 14,
-                      color: isDark ? Colors.white : AppColors.textPrimary,
-                    ),
+              children: [
+                // 1. Icono de Categoría (Círculo)
+                Container(
+                  width: 36,
+                  height: 36,
+                  decoration: BoxDecoration(
+                    color: displayCategoryColor.withOpacity(0.12),
+                    borderRadius: BorderRadius.circular(10),
                   ),
-                  const SizedBox(height: 2),
-                  Row(
+                  child: Icon(
+                    displayCategoryIcon,
+                    color: displayCategoryColor,
+                    size: 16,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                
+                // 2. Información Central (Categoría, Cuenta, Descripción)
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Icon(
-                        Icons.account_balance_rounded,
-                        size: 11,
-                        color: isDark ? Colors.white54 : Colors.grey[500],
-                      ),
-                      const SizedBox(width: 4),
-                      Expanded(
-                        child: Text(
-                          '${displayAccountName ?? "Cuenta general"}${transaction.descripcion?.isNotEmpty == true ? " • ${transaction.descripcion}" : ""}',
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: GoogleFonts.montserrat(
-                            color: isDark ? Colors.white60 : Colors.grey[600],
-                            fontSize: 11,
-                            fontWeight: FontWeight.w500,
-                          ),
+                      Text(
+                        displayCategoryName ?? _getTipoFormatted(transaction.tipo),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: GoogleFonts.montserrat(
+                          fontWeight: FontWeight.w600,
+                          fontSize: 13,
+                          color: isDark ? Colors.white : AppColors.textPrimary,
                         ),
+                      ),
+                      const SizedBox(height: 2),
+                      Row(
+                        children: [
+                          Icon(
+                            Icons.account_balance_rounded,
+                            size: 10,
+                            color: isDark ? Colors.white54 : Colors.grey[500],
+                          ),
+                          const SizedBox(width: 4),
+                          Expanded(
+                            child: Text(
+                              '${displayAccountName ?? "Cuenta general"}${transaction.descripcion?.isNotEmpty == true ? " • ${transaction.descripcion}" : ""}',
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: GoogleFonts.montserrat(
+                                color: isDark ? Colors.white60 : Colors.grey[600],
+                                fontSize: 10,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                     ],
                   ),
-                ],
-              ),
-            ),
-            
-            const SizedBox(width: 8),
-            
-            // 3. Monto y Estado
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Text(
-                  _formatCurrency(transaction.monto, displayCurrencySymbol),
-                  style: GoogleFonts.montserrat(
-                    fontSize: 14,
-                    color: _getAmountColor(),
-                    fontWeight: FontWeight.w700,
-                  ),
                 ),
-                const SizedBox(height: 2),
-                _TransactionStatusButton(
-                  transaction: transaction,
-                  isDark: isDark,
-                  isCompleted: isCompleted,
+                
+                const SizedBox(width: 8),
+                
+                // 3. Monto y Estado
+                Wrap(
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  alignment: WrapAlignment.end,
+                  spacing: 12,
+                  runSpacing: 4,
+                  children: [
+                    Text(
+                      _formatCurrency(transaction.monto, displayCurrencySymbol),
+                      style: GoogleFonts.montserrat(
+                        fontSize: 14,
+                        color: _getAmountColor(),
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    _TransactionStatusButton(
+                      transaction: transaction,
+                      isDark: isDark,
+                      isCompleted: isCompleted,
+                    ),
+                  ],
                 ),
               ],
             ),
-            
-            const SizedBox(width: 12),
-          ],
-        ),
           ),
         ),
       ),

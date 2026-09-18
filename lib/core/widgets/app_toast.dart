@@ -15,8 +15,9 @@ void showAppToast(
   required String message,
   required ToastType type,
   Duration duration = const Duration(seconds: 3),
+  OverlayState? overlayState,
 }) {
-  final overlay = Overlay.of(context);
+  final overlay = overlayState ?? Overlay.of(context);
   
   late OverlayEntry overlayEntry;
   

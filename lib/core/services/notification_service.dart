@@ -1,6 +1,7 @@
 import 'dart:isolate';
 import 'dart:ui';
 import 'dart:async';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_notification_listener/flutter_notification_listener.dart';
 import 'pending_notification_manager.dart';
@@ -77,6 +78,7 @@ class NotificationService {
 
   /// Inicializa el servicio, registra los puertos y el callback en segundo plano
   static Future<void> initialize() async {
+    if (kIsWeb) return; // No ejecutamos el listener en web para evitar errores en la consola
     try {
       _port = ReceivePort();
       IsolateNameServer.removePortNameMapping(_isolateName);

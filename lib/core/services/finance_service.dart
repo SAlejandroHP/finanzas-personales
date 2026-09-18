@@ -7,6 +7,8 @@ import '../../features/debts/presentation/providers/debts_provider.dart';
 import '../../features/goals/presentation/providers/goals_provider.dart';
 import '../../features/categories/presentation/providers/categories_provider.dart';
 import '../../features/transactions/presentation/screens/recurring_transactions_screen.dart';
+import 'package:home_widget/home_widget.dart';
+import 'dart:convert';
 
 // FinanceService: centraliza la lógica de negocio y la coordinación entre repositories.
 // Su función principal es realizar las actualizaciones en cascada (saldos, deudas, metas) 
@@ -132,6 +134,25 @@ class FinanceService {
     refToUse.invalidate(categoriesListProvider);
     refToUse.invalidate(incomeCategoriesProvider);
     refToUse.invalidate(expenseCategoriesProvider);
+    
+    // Guardar contexto para la IA en el Widget
+    _syncContextToWidget(refToUse);
+  }
+
+  Future<void> _syncContextToWidget(Ref ref) async {
+    try {
+      final accounts = ref.read(accountsListProvider).value ?? [];
+      final categories = ref.read(categoriesListProvider).value ?? [];
+      
+      final contextMap = {
+        'accounts': accounts.map((a) => {'id': a.id, 'nombre': a.nombre}).toList(),
+        'categories': categories.map((c) => {'id': c.id, 'nombre': c.nombre, 'tipo': c.tipo}).toList(),
+      };
+      
+      await HomeWidget.saveWidgetData('ai_context', jsonEncode(contextMap));
+    } catch (e) {
+      // Ignorar errores en background
+    }
   }
 }
 
