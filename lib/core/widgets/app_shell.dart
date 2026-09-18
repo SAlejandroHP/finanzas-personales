@@ -198,7 +198,7 @@ class _AppShellState extends ConsumerState<AppShell> {
               child: SafeArea(
                 bottom: true,
                 child: Container(
-                  height: 60, // Aumentado
+                  height: 52, // Reducido estilo Instagram
                   width: double.infinity,
                   margin: EdgeInsets.only(
                     left: 20, 
@@ -258,14 +258,14 @@ class _AppShellState extends ConsumerState<AppShell> {
                               ),
                               // Óvalo indicador de activo integrado al navbar
                               Positioned(
-                                left: (animIndex * itemWidth) + (itemWidth / 2) - 28, // Centrado matemático exacto (mitad de 56 es 28)
-                                top: 10,
+                                left: (animIndex * itemWidth) + (itemWidth / 2) - 24, // Mitad de 48 es 24
+                                top: 8,
                                 child: Container(
-                                  width: 56, // Ancho fijo para mantener la forma de píldora sin estirarse
-                                  height: 40,
+                                  width: 48, // Ancho reducido estilo Instagram
+                                  height: 36,
                                   decoration: BoxDecoration(
                                     color: AppColors.primary,
-                                    borderRadius: BorderRadius.circular(20), // Forma de óvalo/píldora
+                                    borderRadius: BorderRadius.circular(18), // Píldora más esbelta
                                   ),
                                 ),
                               ),
@@ -331,7 +331,7 @@ class _AppShellState extends ConsumerState<AppShell> {
               child: Center(
                 child: Icon(
                   item.icon,
-                  size: 26,
+                  size: 24,
                   color: isActive 
                       ? Colors.white 
                       : (isDark ? Colors.white54 : Colors.grey[600]),
