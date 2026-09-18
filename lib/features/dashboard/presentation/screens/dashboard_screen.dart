@@ -871,7 +871,7 @@ Widget _buildPendingInvitations(BuildContext context, WidgetRef ref, bool isDark
                           ),
                           const SizedBox(width: 8),
                           Text(
-                            'Disponible seguro: ${flowFormatter.format(realAvailable)}',
+                            'Libre de deudas y apartados: ${flowFormatter.format(realAvailable)}',
                             style: GoogleFonts.montserrat(
                               fontSize: 13,
                               fontWeight: FontWeight.w500,
