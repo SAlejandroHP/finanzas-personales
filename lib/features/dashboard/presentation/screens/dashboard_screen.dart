@@ -860,8 +860,7 @@ Widget _buildPendingInvitations(BuildContext context, WidgetRef ref, bool isDark
                       const SizedBox(height: 8),
                       // "Available" sub-balance for smart context
                       Tooltip(
-                        message: 'Solo restamos tus compromisos de tu dinero físico actual.
-Por seguridad, no sumamos ingresos futuros hasta que los cobres.',
+                        message: 'Solo restamos tus compromisos de tu dinero físico actual.\nPor seguridad, no sumamos ingresos futuros hasta que los cobres.',
                         margin: const EdgeInsets.symmetric(horizontal: 20),
                         padding: const EdgeInsets.all(16),
                         showDuration: const Duration(seconds: 4),
