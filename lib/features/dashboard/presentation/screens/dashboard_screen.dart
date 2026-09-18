@@ -735,8 +735,13 @@ Widget _buildPendingInvitations(BuildContext context, WidgetRef ref, bool isDark
     Color cardColor,
     bool isDark,
   ) {
-    final Color cardBackground = isDark ? AppColors.surfaceDark : AppColors.primary;
-    
+    // Smart Holographic colors
+    final glow1 = isDark ? const Color(0xFF64B5F6) : const Color(0xFF2979FF); // Blue
+    final glow2 = isDark ? const Color(0xFFCE93D8) : const Color(0xFFD500F9); // Purple
+    final bgColor1 = isDark ? const Color(0xFF121212) : const Color(0xFFFFFFFF);
+    final bgColor2 = isDark ? const Color(0xFF1E1E1E) : const Color(0xFFF8F9FA);
+    final textColor = isDark ? Colors.white : const Color(0xFF1A1A1A);
+
     return Column(
       children: [
         Container(
@@ -744,91 +749,142 @@ Widget _buildPendingInvitations(BuildContext context, WidgetRef ref, bool isDark
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(32),
             gradient: LinearGradient(
-              colors: [
-                cardBackground,
-                isDark ? cardBackground.withOpacity(0.8) : const Color(0xFF0D47A1), // Deep blue for light mode
-              ],
+              colors: [bgColor1, bgColor2],
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
             ),
-
-          ),
-          child: Stack(
-            children: [
-              // Decorative background elements for premium feel
-              Positioned(
-                right: -30,
-                top: -30,
-                child: Container(
-                  width: 140,
-                  height: 140,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: Colors.white.withOpacity(0.05),
-                  ),
-                ),
-              ),
-              Positioned(
-                right: 40,
-                bottom: -40,
-                child: Container(
-                  width: 100,
-                  height: 100,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: Colors.white.withOpacity(0.03),
-                  ),
-                ),
-              ),
-              Padding(
-                padding: const EdgeInsets.fromLTRB(28, 28, 28, 44),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(
-                          'BALANCE TOTAL',
-                          style: GoogleFonts.montserrat(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w700,
-                            color: Colors.white.withOpacity(0.7),
-                            letterSpacing: 2.5,
-                          ),
-                        ),
-                        Container(
-                          padding: const EdgeInsets.all(8),
-                          decoration: BoxDecoration(
-                            color: Colors.white.withOpacity(0.1),
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: Icon(
-                            Icons.account_balance_wallet_rounded,
-                            color: Colors.white.withOpacity(0.9),
-                            size: 20,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 16),
-                    FittedBox(
-                      fit: BoxFit.scaleDown,
-                      alignment: Alignment.centerLeft,
-                      child: Text(
-                        balanceFormatter.format(balance),
-                        style: GoogleFonts.montserrat(
-                          fontSize: 40,
-                          fontWeight: FontWeight.w800,
-                          color: Colors.white,
-                          letterSpacing: -1.2,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
+            border: Border.all(
+              color: isDark ? Colors.white.withOpacity(0.05) : Colors.black.withOpacity(0.03),
+              width: 1.5,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: isDark ? Colors.black.withOpacity(0.3) : glow1.withOpacity(0.08),
+                blurRadius: 24,
+                offset: const Offset(0, 12),
               ),
             ],
+          ),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(32),
+            child: Stack(
+              children: [
+                // Smart Mesh Gradient Background
+                Positioned(
+                  top: -60,
+                  left: -60,
+                  child: Container(
+                    width: 200,
+                    height: 200,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      gradient: RadialGradient(
+                        colors: [glow1.withOpacity(isDark ? 0.2 : 0.1), Colors.transparent],
+                      ),
+                    ),
+                  ),
+                ),
+                Positioned(
+                  bottom: -80,
+                  right: -40,
+                  child: Container(
+                    width: 250,
+                    height: 250,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      gradient: RadialGradient(
+                        colors: [glow2.withOpacity(isDark ? 0.15 : 0.08), Colors.transparent],
+                      ),
+                    ),
+                  ),
+                ),
+                
+                // Card Content
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(28, 28, 28, 44),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            'BALANCE TOTAL',
+                            style: GoogleFonts.montserrat(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w700,
+                              color: textColor.withOpacity(0.5),
+                              letterSpacing: 2.0,
+                            ),
+                          ),
+                          // Smart AI Badge
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                            decoration: BoxDecoration(
+                              color: textColor.withOpacity(0.04),
+                              borderRadius: BorderRadius.circular(20),
+                              border: Border.all(color: textColor.withOpacity(0.05)),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(Icons.auto_awesome_rounded, size: 12, color: glow1),
+                                const SizedBox(width: 4),
+                                Text(
+                                  'Sincronizado',
+                                  style: GoogleFonts.montserrat(
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.w600,
+                                    color: textColor.withOpacity(0.7),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 16),
+                      FittedBox(
+                        fit: BoxFit.scaleDown,
+                        alignment: Alignment.centerLeft,
+                        child: Text(
+                          balanceFormatter.format(balance),
+                          style: GoogleFonts.montserrat(
+                            fontSize: 44, // Slightly larger and sleeker
+                            fontWeight: FontWeight.w800,
+                            color: textColor,
+                            letterSpacing: -1.5,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      // "Available" sub-balance for smart context
+                      Row(
+                        children: [
+                          Container(
+                            width: 8,
+                            height: 8,
+                            decoration: const BoxDecoration(
+                              color: Color(0xFF00E676),
+                              shape: BoxShape.circle,
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Text(
+                            'Disponible seguro: ${flowFormatter.format(realAvailable)}',
+                            style: GoogleFonts.montserrat(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w500,
+                              color: textColor.withOpacity(0.6),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
         Transform.translate(
@@ -836,9 +892,9 @@ Widget _buildPendingInvitations(BuildContext context, WidgetRef ref, bool isDark
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              _buildFlowItem('Ingresos', incomes, const Color(0xFF10B981), Icons.arrow_upward_rounded, isDark),
+              _buildFlowItem('Ingresos', incomes, const Color(0xFF00E676), Icons.trending_up_rounded, isDark, textColor),
               const SizedBox(width: 12),
-              _buildFlowItem('Gastos', expenses, const Color(0xFFEF4444), Icons.arrow_downward_rounded, isDark),
+              _buildFlowItem('Gastos', expenses, const Color(0xFFFF3D00), Icons.trending_down_rounded, isDark, textColor),
             ],
           ),
         ),
@@ -852,6 +908,7 @@ Widget _buildPendingInvitations(BuildContext context, WidgetRef ref, bool isDark
     Color accentColor,
     IconData icon,
     bool isDark,
+    Color textColor,
   ) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
@@ -859,14 +916,14 @@ Widget _buildPendingInvitations(BuildContext context, WidgetRef ref, bool isDark
         color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
         borderRadius: BorderRadius.circular(24),
         border: Border.all(
-          color: isDark ? Colors.white.withOpacity(0.08) : Colors.black.withOpacity(0.03),
+          color: isDark ? Colors.white.withOpacity(0.05) : Colors.black.withOpacity(0.04),
           width: 1.5,
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(isDark ? 0.3 : 0.06),
-            blurRadius: 16,
-            offset: const Offset(0, 6),
+            color: isDark ? Colors.black.withOpacity(0.4) : Colors.black.withOpacity(0.03),
+            blurRadius: 20,
+            offset: const Offset(0, 8),
           ),
         ],
       ),
@@ -874,9 +931,9 @@ Widget _buildPendingInvitations(BuildContext context, WidgetRef ref, bool isDark
         mainAxisSize: MainAxisSize.min,
         children: [
           Container(
-            padding: const EdgeInsets.all(6),
+            padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: accentColor.withOpacity(0.15),
+              color: accentColor.withOpacity(0.1),
               shape: BoxShape.circle,
             ),
             child: Icon(icon, color: accentColor, size: 16),
@@ -886,21 +943,21 @@ Widget _buildPendingInvitations(BuildContext context, WidgetRef ref, bool isDark
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                label.toUpperCase(),
+                label,
                 style: GoogleFonts.montserrat(
-                  fontSize: 10,
-                  fontWeight: FontWeight.w700,
-                  color: isDark ? Colors.white54 : Colors.black45,
-                  letterSpacing: 1.0,
+                  fontSize: 11,
+                  fontWeight: FontWeight.w600,
+                  color: textColor.withOpacity(0.5),
                 ),
               ),
               const SizedBox(height: 2),
               Text(
-                NumberFormat.currency(locale: 'es_MX', symbol: '\$').format(amount),
+                NumberFormat.currency(symbol: '\$', decimalDigits: 2).format(amount),
                 style: GoogleFonts.montserrat(
                   fontSize: 14,
-                  fontWeight: FontWeight.w800,
-                  color: isDark ? Colors.white : AppColors.textPrimary,
+                  fontWeight: FontWeight.w700,
+                  color: textColor,
+                  letterSpacing: -0.5,
                 ),
               ),
             ],
