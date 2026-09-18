@@ -408,7 +408,7 @@ class _SmartInputBarState extends ConsumerState<SmartInputBar> {
                 fontSize: 14,
               ),
               decoration: InputDecoration(
-                hintText: _isListening ? 'Escuchando tu gasto...' : '✨ ¿Qué registramos hoy?',
+                hintText: _isListening ? 'Escuchando tu gasto...' : '¿Qué registramos hoy?',
                 hintStyle: GoogleFonts.montserrat(
                   color: hintColor,
                   fontWeight: FontWeight.w500,
