@@ -440,7 +440,6 @@ class _SmartInputBarState extends ConsumerState<SmartInputBar> {
             const SizedBox(width: AppColors.sm),
           ],
         ),
-        ),
     );
   }
 }
