@@ -420,6 +420,7 @@ class _SmartInputBarState extends ConsumerState<SmartInputBar> {
               ),
             ),
           ),
+          const SizedBox(width: 12), // Espacio agregado para separar el input del botón derecho
           // Botón de envío estético
           GestureDetector(
             onTap: _processInput,
