@@ -1209,7 +1209,23 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                 ),
               ),
               Text(
-                (DateFormat('MMMM yyyy', 'es_MX').format(selectedDate).substring(0, 1).toUpperCase() + DateFormat('MMMM yyyy', 'es_MX').format(selectedDate).substring(1)),
+                (() {
+                  final now = DateTime.now();
+                  final today = DateTime(now.year, now.month, now.day);
+                  final selectedDay = DateTime(selectedDate.year, selectedDate.month, selectedDate.day);
+                  
+                  String dayStr = DateFormat('d', 'es_MX').format(selectedDate);
+                  String monthStr = DateFormat('MMMM', 'es_MX').format(selectedDate);
+                  monthStr = monthStr[0].toUpperCase() + monthStr.substring(1);
+                  
+                  if (selectedDay.isAtSameMomentAs(today)) {
+                    return 'Hoy, $dayStr $monthStr';
+                  } else {
+                    String weekdayStr = DateFormat('EEEE', 'es_MX').format(selectedDate);
+                    weekdayStr = weekdayStr[0].toUpperCase() + weekdayStr.substring(1);
+                    return '$weekdayStr $dayStr, $monthStr';
+                  }
+                })(),
                 style: GoogleFonts.montserrat(
                   fontSize: 12,
                   fontWeight: FontWeight.w600,
