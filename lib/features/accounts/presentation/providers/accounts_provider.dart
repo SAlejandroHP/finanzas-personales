@@ -82,25 +82,21 @@ final realAvailableBalanceProvider = Provider<double>((ref) {
   final pendingTransactionsAsync = ref.watch(pendingTransactionsProvider);
   
   double pendingExpenses = 0.0;
-  double pendingIncomes = 0.0;
   
   pendingTransactionsAsync.maybeWhen(
     data: (transactions) {
       final now = DateTime.now();
-      // Solo tomamos transacciones pendientes de este mes
-      
+      // Solo tomamos transacciones de salida pendientes para no gastar dinero que no tenemos
       pendingExpenses = transactions
           .where((t) => (t.tipo == 'gasto' || t.tipo == 'pago_deuda' || t.tipo == 'meta_aporte') && t.fecha.month == now.month && t.fecha.year == now.year)
-          .fold<double>(0.0, (sum, t) => sum + t.monto);
-          
-      pendingIncomes = transactions
-          .where((t) => t.tipo == 'ingreso' && t.fecha.month == now.month && t.fecha.year == now.year)
           .fold<double>(0.0, (sum, t) => sum + t.monto);
     },
     orElse: () {},
   );
 
-  return totalBalance + pendingIncomes - (goalsSaved + pendingExpenses);
+  // La regla de oro financiera: NUNCA contar dinero que no tienes físicamente (ingresos pendientes).
+  // Solo restamos compromisos.
+  return totalBalance - (goalsSaved + pendingExpenses);
 });
 
 /// Provider para el estado de carga de operaciones
