@@ -82,18 +82,25 @@ final realAvailableBalanceProvider = Provider<double>((ref) {
   final pendingTransactionsAsync = ref.watch(pendingTransactionsProvider);
   
   double pendingExpenses = 0.0;
+  double pendingIncomes = 0.0;
+  
   pendingTransactionsAsync.maybeWhen(
     data: (transactions) {
       final now = DateTime.now();
-      // Solo tomamos gastos pendientes de este mes para el "Disponible HOY"
+      // Solo tomamos transacciones pendientes de este mes
+      
       pendingExpenses = transactions
           .where((t) => (t.tipo == 'gasto' || t.tipo == 'pago_deuda' || t.tipo == 'meta_aporte') && t.fecha.month == now.month && t.fecha.year == now.year)
+          .fold<double>(0.0, (sum, t) => sum + t.monto);
+          
+      pendingIncomes = transactions
+          .where((t) => t.tipo == 'ingreso' && t.fecha.month == now.month && t.fecha.year == now.year)
           .fold<double>(0.0, (sum, t) => sum + t.monto);
     },
     orElse: () {},
   );
 
-  return totalBalance - (goalsSaved + pendingExpenses);
+  return totalBalance + pendingIncomes - (goalsSaved + pendingExpenses);
 });
 
 /// Provider para el estado de carga de operaciones
