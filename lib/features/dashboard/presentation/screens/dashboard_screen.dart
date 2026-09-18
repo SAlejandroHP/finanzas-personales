@@ -1450,57 +1450,53 @@ Widget _buildPendingInvitations(BuildContext context, WidgetRef ref, bool isDark
                     ],
                   ),
                 ),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  children: [
-                    Text(
-                      (isIngreso ? "+" : "-") + formatter.format(tx.monto),
-                      style: GoogleFonts.montserrat(
-                        fontWeight: FontWeight.w700,
-                        fontSize: 14,
-                        color: isDark ? Colors.white : Colors.black87,
+                const SizedBox(width: 8),
+                Text(
+                  (isIngreso ? "+" : "-") + formatter.format(tx.monto),
+                  style: GoogleFonts.montserrat(
+                    fontWeight: FontWeight.w700,
+                    fontSize: 14,
+                    color: isDark ? Colors.white : Colors.black87,
+                  ),
+                ),
+                if (tx.estado == 'pendiente') ...[
+                  const SizedBox(width: 12),
+                  InkWell(
+                    onTap: () async {
+                      final confirm = await showDialog<bool>(
+                        context: context,
+                        builder: (context) => AlertDialog(
+                          title: const Text('Confirmar pago'),
+                          content: const Text('¿Marcar como pagado?'),
+                          actions: [
+                            TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancelar')),
+                            ElevatedButton(onPressed: () => Navigator.pop(context, true), child: const Text('Confirmar')),
+                          ],
+                        ),
+                      );
+                      if (confirm == true) {
+                        final repo = ref.read(transactionsRepositoryProvider);
+                        final updated = tx.copyWith(estado: 'completada');
+                        await repo.updateTransaction(updated);
+                      }
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: isIngreso ? Colors.green.withOpacity(0.15) : Colors.orange.withOpacity(0.15),
+                        borderRadius: BorderRadius.circular(10),
                       ),
-                    ),
-                    if (tx.estado == 'pendiente') ...[
-                      const SizedBox(height: 4),
-                      InkWell(
-                        onTap: () async {
-                          final confirm = await showDialog<bool>(
-                            context: context,
-                            builder: (context) => AlertDialog(
-                              title: const Text('Confirmar pago'),
-                              content: const Text('¿Marcar como pagado?'),
-                              actions: [
-                                TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancelar')),
-                                ElevatedButton(onPressed: () => Navigator.pop(context, true), child: const Text('Confirmar')),
-                              ],
-                            ),
-                          );
-                          if (confirm == true) {
-                            final repo = ref.read(transactionsRepositoryProvider);
-                            final updated = tx.copyWith(estado: 'completada');
-                            await repo.updateTransaction(updated);
-                          }
-                        },
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                          decoration: BoxDecoration(
-                            color: isIngreso ? Colors.green.withOpacity(0.15) : Colors.orange.withOpacity(0.15),
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: Text(
-                            isIngreso ? 'COBRAR' : 'PAGAR',
-                            style: GoogleFonts.montserrat(
-                              fontSize: 11,
-                              fontWeight: FontWeight.w700,
-                              color: isIngreso ? Colors.green : Colors.orange,
-                            ),
-                          ),
+                      child: Text(
+                        isIngreso ? 'COBRAR' : 'PAGAR',
+                        style: GoogleFonts.montserrat(
+                          fontSize: 10,
+                          fontWeight: FontWeight.w800,
+                          color: isIngreso ? Colors.green : Colors.orange,
                         ),
                       ),
-                    ],
-                  ],
-                ),
+                    ),
+                  ),
+                ],
               ],
             ),
           );
