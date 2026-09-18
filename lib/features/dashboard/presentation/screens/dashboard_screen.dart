@@ -196,12 +196,12 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                         isDark,
                       ),
 
-                      const SizedBox(height: 16),
+                      const SizedBox(height: 8),
                       const Padding(
                         padding: EdgeInsets.symmetric(horizontal: 16),
                         child: SmartInputBar(),
                       ),
-                      const SizedBox(height: 24),
+                      const SizedBox(height: 12),
                       _buildCalendarAndTransactions(
                         context,
                         ref,
