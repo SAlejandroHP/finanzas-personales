@@ -749,13 +749,7 @@ Widget _buildPendingInvitations(BuildContext context, WidgetRef ref, bool isDark
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
             ),
-            boxShadow: [
-              BoxShadow(
-                color: cardBackground.withOpacity(0.4),
-                blurRadius: 24,
-                offset: const Offset(0, 12),
-              ),
-            ],
+
           ),
           child: Stack(
             children: [
