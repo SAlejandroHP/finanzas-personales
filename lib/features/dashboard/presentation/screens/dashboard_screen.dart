@@ -1367,11 +1367,37 @@ Widget _buildPendingInvitations(BuildContext context, WidgetRef ref, bool isDark
       );
     }
 
+    final categoriesAsync = ref.watch(categoriesListProvider);
+    final categories = categoriesAsync.value ?? [];
+    
+    final accountsAsync = ref.watch(accountsWithBalanceProvider);
+    final accounts = accountsAsync.value ?? [];
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: Column(
         children: transactions.map((tx) {
           final isIngreso = tx.tipo == 'ingreso';
+          
+          String categoryName = isIngreso ? 'Ingreso' : 'Gasto';
+          if (tx.categoriaId != null) {
+            try {
+              categoryName = categories.firstWhere((c) => c.id == tx.categoriaId).nombre;
+            } catch (_) {}
+          }
+          
+          String accountName = 'Efectivo';
+          if (tx.cuentaId != null) {
+            try {
+              accountName = accounts.firstWhere((a) => a.id == tx.cuentaId).nombre;
+            } catch (_) {}
+          }
+          
+          String title = (tx.descripcion != null && tx.descripcion!.trim().isNotEmpty) ? tx.descripcion! : categoryName;
+          String subtitle = '$categoryName • $accountName';
+          if (title == categoryName) {
+            subtitle = accountName;
+          }
           final color = isIngreso ? Colors.green : Colors.red;
           final icon = isIngreso ? Icons.arrow_downward : Icons.arrow_upward;
           
@@ -1401,7 +1427,7 @@ Widget _buildPendingInvitations(BuildContext context, WidgetRef ref, bool isDark
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        tx.descripcion ?? '',
+                        title,
                         style: GoogleFonts.montserrat(
                           fontWeight: FontWeight.w600,
                           fontSize: 14,
@@ -1412,11 +1438,14 @@ Widget _buildPendingInvitations(BuildContext context, WidgetRef ref, bool isDark
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        tx.categoriaId ?? (isIngreso ? 'Ingreso' : 'Gasto'),
+                        subtitle,
                         style: GoogleFonts.montserrat(
-                          fontSize: 12,
+                          fontSize: 11,
+                          fontWeight: FontWeight.w500,
                           color: isDark ? Colors.white54 : Colors.black54,
                         ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ],
                   ),
