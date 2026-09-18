@@ -557,9 +557,9 @@ class _SiriOrbState extends State<SiriOrb> with TickerProviderStateMixin {
                   ),
                 ),
                 
-                // Layer 3: Inner counter-rotating gradient to blend colors nicely
+                // Layer 3: Inner counter-rotating gradient to blend colors nicely (MUST be integer multiplier for seamless loop)
                 Transform.rotate(
-                  angle: -_rotateController.value * 2 * math.pi * (speedMultiplier * 0.7),
+                  angle: -_rotateController.value * 2 * math.pi * (speedMultiplier * 2.0),
                   child: Container(
                     width: widget.size * 0.7,
                     height: widget.size * 0.7,
@@ -592,6 +592,13 @@ class _SiriOrbState extends State<SiriOrb> with TickerProviderStateMixin {
                       stops: const [0.2, 1.0],
                     ),
                   ),
+                ),
+                
+                // Layer 5: Microphone Icon so the user knows it's the voice AI button
+                Icon(
+                  widget.isListening ? Icons.mic : Icons.mic_none_rounded,
+                  color: Colors.white.withOpacity(0.9),
+                  size: widget.size * 0.5,
                 ),
               ],
             ),
