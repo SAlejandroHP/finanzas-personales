@@ -859,26 +859,54 @@ Widget _buildPendingInvitations(BuildContext context, WidgetRef ref, bool isDark
                       ),
                       const SizedBox(height: 8),
                       // "Available" sub-balance for smart context
-                      Row(
-                        children: [
-                          Container(
-                            width: 8,
-                            height: 8,
-                            decoration: const BoxDecoration(
-                              color: Color(0xFF00E676),
-                              shape: BoxShape.circle,
+                      Tooltip(
+                        message: 'Solo restamos tus compromisos de tu dinero físico actual.
+Por seguridad, no sumamos ingresos futuros hasta que los cobres.',
+                        margin: const EdgeInsets.symmetric(horizontal: 20),
+                        padding: const EdgeInsets.all(16),
+                        showDuration: const Duration(seconds: 4),
+                        triggerMode: TooltipTriggerMode.tap,
+                        decoration: BoxDecoration(
+                          color: isDark ? const Color(0xFF333333) : const Color(0xFF1E1E1E),
+                          borderRadius: BorderRadius.circular(12),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.2),
+                              blurRadius: 8,
+                              offset: const Offset(0, 4),
                             ),
-                          ),
-                          const SizedBox(width: 8),
-                          Text(
-                            'Libre de deudas y apartados: ${flowFormatter.format(realAvailable)}',
-                            style: GoogleFonts.montserrat(
-                              fontSize: 13,
-                              fontWeight: FontWeight.w500,
-                              color: textColor.withOpacity(0.6),
+                          ],
+                        ),
+                        textStyle: GoogleFonts.montserrat(
+                          color: Colors.white, 
+                          fontSize: 12, 
+                          fontWeight: FontWeight.w500,
+                          height: 1.4,
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Container(
+                              width: 8,
+                              height: 8,
+                              decoration: BoxDecoration(
+                                color: realAvailable >= 0 ? const Color(0xFF00E676) : const Color(0xFFFF3D00),
+                                shape: BoxShape.circle,
+                              ),
                             ),
-                          ),
-                        ],
+                            const SizedBox(width: 8),
+                            Text(
+                              'Flujo real (solo dinero en mano): ${flowFormatter.format(realAvailable)}',
+                              style: GoogleFonts.montserrat(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
+                                color: textColor.withOpacity(0.6),
+                              ),
+                            ),
+                            const SizedBox(width: 6),
+                            Icon(Icons.info_outline_rounded, size: 14, color: textColor.withOpacity(0.4)),
+                          ],
+                        ),
                       ),
                     ],
                   ),
