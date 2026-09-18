@@ -18,7 +18,6 @@ import '../../../debts/models/debt_model.dart';
 import '../../../goals/presentation/providers/goals_provider.dart';
 import '../../../transactions/presentation/widgets/transaction_form_sheet.dart';
 import '../../../../core/services/finance_service.dart';
-import '../widgets/master_plan_card.dart';
 import '../../../../core/widgets/app_toast.dart';
 
 /// Pantalla del dashboard que muestra un resumen financiero.
@@ -188,9 +187,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                         isDark,
                       ),
 
-                      const SizedBox(height: 24),
-                      const MasterPlanCard(),
-
+                      
                       const SizedBox(height: 24),
                       _buildCategoryStatsCard(context, cardColor, isDark),
                       const SizedBox(height: 24),
