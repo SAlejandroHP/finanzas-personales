@@ -270,10 +270,10 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                 Text(
                   greeting,
                   style: GoogleFonts.montserrat(
-                    fontSize: 20, // Reduced from titleLarge (usually 24+)
-                    fontWeight: FontWeight.w700,
+                    fontSize: 16, // Proportional and shielded size
+                    fontWeight: FontWeight.w600,
                     color: isDark ? Colors.white : AppColors.textPrimary,
-                    letterSpacing: -0.5,
+                    letterSpacing: -0.3,
                   ),
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
