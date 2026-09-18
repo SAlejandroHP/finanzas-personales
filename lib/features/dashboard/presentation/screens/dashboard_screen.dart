@@ -740,75 +740,110 @@ Widget _buildPendingInvitations(BuildContext context, WidgetRef ref, bool isDark
         Container(
           width: double.infinity,
           decoration: BoxDecoration(
-            color: cardBackground,
-            borderRadius: const BorderRadius.only(
-              topLeft: Radius.circular(40),
-              bottomRight: Radius.circular(40),
-              topRight: Radius.circular(12),
-              bottomLeft: Radius.circular(12),
+            borderRadius: BorderRadius.circular(32),
+            gradient: LinearGradient(
+              colors: [
+                cardBackground,
+                isDark ? cardBackground.withOpacity(0.8) : const Color(0xFF0D47A1), // Deep blue for light mode
+              ],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
             ),
             boxShadow: [
               BoxShadow(
-                color: cardBackground.withOpacity(0.3),
-                blurRadius: 20,
-                offset: const Offset(0, 10),
+                color: cardBackground.withOpacity(0.4),
+                blurRadius: 24,
+                offset: const Offset(0, 12),
               ),
             ],
           ),
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(24, 24, 24, 40),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          child: Stack(
+            children: [
+              // Decorative background elements for premium feel
+              Positioned(
+                right: -30,
+                top: -30,
+                child: Container(
+                  width: 140,
+                  height: 140,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: Colors.white.withOpacity(0.05),
+                  ),
+                ),
+              ),
+              Positioned(
+                right: 40,
+                bottom: -40,
+                child: Container(
+                  width: 100,
+                  height: 100,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: Colors.white.withOpacity(0.03),
+                  ),
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(28, 28, 28, 44),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      'BALANCE TOTAL',
-                      style: GoogleFonts.montserrat(
-                        fontSize: 11,
-                        fontWeight: FontWeight.w700,
-                        color: Colors.white.withOpacity(0.6),
-                        letterSpacing: 2.0,
-                      ),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          'BALANCE TOTAL',
+                          style: GoogleFonts.montserrat(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w700,
+                            color: Colors.white.withOpacity(0.7),
+                            letterSpacing: 2.5,
+                          ),
+                        ),
+                        Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Icon(
+                            Icons.account_balance_wallet_rounded,
+                            color: Colors.white.withOpacity(0.9),
+                            size: 20,
+                          ),
+                        ),
+                      ],
                     ),
-                    Icon(
-                      Icons.account_balance_wallet_outlined,
-                      color: Colors.white.withOpacity(0.5),
-                      size: 20,
+                    const SizedBox(height: 16),
+                    FittedBox(
+                      fit: BoxFit.scaleDown,
+                      alignment: Alignment.centerLeft,
+                      child: Text(
+                        balanceFormatter.format(balance),
+                        style: GoogleFonts.montserrat(
+                          fontSize: 40,
+                          fontWeight: FontWeight.w800,
+                          color: Colors.white,
+                          letterSpacing: -1.2,
+                        ),
+                      ),
                     ),
                   ],
                 ),
-                const SizedBox(height: 12),
-                FittedBox(
-                  fit: BoxFit.scaleDown,
-                  alignment: Alignment.centerLeft,
-                  child: Text(
-                    balanceFormatter.format(balance),
-                    style: GoogleFonts.montserrat(
-                      fontSize: AppColors.displayLarge,
-                      fontWeight: FontWeight.w800,
-                      color: Colors.white,
-                      letterSpacing: -1.0,
-                    ),
-                  ),
-                ),
-              ],
-            ),
+              ),
+            ],
           ),
         ),
         Transform.translate(
-          offset: const Offset(0, -24),
-          child: SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                _buildFlowItem('Ingresos', incomes, Colors.green, Icons.arrow_upward_rounded, isDark),
-                const SizedBox(width: 8),
-                _buildFlowItem('Gastos', expenses, Colors.redAccent, Icons.arrow_downward_rounded, isDark),
-              ],
-            ),
+          offset: const Offset(0, -26),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              _buildFlowItem('Ingresos', incomes, const Color(0xFF10B981), Icons.arrow_upward_rounded, isDark),
+              const SizedBox(width: 12),
+              _buildFlowItem('Gastos', expenses, const Color(0xFFEF4444), Icons.arrow_downward_rounded, isDark),
+            ],
           ),
         ),
       ],
@@ -823,18 +858,19 @@ Widget _buildPendingInvitations(BuildContext context, WidgetRef ref, bool isDark
     bool isDark,
   ) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
       decoration: BoxDecoration(
-        color: isDark ? AppColors.surfaceDark : Colors.white,
-        borderRadius: BorderRadius.circular(20),
+        color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
+        borderRadius: BorderRadius.circular(24),
         border: Border.all(
-          color: isDark ? Colors.white.withOpacity(0.05) : Colors.black.withOpacity(0.02),
+          color: isDark ? Colors.white.withOpacity(0.08) : Colors.black.withOpacity(0.03),
+          width: 1.5,
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(isDark ? 0.2 : 0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
+            color: Colors.black.withOpacity(isDark ? 0.3 : 0.06),
+            blurRadius: 16,
+            offset: const Offset(0, 6),
           ),
         ],
       ),
@@ -842,32 +878,33 @@ Widget _buildPendingInvitations(BuildContext context, WidgetRef ref, bool isDark
         mainAxisSize: MainAxisSize.min,
         children: [
           Container(
-            padding: const EdgeInsets.all(4),
+            padding: const EdgeInsets.all(6),
             decoration: BoxDecoration(
-              color: accentColor.withOpacity(0.1),
+              color: accentColor.withOpacity(0.15),
               shape: BoxShape.circle,
             ),
-            child: Icon(icon, color: accentColor, size: 14),
+            child: Icon(icon, color: accentColor, size: 16),
           ),
-          const SizedBox(width: 8),
+          const SizedBox(width: 12),
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
                 label.toUpperCase(),
                 style: GoogleFonts.montserrat(
-                  fontSize: 9,
+                  fontSize: 10,
                   fontWeight: FontWeight.w700,
-                  color: isDark ? Colors.white54 : Colors.black54,
+                  color: isDark ? Colors.white54 : Colors.black45,
+                  letterSpacing: 1.0,
                 ),
               ),
               const SizedBox(height: 2),
               Text(
-                NumberFormat.compactCurrency(symbol: r'$', decimalDigits: 2, locale: 'es_MX').format(amount),
+                NumberFormat.currency(locale: 'es_MX', symbol: '\$').format(amount),
                 style: GoogleFonts.montserrat(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w700,
-                  color: isDark ? Colors.white : Colors.black87,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w800,
+                  color: isDark ? Colors.white : AppColors.textPrimary,
                 ),
               ),
             ],
@@ -877,233 +914,6 @@ Widget _buildPendingInvitations(BuildContext context, WidgetRef ref, bool isDark
     );
   }
 
-
-
-
-  Widget _buildRecentTransactionsCard(
-    BuildContext context,
-    WidgetRef ref,
-    AsyncValue pendingTransactions,
-    NumberFormat formatter,
-    bool isDark,
-    Color cardColor,
-  ) {
-    // Obtener cuentas para identificar el banco
-    final accountsAsync = ref.watch(accountsWithBalanceProvider);
-    final accounts = accountsAsync.value ?? [];
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 4),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                'PAGOS PENDIENTES',
-                style: GoogleFonts.montserrat(
-                  fontSize: AppColors.bodySmall,
-                  fontWeight: FontWeight.w700,
-                  color: AppColors.primary.withOpacity(0.8),
-                  letterSpacing: 1.1,
-                ),
-              ),
-              TextButton(
-                onPressed: () => context.go('/transactions'),
-                style: TextButton.styleFrom(
-                  padding: EdgeInsets.zero,
-                  minimumSize: const Size(0, 0),
-                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                ),
-                child: Text(
-                  'Ver todas',
-                  style: GoogleFonts.montserrat(
-                    fontSize: AppColors.bodySmall,
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.primary,
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(height: 8),
-        Container(
-          padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-          decoration: BoxDecoration(
-            color: cardColor,
-            borderRadius: const BorderRadius.only(
-              topLeft: Radius.circular(30),
-              bottomLeft: Radius.circular(30),
-              bottomRight: Radius.circular(30),
-              topRight: Radius.circular(5),
-            ),
-            border: Border.all(
-              color: isDark ? Colors.white.withOpacity(0.05) : Colors.black.withOpacity(0.03),
-            ),
-            boxShadow: [
-              if (!isDark)
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.03),
-                  blurRadius: 15,
-                  offset: const Offset(0, 5),
-                ),
-            ],
-          ),
-          child: pendingTransactions.when(
-            data: (txs) {
-              final list = (txs as List).toList();
-
-              if (list.isEmpty) {
-                return Center(
-                  child: Padding(
-                    padding: const EdgeInsets.all(20.0),
-                    child: Text(
-                      'No tienes pagos para hoy',
-                      style: GoogleFonts.montserrat(
-                        color: Colors.grey,
-                        fontSize: 12,
-                      ),
-                    ),
-                  ),
-                );
-              }
-
-              return Column(
-                children: list.take(3).map((dynamic txData) {
-                  final tx = txData as TransactionModel;
-                  final isExpense = tx.tipo == 'gasto' || tx.tipo == 'pago_deuda' || tx.tipo == 'meta_aporte';
-                  
-                  // Identifica la cuenta/banco para reducir la carga cognitiva al visualizar pagos
-                  final accountForTx = accounts.cast<AccountModel?>().firstWhere(
-                    (a) => a?.id == (tx.tipo == 'ingreso' ? tx.cuentaDestinoId : tx.cuentaOrigenId), 
-                    orElse: () => null
-                  );
-                  final accountName = accountForTx?.bancoNombre ?? accountForTx?.nombre ?? 'Sin cuenta';
-
-                  return Container(
-                    margin: const EdgeInsets.only(bottom: 8),
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: isDark ? Colors.white.withOpacity(0.02) : Colors.black.withOpacity(0.01),
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    child: Row(
-                      children: [
-                        _buildCompactCategoryIcon(ref, tx),
-                        const SizedBox(width: 12),
-                        // Columna para descripción y banco (Mejora de jerarquía visual)
-                        Expanded(
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                tx.descripcion ?? 'Transacción',
-                                style: GoogleFonts.montserrat(
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w600,
-                                  color: isDark ? Colors.white : AppColors.textPrimary,
-                                  height: 1.2,
-                                ),
-                              ),
-                              const SizedBox(height: 2),
-                              // Subtítulo con el nombre del banco/cuenta
-                              Text(
-                                accountName,
-                                style: GoogleFonts.montserrat(
-                                  fontSize: 10,
-                                  color: isDark ? Colors.white38 : Colors.grey.shade500,
-                                  fontWeight: FontWeight.w500,
-                                ),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        // Monto y Fecha alineados a la derecha
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.end,
-                          children: [
-                            Text(
-                              (isExpense ? "-" : "+") + formatter.format(tx.monto),
-                              style: GoogleFonts.montserrat(
-                                fontSize: 12,
-                                fontWeight: FontWeight.bold,
-                                color: isExpense ? (isDark ? Colors.red[300] : Colors.red[700]) : Colors.green[400],
-                              ),
-                            ),
-                            const SizedBox(height: 2),
-                            Text(
-                              DateFormat('dd MMM').format(tx.fecha),
-                              style: GoogleFonts.montserrat(
-                                fontSize: 10,
-                                color: Colors.grey,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(width: 14),
-                        // Acción rápida: Botón de pago equilibrado (Circle Standard)
-                        Material(
-                          color: Colors.transparent,
-                          child: InkWell(
-                            onTap: () async {
-                              try {
-                                // 1. Marcamos como completada
-                                await ref.read(transactionsNotifierProvider.notifier).markAsComplete(tx);
-                                
-                                // 2. Forzar refresco global para reactividad inmediata (Cero cmd+r)
-                                if (context.mounted) {
-                                  ref.read(financeServiceProvider).refreshAll();
-                                }
-                                
-                                if (context.mounted) {
-                                  showAppToast(context, message: 'Pago marcado como realizado', type: ToastType.success);
-                                }
-                              } catch (e) {
-                                if (context.mounted) {
-                                  showAppToast(context, message: 'Error: $e', type: ToastType.error);
-                                }
-                              }
-                            },
-                            borderRadius: BorderRadius.circular(12),
-                            child: Container(
-                              padding: const EdgeInsets.all(10), // Tamaño intermedio equilibrado
-                              decoration: BoxDecoration(
-                                color: AppColors.primary,
-                                borderRadius: BorderRadius.circular(10), // Más sólido, más cuadrado
-                              ),
-                              child: const Icon(
-                                Icons.check_rounded,
-                                size: 18,
-                                color: Colors.white,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  );
-                }).toList(),
-              );
-            },
-            loading: () => const SizedBox(
-              height: 100,
-              child: Center(child: CircularProgressIndicator()),
-            ),
-            error: (_, __) => const Text('Error al cargar'),
-          ),
-        ),
-      ],
-    );
-  }
-
-  /// Tarjeta de estadísticas por categoría.
   Widget _buildCompactCategoryIcon(WidgetRef ref, TransactionModel tx) {
     if (tx.categoriaId == null) {
       Color color = Colors.grey[400]!;
