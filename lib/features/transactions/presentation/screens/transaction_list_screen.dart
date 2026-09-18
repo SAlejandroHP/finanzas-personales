@@ -208,7 +208,7 @@ class _TransactionListScreenState extends ConsumerState<TransactionListScreen> {
                     Column(
                       children: [
                         _buildModernSummaryCard(
-                          title: 'Balance del Periodo',
+                          title: (_hasAnyFilter(ref.watch(transactionFiltersProvider))) ? 'Balance del Periodo' : 'Balance Total (Efectivo)',
                           total: summary.total,
                           income: summary.income,
                           expenses: summary.expenses,
