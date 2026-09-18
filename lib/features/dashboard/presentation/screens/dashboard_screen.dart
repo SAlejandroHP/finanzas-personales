@@ -269,15 +269,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
               Text(
                 greeting,
                 style: GoogleFonts.montserrat(
-                  fontSize: AppColors.bodySmall,
-                  fontWeight: FontWeight.w500,
-                  color: isDark ? Colors.white60 : Colors.black54,
-                ),
-              ),
-              Text(
-                'Tu Resumen',
-                style: GoogleFonts.montserrat(
-                  fontSize: AppColors.titleLarge,
+                  fontSize: AppColors.titleLarge, // Made big like a title
                   fontWeight: FontWeight.w800,
                   color: isDark ? Colors.white : AppColors.textPrimary,
                   letterSpacing: -0.5,
