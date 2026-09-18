@@ -50,12 +50,8 @@ final filteredTransactionsProvider = Provider<AsyncValue<List<TransactionModel>>
     var filtered = transactions.where((t) {
       final transactionDate = DateTime(t.fecha.year, t.fecha.month, t.fecha.day);
       
-      // CORRECCIÓN: Muestra transacciones de TODO EL MES ACTUAL en adelante, 
-      // o transacciones pasadas si aún están pendientes.
-      // Antes: Ocultaba transacciones de ayer si ya estaban completas.
-      if (transactionDate.isBefore(startOfMonth) && t.estado != 'pendiente') {
-        return false;
-      }
+      // ELIMINADO: Ya no ocultamos transacciones de meses pasados.
+      // El usuario debe poder ver TODO su historial de todo el tiempo.
 
       // Filtro por estatus
       if (filters.status != null && t.estado != filters.status) {

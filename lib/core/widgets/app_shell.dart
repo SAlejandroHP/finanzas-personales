@@ -158,15 +158,15 @@ class _AppShellState extends ConsumerState<AppShell> {
         index: 2,
       ),
       NavItem(
-        label: 'Configuración',
-        icon: Icons.settings_outlined,
-        path: '/settings',
+        label: 'Cuentas',
+        icon: Icons.account_balance_wallet_outlined,
+        path: '/accounts',
         index: 3,
       ),
       NavItem(
-        label: 'Salir',
-        icon: Icons.logout_outlined,
-        path: '', // Dispara acción
+        label: 'Ajustes',
+        icon: Icons.settings_outlined,
+        path: '/settings',
         index: 4,
       ),
     ];
