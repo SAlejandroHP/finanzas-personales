@@ -1134,7 +1134,7 @@ Widget _buildPendingInvitations(BuildContext context, WidgetRef ref, bool isDark
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                'Actividad y Pagos',
+                'Transacciones',
                 style: GoogleFonts.montserrat(
                   fontSize: 16,
                   fontWeight: FontWeight.w700,
