@@ -387,10 +387,10 @@ class _SmartInputBarState extends ConsumerState<SmartInputBar> {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          // Botón J.A.R.V.I.S (Micrófono)
+          // Botón Siri/Apple Intelligence (Micrófono)
           GestureDetector(
             onTap: _isLoading ? null : _listen,
-            child: JarvisOrb(
+            child: SiriOrb(
               isListening: _isListening,
               isLoading: _isLoading,
               size: 44.0,
@@ -456,12 +456,13 @@ class _SmartInputBarState extends ConsumerState<SmartInputBar> {
 }
 
 
-class JarvisOrb extends StatefulWidget {
+
+class SiriOrb extends StatefulWidget {
   final bool isListening;
   final bool isLoading;
   final double size;
 
-  const JarvisOrb({
+  const SiriOrb({
     Key? key,
     this.isListening = false,
     this.isLoading = false,
@@ -469,134 +470,131 @@ class JarvisOrb extends StatefulWidget {
   }) : super(key: key);
 
   @override
-  State<JarvisOrb> createState() => _JarvisOrbState();
+  State<SiriOrb> createState() => _SiriOrbState();
 }
 
-class _JarvisOrbState extends State<JarvisOrb> with TickerProviderStateMixin {
-  late AnimationController _pulseController;
+class _SiriOrbState extends State<SiriOrb> with TickerProviderStateMixin {
   late AnimationController _rotateController;
+  late AnimationController _pulseController;
 
   @override
   void initState() {
     super.initState();
-    _pulseController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 1200),
-    )..repeat(reverse: true);
-
     _rotateController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 3000),
+      duration: const Duration(milliseconds: 4000),
     )..repeat();
+    
+    _pulseController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1500),
+    )..repeat(reverse: true);
   }
 
   @override
   void dispose() {
-    _pulseController.dispose();
     _rotateController.dispose();
+    _pulseController.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    // Colores tipo J.A.R.V.I.S (Cyan/Azul) y para modo activo (Rojo/Naranja)
-    final Color coreColor = widget.isListening 
-        ? const Color(0xFFFF3D00) // Deep Orange
-        : (widget.isLoading ? const Color(0xFFB388FF) : const Color(0xFF00E5FF)); // Purple if loading, Cyan if idle
-        
-    final Color outerColor = widget.isListening 
-        ? const Color(0xFFFF1744) // Red
-        : (widget.isLoading ? const Color(0xFF651FFF) : const Color(0xFF0D47A1)); // Deep Blue
-
+    // When listening or loading, it rotates much faster
+    final double speedMultiplier = widget.isListening ? 3.0 : (widget.isLoading ? 2.0 : 1.0);
+    final double pulseScale = widget.isListening ? 1.15 : (widget.isLoading ? 1.05 : 1.0);
+    
     return SizedBox(
       width: widget.size,
       height: widget.size,
       child: AnimatedBuilder(
-        animation: Listenable.merge([_pulseController, _rotateController]),
+        animation: Listenable.merge([_rotateController, _pulseController]),
         builder: (context, child) {
-          final pulse = 0.8 + (_pulseController.value * 0.4); // 0.8 to 1.2
-          final fastPulse = 0.9 + (math.sin(_pulseController.value * math.pi * 4) * 0.3); // Faster oscillation for active state
+          final pulse = 1.0 + (_pulseController.value * 0.1 * (widget.isListening ? 2 : 1));
+          final targetScale = pulse * pulseScale;
           
-          final currentScale = widget.isListening ? fastPulse : pulse;
-          // Rotate much faster if listening or loading
-          final rotationSpeed = (widget.isListening || widget.isLoading) ? 4 : 1;
-
-          return Stack(
-            alignment: Alignment.center,
-            children: [
-              // Anillo exterior rotatorio con gradiente (estilo holograma)
-              Transform.rotate(
-                angle: _rotateController.value * 2 * math.pi * rotationSpeed,
-                child: Container(
-                  width: widget.size * (widget.isListening ? 0.95 : 0.85),
-                  height: widget.size * (widget.isListening ? 0.95 : 0.85),
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    gradient: SweepGradient(
-                      colors: [
-                        outerColor.withOpacity(0.0),
-                        outerColor.withOpacity(0.6),
-                        coreColor.withOpacity(0.9),
-                        outerColor.withOpacity(0.0),
-                      ],
-                      stops: const [0.0, 0.4, 0.6, 1.0],
-                    ),
-                  ),
-                ),
-              ),
-              
-              // Segundo anillo rotando en dirección opuesta
-              Transform.rotate(
-                angle: -_rotateController.value * 2 * math.pi * (rotationSpeed * 1.5),
-                child: Container(
-                  width: widget.size * 0.7,
-                  height: widget.size * 0.7,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    border: Border.all(
-                      color: coreColor.withOpacity(0.3 * currentScale),
-                      width: 2,
-                    ),
-                  ),
-                ),
-              ),
-
-              // Resplandor central (Glow)
-              Transform.scale(
-                scale: currentScale,
-                child: Container(
-                  width: widget.size * 0.5,
-                  height: widget.size * 0.5,
+          return Transform.scale(
+            scale: targetScale,
+            child: Stack(
+              alignment: Alignment.center,
+              children: [
+                // Layer 1: Glowing base (Blurred shadow effect)
+                Container(
+                  width: widget.size * 0.85,
+                  height: widget.size * 0.85,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
                     boxShadow: [
                       BoxShadow(
-                        color: coreColor.withOpacity(0.6),
-                        blurRadius: 10 * currentScale,
-                        spreadRadius: 2 * currentScale,
-                      )
+                        color: const Color(0xFF651FFF).withOpacity(0.5),
+                        blurRadius: 16 * pulse,
+                        spreadRadius: 2,
+                      ),
                     ],
                   ),
                 ),
-              ),
-
-              // Núcleo sólido brillante
-              Container(
-                width: widget.size * 0.25,
-                height: widget.size * 0.25,
-                decoration: const BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: Colors.white,
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.white,
-                      blurRadius: 5,
-                      spreadRadius: 2,
+                
+                // Layer 2: Colorful Siri-like Sweep Gradient
+                Transform.rotate(
+                  angle: _rotateController.value * 2 * math.pi * speedMultiplier,
+                  child: Container(
+                    width: widget.size * 0.85,
+                    height: widget.size * 0.85,
+                    decoration: const BoxDecoration(
+                      shape: BoxShape.circle,
+                      gradient: SweepGradient(
+                        colors: [
+                          Color(0xFFFF3D00), // Orange/Red
+                          Color(0xFFD500F9), // Purple
+                          Color(0xFF2979FF), // Blue
+                          Color(0xFF00E5FF), // Cyan
+                          Color(0xFF00E676), // Green
+                          Color(0xFFFF3D00), // Back to Orange
+                        ],
+                        stops: [0.0, 0.2, 0.4, 0.6, 0.8, 1.0],
+                      ),
                     ),
-                  ],
+                  ),
                 ),
-              ),
-            ],
+                
+                // Layer 3: Inner counter-rotating gradient to blend colors nicely
+                Transform.rotate(
+                  angle: -_rotateController.value * 2 * math.pi * (speedMultiplier * 0.7),
+                  child: Container(
+                    width: widget.size * 0.7,
+                    height: widget.size * 0.7,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      gradient: SweepGradient(
+                        colors: [
+                          const Color(0xFF2979FF).withOpacity(0.8),
+                          const Color(0xFFFF3D00).withOpacity(0.4),
+                          const Color(0xFF00E5FF).withOpacity(0.8),
+                          const Color(0xFFD500F9).withOpacity(0.4),
+                          const Color(0xFF2979FF).withOpacity(0.8),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+
+                // Layer 4: Soft white inner core to give it volume (like a bubble)
+                Container(
+                  width: widget.size * 0.5,
+                  height: widget.size * 0.5,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    gradient: RadialGradient(
+                      colors: [
+                        Colors.white.withOpacity(0.8),
+                        Colors.white.withOpacity(0.0),
+                      ],
+                      stops: const [0.2, 1.0],
+                    ),
+                  ),
+                ),
+              ],
+            ),
           );
         },
       ),
