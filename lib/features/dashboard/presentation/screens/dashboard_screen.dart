@@ -263,20 +263,25 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                greeting,
-                style: GoogleFonts.montserrat(
-                  fontSize: AppColors.titleLarge, // Made big like a title
-                  fontWeight: FontWeight.w800,
-                  color: isDark ? Colors.white : AppColors.textPrimary,
-                  letterSpacing: -0.5,
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  greeting,
+                  style: GoogleFonts.montserrat(
+                    fontSize: AppColors.titleLarge, // Made big like a title
+                    fontWeight: FontWeight.w800,
+                    color: isDark ? Colors.white : AppColors.textPrimary,
+                    letterSpacing: -0.5,
+                  ),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
+          const SizedBox(width: 16),
           _buildDateClock(context, isDark, formattedDate),
         ],
       ),
