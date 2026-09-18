@@ -526,15 +526,15 @@ class _SiriOrbState extends State<SiriOrb> with TickerProviderStateMixin {
                     shape: BoxShape.circle,
                     boxShadow: [
                       BoxShadow(
-                        color: const Color(0xFF651FFF).withOpacity(0.5),
+                        color: AppColors.primary.withOpacity(0.2), // Soft shadow instead of intense purple
                         blurRadius: 16 * pulse,
-                        spreadRadius: 2,
+                        spreadRadius: 1,
                       ),
                     ],
                   ),
                 ),
                 
-                // Layer 2: Colorful Siri-like Sweep Gradient
+                // Layer 2: Colorful Siri-like Sweep Gradient (Pastel/Discreet)
                 Transform.rotate(
                   angle: _rotateController.value * 2 * math.pi * speedMultiplier,
                   child: Container(
@@ -544,12 +544,12 @@ class _SiriOrbState extends State<SiriOrb> with TickerProviderStateMixin {
                       shape: BoxShape.circle,
                       gradient: SweepGradient(
                         colors: [
-                          Color(0xFFFF3D00), // Orange/Red
-                          Color(0xFFD500F9), // Purple
-                          Color(0xFF2979FF), // Blue
-                          Color(0xFF00E5FF), // Cyan
-                          Color(0xFF00E676), // Green
-                          Color(0xFFFF3D00), // Back to Orange
+                          Color(0xFFFFB74D), // Soft Orange
+                          Color(0xFFCE93D8), // Soft Purple
+                          Color(0xFF64B5F6), // Soft Blue
+                          Color(0xFF4DD0E1), // Soft Cyan
+                          Color(0xFF81C784), // Soft Green
+                          Color(0xFFFFB74D), // Back to Soft Orange
                         ],
                         stops: [0.0, 0.2, 0.4, 0.6, 0.8, 1.0],
                       ),
@@ -567,11 +567,11 @@ class _SiriOrbState extends State<SiriOrb> with TickerProviderStateMixin {
                       shape: BoxShape.circle,
                       gradient: SweepGradient(
                         colors: [
-                          const Color(0xFF2979FF).withOpacity(0.8),
-                          const Color(0xFFFF3D00).withOpacity(0.4),
-                          const Color(0xFF00E5FF).withOpacity(0.8),
-                          const Color(0xFFD500F9).withOpacity(0.4),
-                          const Color(0xFF2979FF).withOpacity(0.8),
+                          const Color(0xFF64B5F6).withOpacity(0.6), // Soft Blue
+                          const Color(0xFFFFB74D).withOpacity(0.4), // Soft Orange
+                          const Color(0xFF4DD0E1).withOpacity(0.6), // Soft Cyan
+                          const Color(0xFFCE93D8).withOpacity(0.4), // Soft Purple
+                          const Color(0xFF64B5F6).withOpacity(0.6), // Back to Soft Blue
                         ],
                       ),
                     ),
@@ -597,7 +597,7 @@ class _SiriOrbState extends State<SiriOrb> with TickerProviderStateMixin {
                 // Layer 5: Microphone Icon so the user knows it's the voice AI button
                 Icon(
                   widget.isListening ? Icons.mic : Icons.mic_none_rounded,
-                  color: Colors.white.withOpacity(0.9),
+                  color: Colors.white.withOpacity(0.7),
                   size: widget.size * 0.5,
                 ),
               ],
