@@ -7,8 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:go_router/go_router.dart';
 import 'package:receive_sharing_intent/receive_sharing_intent.dart';
-import 'package:quick_actions/quick_actions.dart';
-import '../../features/transactions/presentation/widgets/ai_quick_entry_sheet.dart';
+
 import '../../core/constants/app_colors.dart';
 import '../../core/providers/ui_provider.dart';
 import '../../features/transactions/presentation/widgets/transaction_form_sheet.dart';
@@ -54,7 +53,6 @@ class _AppShellState extends ConsumerState<AppShell> {
   @override
   void initState() {
     super.initState();
-    _initQuickActions();
     _initSharingIntentListener();
   }
 
@@ -62,32 +60,6 @@ class _AppShellState extends ConsumerState<AppShell> {
   void dispose() {
     _intentSub?.cancel();
     super.dispose();
-  }
-
-  
-  void _initQuickActions() {
-    if (kIsWeb) return;
-    
-    const QuickActions quickActions = QuickActions();
-    quickActions.initialize((String shortcutType) {
-      if (shortcutType == 'action_ai_entry') {
-        showModalBottomSheet(
-          context: context,
-          isScrollControlled: true,
-          backgroundColor: Colors.transparent,
-          useRootNavigator: true,
-          builder: (context) => const AiQuickEntrySheet(),
-        );
-      }
-    });
-
-    quickActions.setShortcutItems(<ShortcutItem>[
-      const ShortcutItem(
-        type: 'action_ai_entry',
-        localizedTitle: 'Registro con IA',
-        // icon omitted for safety
-      ),
-    ]);
   }
 
   void _initSharingIntentListener() {

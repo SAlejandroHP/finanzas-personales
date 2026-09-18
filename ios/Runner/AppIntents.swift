@@ -35,7 +35,7 @@ struct RegistrarGastoIntent: AppIntent {
         - tipo: "ingreso" o "gasto"
         - monto: número (float)
         - descripcion: un resumen corto
-        - cuentaOrigenId: busca el UUID de la cuenta que mencione o la que suene más parecida de aquí: \(aiContext)
+        - cuentaOrigenId: busca el UUID de la cuenta que mencione de aquí: \(aiContext). Si no menciona ninguna, omite la llave o devuelve null.
         - categoriaId: busca el UUID de la categoría que mejor encaje de aquí: \(aiContext)
         No agregues texto extra, solo el JSON.
         """
