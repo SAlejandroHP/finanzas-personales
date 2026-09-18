@@ -87,7 +87,7 @@ final realAvailableBalanceProvider = Provider<double>((ref) {
       final now = DateTime.now();
       // Solo tomamos gastos pendientes de este mes para el "Disponible HOY"
       pendingExpenses = transactions
-          .where((t) => t.tipo == 'gasto' && t.fecha.month == now.month && t.fecha.year == now.year)
+          .where((t) => (t.tipo == 'gasto' || t.tipo == 'pago_deuda' || t.tipo == 'meta_aporte') && t.fecha.month == now.month && t.fecha.year == now.year)
           .fold<double>(0.0, (sum, t) => sum + t.monto);
     },
     orElse: () {},
