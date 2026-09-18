@@ -383,7 +383,7 @@ class _SmartInputBarState extends ConsumerState<SmartInputBar> {
           ),
         ],
       ),
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
@@ -393,7 +393,7 @@ class _SmartInputBarState extends ConsumerState<SmartInputBar> {
             child: SiriOrb(
               isListening: _isListening,
               isLoading: _isLoading,
-              size: 44.0,
+              size: 40.0,
             ),
           ),
           const SizedBox(width: 12),
@@ -416,7 +416,7 @@ class _SmartInputBarState extends ConsumerState<SmartInputBar> {
                 ),
                 border: InputBorder.none,
                 isDense: true,
-                contentPadding: const EdgeInsets.symmetric(vertical: 12),
+                contentPadding: const EdgeInsets.symmetric(vertical: 8),
               ),
             ),
           ),
@@ -425,8 +425,8 @@ class _SmartInputBarState extends ConsumerState<SmartInputBar> {
           GestureDetector(
             onTap: _processInput,
             child: Container(
-              width: 44,
-              height: 44,
+              width: 40,
+              height: 40,
               decoration: BoxDecoration(
                 gradient: LinearGradient(
                   colors: [AppColors.primary, AppColors.primary.withBlue(200)],
