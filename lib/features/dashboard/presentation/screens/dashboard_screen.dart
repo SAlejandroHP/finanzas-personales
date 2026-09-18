@@ -1402,8 +1402,8 @@ Widget _buildPendingInvitations(BuildContext context, WidgetRef ref, bool isDark
           final icon = isIngreso ? Icons.arrow_downward : Icons.arrow_upward;
           
           return Container(
-            margin: const EdgeInsets.only(bottom: 12),
-            padding: const EdgeInsets.all(12),
+            margin: const EdgeInsets.only(bottom: 8),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
             decoration: BoxDecoration(
               color: cardColor,
               borderRadius: BorderRadius.circular(16),
@@ -1414,14 +1414,14 @@ Widget _buildPendingInvitations(BuildContext context, WidgetRef ref, bool isDark
             child: Row(
               children: [
                 Container(
-                  padding: const EdgeInsets.all(10),
+                  padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
                     color: color.withOpacity(0.1),
                     shape: BoxShape.circle,
                   ),
                   child: Icon(icon, color: color, size: 20),
                 ),
-                const SizedBox(width: 12),
+                const SizedBox(width: 10),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -1450,7 +1450,7 @@ Widget _buildPendingInvitations(BuildContext context, WidgetRef ref, bool isDark
                     ],
                   ),
                 ),
-                const SizedBox(width: 8),
+                const SizedBox(width: 6),
                 Text(
                   (isIngreso ? "+" : "-") + formatter.format(tx.monto),
                   style: GoogleFonts.montserrat(
@@ -1460,7 +1460,7 @@ Widget _buildPendingInvitations(BuildContext context, WidgetRef ref, bool isDark
                   ),
                 ),
                 if (tx.estado == 'pendiente') ...[
-                  const SizedBox(width: 12),
+                  const SizedBox(width: 8),
                   InkWell(
                     onTap: () async {
                       final confirm = await showDialog<bool>(
@@ -1481,7 +1481,7 @@ Widget _buildPendingInvitations(BuildContext context, WidgetRef ref, bool isDark
                       }
                     },
                     child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                       decoration: BoxDecoration(
                         color: isIngreso ? Colors.green.withOpacity(0.15) : Colors.orange.withOpacity(0.15),
                         borderRadius: BorderRadius.circular(10),
