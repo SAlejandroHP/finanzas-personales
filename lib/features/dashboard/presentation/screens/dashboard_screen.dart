@@ -86,9 +86,17 @@ class DashboardScreen extends ConsumerStatefulWidget {
 }
 
 class _DashboardScreenState extends ConsumerState<DashboardScreen> {
+  ScrollController _calendarScrollController = ScrollController();
+  DateTime? _lastCenteredDate;
   int touchedIndex = -1;
   String periodFilter = 'Este mes';
   bool _showAllCategories = false;
+  @override
+  void dispose() {
+    _calendarScrollController.dispose();
+    super.dispose();
+  }
+
 
   @override
   Widget build(BuildContext context) {
@@ -1230,10 +1238,30 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     final today = DateTime(now.year, now.month, now.day);
     final dates = List.generate(45, (index) => today.subtract(const Duration(days: 15)).add(Duration(days: index)));
 
+    final initialIndex = dates.indexWhere((d) => d.year == selectedDate.year && d.month == selectedDate.month && d.day == selectedDate.day);
+    
+    if (_lastCenteredDate != selectedDate && initialIndex != -1) {
+      _lastCenteredDate = selectedDate;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (_calendarScrollController.hasClients) {
+          final screenWidth = MediaQuery.of(context).size.width;
+          final itemWidth = 63.0; // 55 width + 8 margin
+          final offset = (initialIndex * itemWidth) - (screenWidth / 2) + (itemWidth / 2) + 16;
+          _calendarScrollController.animateTo(
+            offset.clamp(0.0, _calendarScrollController.position.maxScrollExtent),
+            duration: const Duration(milliseconds: 300),
+            curve: Curves.easeInOut,
+          );
+        }
+      });
+    }
+
+
     return SizedBox(
       height: 70,
       child: ListView.builder(
         scrollDirection: Axis.horizontal,
+        controller: _calendarScrollController,
         itemCount: dates.length,
         itemBuilder: (context, index) {
           final date = dates[index];
