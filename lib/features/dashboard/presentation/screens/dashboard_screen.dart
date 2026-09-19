@@ -197,10 +197,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                       ),
 
                       const SizedBox(height: 4),
-                      const Padding(
-                        padding: EdgeInsets.symmetric(horizontal: 16),
-                        child: SmartInputBar(),
-                      ),
+                      const SmartInputBar(),
                       const SizedBox(height: 8),
                       _buildCalendarAndTransactions(
                         context,
@@ -1209,9 +1206,7 @@ Widget _buildPendingInvitations(BuildContext context, WidgetRef ref, bool isDark
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          child: Row(
+        Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
@@ -1248,7 +1243,6 @@ Widget _buildPendingInvitations(BuildContext context, WidgetRef ref, bool isDark
               ),
             ],
           ),
-        ),
         const SizedBox(height: 16),
         _buildHorizontalCalendar(context, ref, selectedDate, isDark, cardColor),
         const SizedBox(height: 16),
@@ -1308,8 +1302,8 @@ Widget _buildPendingInvitations(BuildContext context, WidgetRef ref, bool isDark
             child: Container(
               width: 55,
               margin: EdgeInsets.only(
-                left: index == 0 ? 16 : 8,
-                right: index == dates.length - 1 ? 16 : 0,
+                left: index == 0 ? 0 : 8,
+                right: index == dates.length - 1 ? 0 : 0,
               ),
               decoration: BoxDecoration(
                 color: isSelected ? AppColors.primary : cardColor,
@@ -1453,9 +1447,7 @@ Widget _buildPendingInvitations(BuildContext context, WidgetRef ref, bool isDark
     final accountsAsync = ref.watch(accountsWithBalanceProvider);
     final accounts = accountsAsync.value ?? [];
 
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      child: Column(
+    return Column(
         children: transactions.map((tx) {
           final isIngreso = tx.tipo == 'ingreso';
           
