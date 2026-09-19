@@ -217,107 +217,71 @@ final routerProvider = Provider<GoRouter>((ref) {
     initialLocation: '/',
     redirect: (context, state) => _handleRedirects(context, state),
     routes: [
-      // Shell route con el BottomNavigationBar
-      ShellRoute(
-        builder: (context, state, child) {
-          return AppShell(child: child);
+      // App principal (PageView deslizable con las 4 pestañas)
+      GoRoute(
+        path: '/',
+        name: 'dashboard',
+        pageBuilder: (context, state) => _fadeTransitionPage(
+          state: state,
+          child: const AppShell(),
+        ),
+      ),
+      // Cuentas Detalles
+      GoRoute(
+        path: '/accounts/detail/:id',
+        name: 'account_detail',
+        pageBuilder: (context, state) {
+          final id = state.pathParameters['id']!;
+          return _fadeTransitionPage(
+            state: state,
+            child: AccountDetailScreen(accountId: id),
+          );
         },
-        routes: [
-          // Dashboard (home)
-          GoRoute(
-            path: '/',
-            name: 'dashboard',
-            pageBuilder: (context, state) => _fadeTransitionPage(
-              state: state,
-              child: const DashboardScreen(),
-            ),
-          ),
-          // Cuentas
-          GoRoute(
-            path: '/accounts',
-            name: 'accounts',
-            pageBuilder: (context, state) => _fadeTransitionPage(
-              state: state,
-              child: const AccountsListScreen(),
-            ),
-            routes: [
-              GoRoute(
-                path: 'detail/:id',
-                name: 'account_detail',
-                pageBuilder: (context, state) {
-                  final id = state.pathParameters['id']!;
-                  return _fadeTransitionPage(
-                    state: state,
-                    child: AccountDetailScreen(accountId: id),
-                  );
-                },
-              ),
-            ],
-          ),
-          // Transacciones
-          GoRoute(
-            path: '/transactions',
-            name: 'transactions',
-            pageBuilder: (context, state) => _fadeTransitionPage(
-              state: state,
-              child: const TransactionListScreen(),
-            ),
-          ),
-          // Metas
-          GoRoute(
-            path: '/goals',
-            name: 'goals',
-            pageBuilder: (context, state) => _fadeTransitionPage(
-              state: state,
-              child: const GoalsListScreen(),
-            ),
-          ),
-          // Categorías
-          GoRoute(
-            path: '/categories',
-            name: 'categories',
-            pageBuilder: (context, state) => _fadeTransitionPage(
-              state: state,
-              child: const CategoriesListScreen(),
-            ),
-          ),
-          // Configuración
-          GoRoute(
-            path: '/settings',
-            name: 'settings',
-            pageBuilder: (context, state) => _fadeTransitionPage(
-              state: state,
-              child: const SettingsScreen(),
-            ),
-            routes: [
-              GoRoute(
-                path: 'debts',
-                name: 'debts',
-                pageBuilder: (context, state) => _fadeTransitionPage(
-                  state: state,
-                  child: const DebtsListScreen(),
-                ),
-              ),
-              GoRoute(
-                path: 'recurring',
-                name: 'recurring',
-                pageBuilder: (context, state) => _fadeTransitionPage(
-                  state: state,
-                  child: const RecurringTransactionsScreen(),
-                ),
-              ),
-            ],
-          ),
-          // Notificaciones
-          GoRoute(
-            path: '/notifications',
-            name: 'notifications',
-            pageBuilder: (context, state) => _fadeTransitionPage(
-              state: state,
-              child: const NotificationsScreen(),
-            ),
-          ),
-        ],
+      ),
+      // Metas
+      GoRoute(
+        path: '/goals',
+        name: 'goals',
+        pageBuilder: (context, state) => _fadeTransitionPage(
+          state: state,
+          child: const GoalsListScreen(),
+        ),
+      ),
+      // Categorías
+      GoRoute(
+        path: '/categories',
+        name: 'categories',
+        pageBuilder: (context, state) => _fadeTransitionPage(
+          state: state,
+          child: const CategoriesListScreen(),
+        ),
+      ),
+      // Deudas
+      GoRoute(
+        path: '/settings/debts',
+        name: 'debts',
+        pageBuilder: (context, state) => _fadeTransitionPage(
+          state: state,
+          child: const DebtsListScreen(),
+        ),
+      ),
+      // Recurrentes
+      GoRoute(
+        path: '/settings/recurring',
+        name: 'recurring',
+        pageBuilder: (context, state) => _fadeTransitionPage(
+          state: state,
+          child: const RecurringTransactionsScreen(),
+        ),
+      ),
+      // Notificaciones
+      GoRoute(
+        path: '/notifications',
+        name: 'notifications',
+        pageBuilder: (context, state) => _fadeTransitionPage(
+          state: state,
+          child: const NotificationsScreen(),
+        ),
       ),
       // Auth
       GoRoute(

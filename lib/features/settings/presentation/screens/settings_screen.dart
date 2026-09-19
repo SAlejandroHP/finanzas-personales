@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../../core/widgets/app_shell.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -229,7 +230,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             iconColor: AppColors.myAccounts,
             title: 'Mis Cuentas',
             subtitle: 'Bancos, efectivo y billeteras virtuales',
-            onTap: () => context.push('/accounts'),
+            onTap: () => ref.read(appNavigationProvider.notifier).state = 2,
           ),
           const SizedBox(height: 8),
           _buildNavigationCard(

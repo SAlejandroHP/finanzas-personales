@@ -63,7 +63,7 @@ class _TransactionListScreenState extends ConsumerState<TransactionListScreen> {
 
   @override
   void dispose() {
-    _pageController.dispose();
+
     super.dispose();
   }
 
@@ -200,109 +200,38 @@ class _TransactionListScreenState extends ConsumerState<TransactionListScreen> {
                     }
                     return false;
                   },
-                  child: PageView(
-                    controller: _pageController,
-                    onPageChanged: (index) => setState(() => _currentPage = index),
-                    children: [
-                    // --- PESTAÑA 1: Balance del Periodo y Todas las transacciones ---
-                    Column(
-                      children: [
-                        _buildModernSummaryCard(
-                          title: (_hasAnyFilter(ref.watch(transactionFiltersProvider))) ? 'Balance del Periodo' : 'Balance Total (Efectivo)',
-                          total: summary.total,
-                          income: summary.income,
-                          expenses: summary.expenses,
-                          isDark: isDark,
-                          gradient: [
-                            AppColors.primary,
-                            AppColors.primary.withRed(30).withGreen(100),
-                          ],
-                        ),
-                        const SizedBox(height: 4),
-                        Expanded(child: _buildTransactionList(displayedTransactions, isDark, ref, archivedCount: archivedTransactions.length)),
-                      ],
-                    ),
-                    
-                    // --- PESTAÑA 2: Compromisos y Pendientes ---
-                    if (hasPending)
-                      Column(
+                  child: _currentPage == 0 
+                    ? Column(
+                        children: [
+                          _buildModernSummaryCard(
+                            title: (_hasAnyFilter(ref.watch(transactionFiltersProvider))) ? 'Balance del Periodo' : 'Balance Total (Efectivo)',
+                            total: summary.total,
+                            income: summary.income,
+                            expenses: summary.expenses,
+                            isDark: isDark,
+                            gradient: [
+                              AppColors.primary,
+                              AppColors.primary.withRed(30).withGreen(100),
+                            ],
+                          ),
+                          const SizedBox(height: 4),
+                          Expanded(child: _buildTransactionList(displayedTransactions, isDark, ref, archivedCount: archivedTransactions.length)),
+                        ],
+                      )
+                    : Column(
                         children: [
                           _buildCommitmentSummaryCard(
-                            title: 'Balance',
-                            total: summary.pendingTotal,
-                            income: summary.pendingIncome,
-                            expenses: summary.pendingExpenses,
+                            summary: summary,
                             isDark: isDark,
                           ),
-                          const SizedBox(height: 8),
-                          Expanded(child: _buildTransactionList(pendingTransactions, isDark, ref, isPendingList: true)),
+                          const SizedBox(height: 4),
+                          Expanded(child: _buildTransactionList(pendingTransactions, isDark, ref)),
                         ],
                       ),
-                  ],
                 ),
-              ),
-              ),
+              ],
             ],
-          );
-        },
-        loading: () => const Column(
-          children: [
-            Expanded(
-              child: Center(
-                child: CircularProgressIndicator(color: AppColors.primary),
-              ),
-            ),
-          ],
-        ),
-        error: (error, stackTrace) => Column(
-          children: [
-            Expanded(
-              child: Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    const Icon(
-                      Icons.error_outline,
-                      size: 64,
-                      color: Colors.redAccent,
-                    ),
-                    const SizedBox(height: AppColors.lg),
-                    Text(
-                      'Error al cargar transacciones',
-                      style: GoogleFonts.montserrat(
-                        fontWeight: FontWeight.w700,
-                        fontSize: AppColors.bodyLarge,
-                      ),
-                    ),
-                    const SizedBox(height: AppColors.sm),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 32),
-                      child: Text(
-                        error.toString(),
-                        textAlign: TextAlign.center,
-                        style: GoogleFonts.montserrat(
-                          color: AppColors.textPrimary.withOpacity(0.6),
-                          fontSize: AppColors.bodySmall,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: AppColors.lg),
-                    ElevatedButton(
-                      onPressed: () => ref.read(financeServiceProvider).refreshAll(),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.primary,
-                        foregroundColor: Colors.white,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
-                      child: const Text('Reintentar'),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ],
+          ),
         ),
       ), // Cierra async when
     ), // Cierra Expanded

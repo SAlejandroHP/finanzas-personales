@@ -34,14 +34,16 @@ class NavItem {
 
 /// Widget shell que contiene el BottomNavigationBar tipo "island"
 /// Se usa con GoRouter para envolver todas las rutas principales
-class AppShell extends ConsumerStatefulWidget {
-  /// Pantalla actual a mostrar
-  final Widget child;
+import '../../features/dashboard/presentation/screens/dashboard_screen.dart';
+import '../../features/transactions/presentation/screens/transaction_list_screen.dart';
+import '../../features/accounts/presentation/screens/accounts_list_screen.dart';
+import '../../features/settings/presentation/screens/settings_screen.dart';
 
-  const AppShell({
-    super.key,
-    required this.child,
-  });
+/// Provider to control main app navigation index (PageView)
+final appNavigationProvider = StateProvider<int>((ref) => 0);
+
+class AppShell extends ConsumerStatefulWidget {
+  const AppShell({super.key});
 
   @override
   ConsumerState<AppShell> createState() => _AppShellState();
@@ -51,10 +53,15 @@ class _AppShellState extends ConsumerState<AppShell> {
   StreamSubscription? _intentSub;
   bool _isScrolling = false;
   Timer? _scrollTimer;
+  late final PageController _pageController;
+  int _currentIndex = 0;
+  late final PageController _pageController;
+  int _currentIndex = 0;
 
   @override
   void initState() {
     super.initState();
+    _pageController = PageController(initialPage: 0);
     _initSharingIntentListener();
   }
 
@@ -62,6 +69,7 @@ class _AppShellState extends ConsumerState<AppShell> {
   void dispose() {
     _intentSub?.cancel();
     _scrollTimer?.cancel();
+    _pageController.dispose();
     super.dispose();
   }
 
@@ -131,8 +139,17 @@ class _AppShellState extends ConsumerState<AppShell> {
 
   @override
   Widget build(BuildContext context) {
+    ref.listen<int>(appNavigationProvider, (previous, next) {
+      if (previous != next && _pageController.hasClients) {
+        _pageController.animateToPage(
+          next,
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeInOut,
+        );
+      }
+    });
+
     final isDark       = Theme.of(context).brightness == Brightness.dark;
-    final location = GoRouterState.of(context).matchedLocation;
     
     // Detección de PWA vs Nativa (kIsWeb detecta si corre en navegador)
     final bool isPwa = kIsWeb;
@@ -174,16 +191,7 @@ class _AppShellState extends ConsumerState<AppShell> {
       ),
     ];
 
-    int currentIndex = 0;
-    if (isCanvasOpen) {
-      currentIndex = 2; // El notch se desliza al centro si el modal está abierto
-    } else if (location.startsWith('/transactions')) {
-      currentIndex = 1;
-    } else if (location.startsWith('/settings') || 
-               location.startsWith('/accounts') || 
-               location.startsWith('/categories')) {
-      currentIndex = 3;
-    }
+    int currentIndex = isCanvasOpen ? 2 : _currentIndex;
 
     final isNavbarVisible = ref.watch(isNavbarVisibleProvider);
     // Ocultar la barra entera cuando el teclado inteligente esté activo
@@ -211,7 +219,27 @@ class _AppShellState extends ConsumerState<AppShell> {
           }
           return false;
         },
-        child: widget.child,
+        child: PageView(
+          controller: _pageController,
+          physics: const BouncingScrollPhysics(),
+          onPageChanged: (index) {
+            setState(() {
+              // Convert PageView index (0,1,2,3) to NavItem index (0,1,3,4)
+              if (index == 0) _currentIndex = 0;
+              else if (index == 1) _currentIndex = 1;
+              else if (index == 2) _currentIndex = 3;
+              else if (index == 3) _currentIndex = 4;
+            });
+            // Keep provider in sync
+            Future.microtask(() => ref.read(appNavigationProvider.notifier).state = index);
+          },
+          children: const [
+            DashboardScreen(),
+            TransactionListScreen(),
+            AccountsListScreen(),
+            SettingsScreen(),
+          ],
+        ),
       ),
       bottomNavigationBar: !hideNav
           ? AnimatedSlide(
@@ -345,7 +373,18 @@ class _AppShellState extends ConsumerState<AppShell> {
           } else if (item.label == 'Agregar') {
             _showAddTransactionSheet(context, ref);
           } else {
-            context.go(item.path);
+            // Map nav index to page view index
+            int pageIndex = 0;
+            if (item.index == 0) pageIndex = 0;
+            else if (item.index == 1) pageIndex = 1;
+            else if (item.index == 3) pageIndex = 2;
+            else if (item.index == 4) pageIndex = 3;
+            
+            _pageController.animateToPage(
+              pageIndex,
+              duration: const Duration(milliseconds: 300),
+              curve: Curves.easeInOut,
+            );
           }
         },
         behavior: HitTestBehavior.opaque,
