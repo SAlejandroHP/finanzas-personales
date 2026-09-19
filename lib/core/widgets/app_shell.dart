@@ -4,6 +4,8 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:quick_actions/quick_actions.dart';
+import 'package:app_links/app_links.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:go_router/go_router.dart';
 import 'package:receive_sharing_intent/receive_sharing_intent.dart';
@@ -51,10 +53,9 @@ class AppShell extends ConsumerStatefulWidget {
 
 class _AppShellState extends ConsumerState<AppShell> {
   StreamSubscription? _intentSub;
+  StreamSubscription? _appLinksSub;
   bool _isScrolling = false;
   Timer? _scrollTimer;
-  late final PageController _pageController;
-  int _currentIndex = 0;
   late final PageController _pageController;
   int _currentIndex = 0;
 
@@ -63,11 +64,41 @@ class _AppShellState extends ConsumerState<AppShell> {
     super.initState();
     _pageController = PageController(initialPage: 0);
     _initSharingIntentListener();
+    _initQuickActions();
+    _initAppLinks();
+  }
+
+  void _initAppLinks() {
+    final appLinks = AppLinks();
+    _appLinksSub = appLinks.uriLinkStream.listen((uri) {
+      if (uri.host == 'add' || uri.path.contains('add')) {
+        ref.read(isCanvasOpenProvider.notifier).state = true;
+      }
+    });
+  }
+
+  void _initQuickActions() {
+    const QuickActions quickActions = QuickActions();
+    quickActions.initialize((String shortcutType) {
+      if (shortcutType == 'action_add_transaction') {
+        // Open the AI Advisor Bottom Sheet
+        ref.read(isCanvasOpenProvider.notifier).state = true;
+      }
+    });
+
+    quickActions.setShortcutItems(<ShortcutItem>[
+      const ShortcutItem(
+        type: 'action_add_transaction',
+        localizedTitle: 'Agregar transacción',
+        icon: 'AppIcon', // Uses default app icon or system icon if defined natively, but 'compose' is standard iOS, wait, 'AppIcon' or None. We can omit icon or use 'compose' for iOS.
+      ),
+    ]);
   }
 
   @override
   void dispose() {
     _intentSub?.cancel();
+    _appLinksSub?.cancel();
     _scrollTimer?.cancel();
     _pageController.dispose();
     super.dispose();

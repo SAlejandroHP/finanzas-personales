@@ -88,6 +88,7 @@
 				<key>CFBundleURLSchemes</key>
 				<array>
 					<string>ShareMedia-com.saaksolutions.app.finanzas</string>
+					<string>finanzas</string>
 				</array>
 			</dict>
 		</array>
