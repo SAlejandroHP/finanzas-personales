@@ -361,45 +361,26 @@ class _AppShellState extends ConsumerState<AppShell> with WidgetsBindingObserver
                                 ),
                               ),
                               // Óvalo indicador de activo integrado al navbar
-                              forceAnimation
-                                ? AnimatedPositioned(
+                              AnimatedPositioned(
+                                duration: forceAnimation ? const Duration(milliseconds: 300) : Duration.zero,
+                                curve: Curves.easeOutCubic,
+                                left: animIndex * itemWidth,
+                                top: 0,
+                                bottom: 0,
+                                width: itemWidth,
+                                child: Center(
+                                  child: AnimatedContainer(
                                     duration: const Duration(milliseconds: 300),
                                     curve: Curves.easeOutCubic,
-                                    left: animIndex * itemWidth,
-                                    top: 0,
-                                    bottom: 0,
-                                    width: itemWidth,
-                                    child: Center(
-                                      child: AnimatedContainer(
-                                        duration: const Duration(milliseconds: 300),
-                                        curve: Curves.easeOutCubic,
-                                        width: _isScrolling ? 36 : 56,
-                                        height: _isScrolling ? 28 : 44,
-                                        decoration: BoxDecoration(
-                                          color: AppColors.primary,
-                                          borderRadius: BorderRadius.circular(_isScrolling ? 14 : 22),
-                                        ),
-                                      ),
-                                    ),
-                                  )
-                                : Positioned(
-                                    left: animIndex * itemWidth,
-                                    top: 0,
-                                    bottom: 0,
-                                    width: itemWidth,
-                                    child: Center(
-                                      child: AnimatedContainer(
-                                        duration: const Duration(milliseconds: 300),
-                                        curve: Curves.easeOutCubic,
-                                        width: _isScrolling ? 36 : 56,
-                                        height: _isScrolling ? 28 : 44,
-                                        decoration: BoxDecoration(
-                                          color: AppColors.primary,
-                                          borderRadius: BorderRadius.circular(_isScrolling ? 14 : 22),
-                                        ),
-                                      ),
+                                    width: _isScrolling ? 36 : 56,
+                                    height: _isScrolling ? 28 : 44,
+                                    decoration: BoxDecoration(
+                                      color: AppColors.primary,
+                                      borderRadius: BorderRadius.circular(_isScrolling ? 14 : 22),
                                     ),
                                   ),
+                                ),
+                              ),
                               // Fila de botones de navegación
                               Positioned.fill(
                                 child: Row(
@@ -452,19 +433,9 @@ class _AppShellState extends ConsumerState<AppShell> with WidgetsBindingObserver
               _isTappingNav = true;
             });
             
-            int distance = (item.index - _currentIndex).abs();
-            if (distance > 1) {
-              // Si la distancia es mayor a 1, saltamos instantáneamente
-              // para no ver el "carrusel" de pantallas intermedias.
-              _pageController.jumpToPage(item.index);
-            } else {
-              // Si es la pantalla de al lado, una transición normal se ve bien
-              _pageController.animateToPage(
-                item.index,
-                duration: const Duration(milliseconds: 300),
-                curve: Curves.easeInOut,
-              );
-            }
+            // Siempre usamos jumpToPage para que las pantallas cambien instantáneamente
+            // sin el efecto de "carrusel", mientras el AnimatedPositioned de la barra hace el slide fluido.
+            _pageController.jumpToPage(item.index);
             
             // Restablecemos la bandera después de la animación
             Future.delayed(const Duration(milliseconds: 300), () {
