@@ -233,18 +233,33 @@ class _AppShellState extends ConsumerState<AppShell> {
       extendBody: true,
       body: NotificationListener<ScrollNotification>(
         onNotification: (scrollNotification) {
-          if (scrollNotification is ScrollStartNotification || scrollNotification is ScrollUpdateNotification) {
-            if (!_isScrolling) {
-              setState(() {
-                _isScrolling = true;
-              });
+          // 1. Ignorar movimientos horizontales (PageView, swiping de pestañas)
+          if (scrollNotification.metrics.axis == Axis.horizontal) {
+            return false;
+          }
+
+          // 2. Detectar la dirección real del scroll vertical
+          if (scrollNotification is UserScrollNotification) {
+            if (scrollNotification.direction == ScrollDirection.forward) {
+              // El usuario hace scroll hacia ARRIBA (viendo contenido anterior)
+              // Expandimos la barra inmediatamente
+              _scrollTimer?.cancel();
+              if (_isScrolling) {
+                setState(() => _isScrolling = false);
+              }
+            } else if (scrollNotification.direction == ScrollDirection.reverse) {
+              // El usuario hace scroll hacia ABAJO (viendo contenido nuevo)
+              // Encogemos la barra para dar espacio de lectura
+              if (!_isScrolling) {
+                setState(() => _isScrolling = true);
+              }
             }
+          } else if (scrollNotification is ScrollEndNotification) {
+            // Cuando suelta el dedo y termina la inercia, restaurar después de un delay
             _scrollTimer?.cancel();
             _scrollTimer = Timer(const Duration(milliseconds: 300), () {
               if (mounted && _isScrolling) {
-                setState(() {
-                  _isScrolling = false;
-                });
+                setState(() => _isScrolling = false);
               }
             });
           }
