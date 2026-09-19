@@ -15,6 +15,11 @@ import '../../core/providers/ui_provider.dart';
 import '../../features/transactions/presentation/widgets/transaction_form_sheet.dart';
 import '../../features/auth/presentation/providers/auth_provider.dart';
 import '../../features/dashboard/presentation/widgets/ai_advisor_bottom_sheet.dart';
+import '../../features/dashboard/presentation/screens/dashboard_screen.dart';
+import '../../features/transactions/presentation/screens/transaction_list_screen.dart';
+import '../../features/accounts/presentation/screens/accounts_list_screen.dart';
+import '../../features/settings/presentation/screens/settings_screen.dart';
+
 
 /// Provider para mantener el índice de la ruta activa en la navegación
 final navigationIndexProvider = StateProvider<int>((ref) => 0);
@@ -35,11 +40,6 @@ class NavItem {
 }
 
 /// Widget shell que contiene el BottomNavigationBar tipo "island"
-/// Se usa con GoRouter para envolver todas las rutas principales
-import '../../features/dashboard/presentation/screens/dashboard_screen.dart';
-import '../../features/transactions/presentation/screens/transaction_list_screen.dart';
-import '../../features/accounts/presentation/screens/accounts_list_screen.dart';
-import '../../features/settings/presentation/screens/settings_screen.dart';
 
 /// Provider to control main app navigation index (PageView)
 final appNavigationProvider = StateProvider<int>((ref) => 0);
@@ -203,26 +203,26 @@ class _AppShellState extends ConsumerState<AppShell> {
         index: 1,
       ),
       NavItem(
-        label: 'Agregar',
-        icon: Icons.add_circle_outline_rounded,
-        path: '', // Abre el modal
-        index: 2,
-      ),
-      NavItem(
         label: 'Cuentas',
         icon: Icons.account_balance_wallet_outlined,
         path: '/accounts',
-        index: 3,
+        index: 2,
       ),
       NavItem(
         label: 'Ajustes',
         icon: Icons.settings_outlined,
         path: '/settings',
+        index: 3,
+      ),
+      NavItem(
+        label: 'Agregar',
+        icon: Icons.add_circle_outline_rounded,
+        path: '', // Abre el modal
         index: 4,
       ),
     ];
 
-    int currentIndex = isCanvasOpen ? 2 : _currentIndex;
+    int currentIndex = isCanvasOpen ? 4 : _currentIndex;
 
     final isNavbarVisible = ref.watch(isNavbarVisibleProvider);
     // Ocultar la barra entera cuando el teclado inteligente esté activo
@@ -255,11 +255,8 @@ class _AppShellState extends ConsumerState<AppShell> {
           physics: const BouncingScrollPhysics(),
           onPageChanged: (index) {
             setState(() {
-              // Convert PageView index (0,1,2,3) to NavItem index (0,1,3,4)
-              if (index == 0) _currentIndex = 0;
-              else if (index == 1) _currentIndex = 1;
-              else if (index == 2) _currentIndex = 3;
-              else if (index == 3) _currentIndex = 4;
+              // Convert PageView index (0,1,2,3) directly to NavItem index (0,1,2,3)
+              _currentIndex = index;
             });
             // Keep provider in sync
             Future.microtask(() => ref.read(appNavigationProvider.notifier).state = index);
@@ -404,15 +401,9 @@ class _AppShellState extends ConsumerState<AppShell> {
           } else if (item.label == 'Agregar') {
             _showAddTransactionSheet(context, ref);
           } else {
-            // Map nav index to page view index
-            int pageIndex = 0;
-            if (item.index == 0) pageIndex = 0;
-            else if (item.index == 1) pageIndex = 1;
-            else if (item.index == 3) pageIndex = 2;
-            else if (item.index == 4) pageIndex = 3;
-            
+            // Because Agregar is at index 4, any other item index matches the page index exactly
             _pageController.animateToPage(
-              pageIndex,
+              item.index,
               duration: const Duration(milliseconds: 300),
               curve: Curves.easeInOut,
             );
