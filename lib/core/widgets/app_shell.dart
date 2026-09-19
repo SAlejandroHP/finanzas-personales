@@ -49,6 +49,8 @@ class AppShell extends ConsumerStatefulWidget {
 
 class _AppShellState extends ConsumerState<AppShell> {
   StreamSubscription? _intentSub;
+  bool _isScrolling = false;
+  Timer? _scrollTimer;
 
   @override
   void initState() {
@@ -59,6 +61,7 @@ class _AppShellState extends ConsumerState<AppShell> {
   @override
   void dispose() {
     _intentSub?.cancel();
+    _scrollTimer?.cancel();
     super.dispose();
   }
 
@@ -189,7 +192,27 @@ class _AppShellState extends ConsumerState<AppShell> {
 
     return Scaffold(
       extendBody: true,
-      body: widget.child,
+      body: NotificationListener<ScrollNotification>(
+        onNotification: (scrollNotification) {
+          if (scrollNotification is ScrollStartNotification || scrollNotification is ScrollUpdateNotification) {
+            if (!_isScrolling) {
+              setState(() {
+                _isScrolling = true;
+              });
+            }
+            _scrollTimer?.cancel();
+            _scrollTimer = Timer(const Duration(milliseconds: 300), () {
+              if (mounted && _isScrolling) {
+                setState(() {
+                  _isScrolling = false;
+                });
+              }
+            });
+          }
+          return false;
+        },
+        child: widget.child,
+      ),
       bottomNavigationBar: !hideNav
           ? AnimatedSlide(
               offset: isNavbarVisible ? Offset.zero : const Offset(0, 2),
@@ -197,13 +220,15 @@ class _AppShellState extends ConsumerState<AppShell> {
               curve: Curves.easeInOut,
               child: SafeArea(
                 bottom: true,
-                child: Container(
-                  height: 52, // Reducido estilo Instagram
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 300),
+                  curve: Curves.easeOutCubic,
+                  height: _isScrolling ? 44 : 52, 
                   width: double.infinity,
                   margin: EdgeInsets.only(
-                    left: 20, 
-                    right: 20, 
-                    bottom: bottomMargin + 8.0, // Reduced from AppColors.pagePadding to lower the navbar
+                    left: _isScrolling ? 60 : 20, 
+                    right: _isScrolling ? 60 : 20, 
+                    bottom: bottomMargin + 8.0, 
                   ),
                   child: LayoutBuilder(
                     builder: (context, constraints) {
@@ -258,14 +283,20 @@ class _AppShellState extends ConsumerState<AppShell> {
                               ),
                               // Óvalo indicador de activo integrado al navbar
                               Positioned(
-                                left: (animIndex * itemWidth) + (itemWidth / 2) - 24, // Mitad de 48 es 24
-                                top: 8,
-                                child: Container(
-                                  width: 48, // Ancho reducido estilo Instagram
-                                  height: 36,
-                                  decoration: BoxDecoration(
-                                    color: AppColors.primary,
-                                    borderRadius: BorderRadius.circular(18), // Píldora más esbelta
+                                left: animIndex * itemWidth,
+                                top: 0,
+                                bottom: 0,
+                                width: itemWidth,
+                                child: Center(
+                                  child: AnimatedContainer(
+                                    duration: const Duration(milliseconds: 300),
+                                    curve: Curves.easeOutCubic,
+                                    width: _isScrolling ? 40 : 48,
+                                    height: _isScrolling ? 32 : 36,
+                                    decoration: BoxDecoration(
+                                      color: AppColors.primary,
+                                      borderRadius: BorderRadius.circular(_isScrolling ? 16 : 18),
+                                    ),
                                   ),
                                 ),
                               ),
@@ -277,7 +308,8 @@ class _AppShellState extends ConsumerState<AppShell> {
                                       context, 
                                       ref, 
                                       item, 
-                                      currentIndex == item.index
+                                      currentIndex == item.index,
+                                      _isScrolling,
                                     );
                                   }).toList(),
                                 ),
@@ -301,6 +333,7 @@ class _AppShellState extends ConsumerState<AppShell> {
     WidgetRef ref,
     NavItem item,
     bool isActive,
+    bool isScrolling,
   ) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
@@ -329,12 +362,17 @@ class _AppShellState extends ConsumerState<AppShell> {
               left: 0,
               right: 0,
               child: Center(
-                child: Icon(
-                  item.icon,
-                  size: 24,
-                  color: isActive 
-                      ? Colors.white 
-                      : (isDark ? Colors.white54 : Colors.grey[600]),
+                child: AnimatedScale(
+                  scale: isScrolling ? 0.85 : 1.0,
+                  duration: const Duration(milliseconds: 300),
+                  curve: Curves.easeOutCubic,
+                  child: Icon(
+                    item.icon,
+                    size: 24, // El tamaño base se escala suavemente
+                    color: isActive 
+                        ? Colors.white 
+                        : (isDark ? Colors.white54 : Colors.grey[600]),
+                  ),
                 ),
               ),
             ),
