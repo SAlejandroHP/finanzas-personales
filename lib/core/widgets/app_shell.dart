@@ -66,6 +66,7 @@ class _AppShellState extends ConsumerState<AppShell> with WidgetsBindingObserver
     _initSharingIntentListener();
     _initQuickActions();
     _initAppLinks();
+  WidgetsBinding.instance.addObserver(this);
   }
 
   void _initAppLinks() {
@@ -249,18 +250,12 @@ class _AppShellState extends ConsumerState<AppShell> with WidgetsBindingObserver
           }
 
           // 2. Detectar la dirección real del scroll vertical
-          if (scrollNotification is UserScrollNotification) {
-            if (scrollNotification.direction == ScrollDirection.forward) {
-              // El usuario hace scroll hacia ARRIBA (viendo contenido anterior)
-              // Expandimos la barra inmediatamente
-              if (_isScrolling) {
-                setState(() => _isScrolling = false);
-              }
-            } else if (scrollNotification.direction == ScrollDirection.reverse) {
-              // El usuario hace scroll hacia ABAJO (viendo contenido nuevo)
-              // Encogemos la barra para dar espacio de lectura
-              if (!_isScrolling) {
-                setState(() => _isScrolling = true);
+          if (scrollNotification is ScrollUpdateNotification) {
+            if (scrollNotification.dragDetails != null && scrollNotification.scrollDelta != null) {
+              if (scrollNotification.scrollDelta! > 0) {
+                if (!_isScrolling) setState(() => _isScrolling = true);
+              } else if (scrollNotification.scrollDelta! < 0) {
+                if (_isScrolling) setState(() => _isScrolling = false);
               }
             }
           }
@@ -295,11 +290,11 @@ class _AppShellState extends ConsumerState<AppShell> with WidgetsBindingObserver
                 child: AnimatedContainer(
                   duration: const Duration(milliseconds: 300),
                   curve: Curves.easeOutCubic,
-                  height: _isScrolling ? 40 : 50, 
+                  height: _isScrolling ? 44 : 64, 
                   width: double.infinity,
                   margin: EdgeInsets.only(
-                    left: _isScrolling ? 72 : 16, 
-                    right: _isScrolling ? 72 : 16, 
+                    left: _isScrolling ? 80 : 16, 
+                    right: _isScrolling ? 80 : 16, 
                     bottom: bottomMargin + 8.0, 
                   ),
                   child: LayoutBuilder(
@@ -366,26 +361,45 @@ class _AppShellState extends ConsumerState<AppShell> with WidgetsBindingObserver
                                 ),
                               ),
                               // Óvalo indicador de activo integrado al navbar
-                              AnimatedPositioned(
-                                duration: forceAnimation ? const Duration(milliseconds: 300) : Duration.zero,
-                                curve: Curves.easeOutCubic,
-                                left: animIndex * itemWidth,
-                                top: 0,
-                                bottom: 0,
-                                width: itemWidth,
-                                child: Center(
-                                  child: AnimatedContainer(
+                              forceAnimation
+                                ? AnimatedPositioned(
                                     duration: const Duration(milliseconds: 300),
                                     curve: Curves.easeOutCubic,
-                                    width: _isScrolling ? 36 : 46,
-                                    height: _isScrolling ? 28 : 38,
-                                    decoration: BoxDecoration(
-                                      color: AppColors.primary,
-                                      borderRadius: BorderRadius.circular(_isScrolling ? 14 : 19),
+                                    left: animIndex * itemWidth,
+                                    top: 0,
+                                    bottom: 0,
+                                    width: itemWidth,
+                                    child: Center(
+                                      child: AnimatedContainer(
+                                        duration: const Duration(milliseconds: 300),
+                                        curve: Curves.easeOutCubic,
+                                        width: _isScrolling ? 36 : 56,
+                                        height: _isScrolling ? 28 : 44,
+                                        decoration: BoxDecoration(
+                                          color: AppColors.primary,
+                                          borderRadius: BorderRadius.circular(_isScrolling ? 14 : 22),
+                                        ),
+                                      ),
+                                    ),
+                                  )
+                                : Positioned(
+                                    left: animIndex * itemWidth,
+                                    top: 0,
+                                    bottom: 0,
+                                    width: itemWidth,
+                                    child: Center(
+                                      child: AnimatedContainer(
+                                        duration: const Duration(milliseconds: 300),
+                                        curve: Curves.easeOutCubic,
+                                        width: _isScrolling ? 36 : 56,
+                                        height: _isScrolling ? 28 : 44,
+                                        decoration: BoxDecoration(
+                                          color: AppColors.primary,
+                                          borderRadius: BorderRadius.circular(_isScrolling ? 14 : 22),
+                                        ),
+                                      ),
                                     ),
                                   ),
-                                ),
-                              ),
                               // Fila de botones de navegación
                               Positioned.fill(
                                 child: Row(
@@ -482,7 +496,7 @@ class _AppShellState extends ConsumerState<AppShell> with WidgetsBindingObserver
                   curve: Curves.easeOutCubic,
                   child: Icon(
                     item.icon,
-                    size: 26, // Exactamente igual a las proporciones de Instagram
+                    size: 28, // Proporciones de Instagram Island
                     color: isActive 
                         ? Colors.white 
                         : (isDark ? Colors.white54 : Colors.grey[600]),
