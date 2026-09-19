@@ -277,10 +277,10 @@ class _AppShellState extends ConsumerState<AppShell> {
             Future.microtask(() => ref.read(appNavigationProvider.notifier).state = index);
           },
           children: const [
-            DashboardScreen(),
-            TransactionListScreen(),
-            AccountsListScreen(),
-            SettingsScreen(),
+            _KeepAlivePage(child: DashboardScreen()),
+            _KeepAlivePage(child: TransactionListScreen()),
+            _KeepAlivePage(child: AccountsListScreen()),
+            _KeepAlivePage(child: SettingsScreen()),
           ],
         ),
       ),
@@ -511,5 +511,24 @@ class _AppShellState extends ConsumerState<AppShell> {
     showTransactionFormSheet(context).then((_) {
       ref.read(isCanvasOpenProvider.notifier).state = false;
     });
+  }
+}
+
+class _KeepAlivePage extends StatefulWidget {
+  final Widget child;
+  const _KeepAlivePage({required this.child});
+
+  @override
+  State<_KeepAlivePage> createState() => _KeepAlivePageState();
+}
+
+class _KeepAlivePageState extends State<_KeepAlivePage> with AutomaticKeepAliveClientMixin {
+  @override
+  bool get wantKeepAlive => true;
+
+  @override
+  Widget build(BuildContext context) {
+    super.build(context);
+    return widget.child;
   }
 }
