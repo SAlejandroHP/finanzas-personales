@@ -51,10 +51,11 @@ class AppShell extends ConsumerStatefulWidget {
   ConsumerState<AppShell> createState() => _AppShellState();
 }
 
-class _AppShellState extends ConsumerState<AppShell> {
+class _AppShellState extends ConsumerState<AppShell> with WidgetsBindingObserver {
   StreamSubscription? _intentSub;
   StreamSubscription? _appLinksSub;
   bool _isScrolling = false;
+  bool _isTappingNav = false;
   late final PageController _pageController;
   int _currentIndex = 0;
 
@@ -319,7 +320,7 @@ class _AppShellState extends ConsumerState<AppShell> {
                           // If canvas is open, override the visual index to 4.0
                           // To animate to/from 4.0 smoothly while still tracking finger perfectly on 0-3,
                           // we use AnimatedPositioned with a dynamic duration.
-                          bool forceAnimation = isCanvasOpen || (currentIndex == 4);
+                          bool forceAnimation = isCanvasOpen || (currentIndex == 4) || _isTappingNav;
                           double animIndex = isCanvasOpen ? 4.0 : pageValue;
                           
                           return Stack(
@@ -432,12 +433,33 @@ class _AppShellState extends ConsumerState<AppShell> {
           } else if (item.label == 'Agregar') {
             _showAddTransactionSheet(context, ref);
           } else {
-            // Because Agregar is at index 4, any other item index matches the page index exactly
-            _pageController.animateToPage(
-              item.index,
-              duration: const Duration(milliseconds: 300),
-              curve: Curves.easeInOut,
-            );
+            // Animamos el botón de la navbar manualmente
+            setState(() {
+              _isTappingNav = true;
+            });
+            
+            int distance = (item.index - _currentIndex).abs();
+            if (distance > 1) {
+              // Si la distancia es mayor a 1, saltamos instantáneamente
+              // para no ver el "carrusel" de pantallas intermedias.
+              _pageController.jumpToPage(item.index);
+            } else {
+              // Si es la pantalla de al lado, una transición normal se ve bien
+              _pageController.animateToPage(
+                item.index,
+                duration: const Duration(milliseconds: 300),
+                curve: Curves.easeInOut,
+              );
+            }
+            
+            // Restablecemos la bandera después de la animación
+            Future.delayed(const Duration(milliseconds: 300), () {
+              if (mounted) {
+                setState(() {
+                  _isTappingNav = false;
+                });
+              }
+            });
           }
         },
         behavior: HitTestBehavior.opaque,
