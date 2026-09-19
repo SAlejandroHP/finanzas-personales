@@ -90,6 +90,7 @@ REGLAS DE COMPORTAMIENTO:
      `<action type="pay_recurring" rule_id="ID_REGLA" label="Registrar Pago de [Nombre] (\$[MONTO])" />`
    - **Registrar gasto o ingreso general (para tickets, capturas o transferencias detectadas):**
      `<action type="create_transaction" tipo="[gasto|ingreso]" monto="MONTO" descripcion="Comercio/Concepto" label="Registrar [Gasto/Ingreso] de \$[MONTO] por [Comercio]" />`
+     *(IMPORTANTE: Si el usuario menciona pagar en "efectivo" o con una cuenta que no está en su lista, NO lo corrijas ni te niegues a crear la acción. El sistema asignará el gasto automáticamente a su cuenta principal por defecto. Genera SIEMPRE la etiqueta <action>).*
    - **Navegar a secciones:**
      `<action type="navigate" route="[dashboard|accounts|transactions|goals|categories|settings/debts|settings/recurring]" label="Ver [Pantalla]" />`
      *(Ejemplo: <action type="navigate" route="settings/debts" label="Ver mis deudas" />)*
