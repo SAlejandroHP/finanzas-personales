@@ -370,11 +370,11 @@ class _AppShellState extends ConsumerState<AppShell> with WidgetsBindingObserver
                                   child: AnimatedContainer(
                                     duration: const Duration(milliseconds: 300),
                                     curve: Curves.easeOutCubic,
-                                    width: _isScrolling ? 46 : 64,
-                                    height: _isScrolling ? 36 : 56,
+                                    width: _isScrolling ? 52 : 72,
+                                    height: _isScrolling ? 32 : 46,
                                     decoration: BoxDecoration(
                                       color: AppColors.primary,
-                                      borderRadius: BorderRadius.circular(_isScrolling ? 18 : 28),
+                                      borderRadius: BorderRadius.circular(_isScrolling ? 16 : 23),
                                     ),
                                   ),
                                 ),
