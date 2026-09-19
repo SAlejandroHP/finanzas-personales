@@ -225,9 +225,9 @@ class _AppShellState extends ConsumerState<AppShell> {
     int currentIndex = isCanvasOpen ? 4 : _currentIndex;
 
     final isNavbarVisible = ref.watch(isNavbarVisibleProvider);
-    // Ocultar la barra entera cuando el teclado inteligente esté activo
-    final smartInputHasText = ref.watch(smartInputHasTextProvider);
-    final bool hideNav = smartInputHasText;
+    // Ocultar la barra entera cuando el teclado esté abierto para que no flote arriba
+    final bool isKeyboardOpen = MediaQuery.of(context).viewInsets.bottom > 0;
+    final bool hideNav = isKeyboardOpen;
 
     return Scaffold(
       extendBody: true,
