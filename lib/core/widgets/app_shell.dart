@@ -250,13 +250,11 @@ class _AppShellState extends ConsumerState<AppShell> with WidgetsBindingObserver
           }
 
           // 2. Detectar la dirección real del scroll vertical
-          if (scrollNotification is ScrollUpdateNotification) {
-            if (scrollNotification.dragDetails != null && scrollNotification.scrollDelta != null) {
-              if (scrollNotification.scrollDelta! > 0) {
-                if (!_isScrolling) setState(() => _isScrolling = true);
-              } else if (scrollNotification.scrollDelta! < 0) {
-                if (_isScrolling) setState(() => _isScrolling = false);
-              }
+          if (scrollNotification is UserScrollNotification) {
+            if (scrollNotification.direction == ScrollDirection.reverse) {
+              if (!_isScrolling) setState(() => _isScrolling = true);
+            } else if (scrollNotification.direction == ScrollDirection.forward) {
+              if (_isScrolling) setState(() => _isScrolling = false);
             }
           }
           return false;
