@@ -102,15 +102,43 @@ class _BankGroupCardState extends State<BankGroupCard> {
                   const SizedBox(width: 12),
                   // Info del Banco
                   Expanded(
-                    child: Text(
-                      widget.bankName,
-                      style: GoogleFonts.montserrat(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w700,
-                        color: isDark ? Colors.white : AppColors.textPrimary,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(
+                          widget.bankName == 'Otras cuentas' && widget.accounts.length == 1 
+                              ? widget.accounts.first.nombre 
+                              : widget.bankName,
+                          style: GoogleFonts.montserrat(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w700,
+                            color: isDark ? Colors.white : AppColors.textPrimary,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        if (widget.accounts.length == 1 && widget.bankName != 'Otras cuentas')
+                          Text(
+                            widget.accounts.first.nombre,
+                            style: GoogleFonts.montserrat(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w500,
+                              color: isDark ? Colors.white70 : Colors.black54,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        if (widget.accounts.length > 1)
+                          Text(
+                            '${widget.accounts.length} cuentas',
+                            style: GoogleFonts.montserrat(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w500,
+                              color: isDark ? Colors.white70 : Colors.black54,
+                            ),
+                          ),
+                      ],
                     ),
                   ),
                   // Saldo Consolidado
