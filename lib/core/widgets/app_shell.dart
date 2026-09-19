@@ -55,7 +55,6 @@ class _AppShellState extends ConsumerState<AppShell> {
   StreamSubscription? _intentSub;
   StreamSubscription? _appLinksSub;
   bool _isScrolling = false;
-  Timer? _scrollTimer;
   late final PageController _pageController;
   int _currentIndex = 0;
 
@@ -96,10 +95,20 @@ class _AppShellState extends ConsumerState<AppShell> {
   }
 
   @override
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      if (_isScrolling) {
+        setState(() => _isScrolling = false);
+      }
+    }
+  }
+
+  @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _intentSub?.cancel();
     _appLinksSub?.cancel();
-    _scrollTimer?.cancel();
     _pageController.dispose();
     super.dispose();
   }
@@ -243,7 +252,6 @@ class _AppShellState extends ConsumerState<AppShell> {
             if (scrollNotification.direction == ScrollDirection.forward) {
               // El usuario hace scroll hacia ARRIBA (viendo contenido anterior)
               // Expandimos la barra inmediatamente
-              _scrollTimer?.cancel();
               if (_isScrolling) {
                 setState(() => _isScrolling = false);
               }
@@ -254,14 +262,6 @@ class _AppShellState extends ConsumerState<AppShell> {
                 setState(() => _isScrolling = true);
               }
             }
-          } else if (scrollNotification is ScrollEndNotification) {
-            // Cuando suelta el dedo y termina la inercia, restaurar después de un delay
-            _scrollTimer?.cancel();
-            _scrollTimer = Timer(const Duration(milliseconds: 300), () {
-              if (mounted && _isScrolling) {
-                setState(() => _isScrolling = false);
-              }
-            });
           }
           return false;
         },
