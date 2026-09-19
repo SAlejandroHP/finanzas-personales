@@ -305,11 +305,23 @@ class _AppShellState extends ConsumerState<AppShell> {
                     builder: (context, constraints) {
                       final double itemWidth = constraints.maxWidth / navItems.length;
                       
-                      return TweenAnimationBuilder<double>(
-                        tween: Tween<double>(end: currentIndex.toDouble()),
-                        duration: const Duration(milliseconds: 500),
-                        curve: Curves.fastOutSlowIn,
-                        builder: (context, animIndex, child) {
+                      return AnimatedBuilder(
+                        animation: _pageController,
+                        builder: (context, child) {
+                          // The raw page value from PageController, which smoothly tracks finger drags 1:1
+                          double pageValue = 0.0;
+                          if (_pageController.hasClients && _pageController.position.haveDimensions) {
+                            pageValue = _pageController.page ?? _currentIndex.toDouble();
+                          } else {
+                            pageValue = _currentIndex.toDouble();
+                          }
+                          
+                          // If canvas is open, override the visual index to 4.0
+                          // To animate to/from 4.0 smoothly while still tracking finger perfectly on 0-3,
+                          // we use AnimatedPositioned with a dynamic duration.
+                          bool forceAnimation = isCanvasOpen || (currentIndex == 4);
+                          double animIndex = isCanvasOpen ? 4.0 : pageValue;
+                          
                           return Stack(
                             clipBehavior: Clip.none,
                             children: [
@@ -353,7 +365,9 @@ class _AppShellState extends ConsumerState<AppShell> {
                                 ),
                               ),
                               // Óvalo indicador de activo integrado al navbar
-                              Positioned(
+                              AnimatedPositioned(
+                                duration: forceAnimation ? const Duration(milliseconds: 300) : Duration.zero,
+                                curve: Curves.easeOutCubic,
                                 left: animIndex * itemWidth,
                                 top: 0,
                                 bottom: 0,
@@ -375,11 +389,13 @@ class _AppShellState extends ConsumerState<AppShell> {
                               Positioned.fill(
                                 child: Row(
                                   children: navItems.map((item) {
+                                    // Make the icon light up smoothly if it's currently selected
+                                    bool isIconActive = (item.index == 4 && isCanvasOpen) || (!isCanvasOpen && _currentIndex == item.index);
                                     return _buildNavButton(
                                       context, 
                                       ref, 
                                       item, 
-                                      currentIndex == item.index,
+                                      isIconActive,
                                       _isScrolling,
                                     );
                                   }).toList(),
