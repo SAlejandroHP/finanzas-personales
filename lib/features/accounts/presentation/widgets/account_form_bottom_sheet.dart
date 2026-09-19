@@ -247,14 +247,14 @@ class _AccountFormBottomSheetState extends ConsumerState<AccountFormBottomSheet>
 
       final selectedAccount = ref.read(selectedAccountProvider);
       
-      double finalSaldoInicial = double.tryParse(_saldoInicialController.text) ?? 0.0;
+      double finalSaldoInicial = _evaluateExpressionSafely(_saldoInicialController.text.replaceAll(',', '')) ?? 0.0;
       double finalSaldoActual = selectedAccount?.saldoActual ?? finalSaldoInicial;
       double? limiteCredito;
       double? deudaActual;
 
       if (_selectedTipo == 'tarjeta_credito') {
-        limiteCredito = double.tryParse(_limiteCreditoController.text) ?? 0.0;
-        deudaActual = double.tryParse(_deudaActualController.text) ?? 0.0;
+        limiteCredito = _evaluateExpressionSafely(_limiteCreditoController.text.replaceAll(',', '')) ?? 0.0;
+        deudaActual = _evaluateExpressionSafely(_deudaActualController.text.replaceAll(',', '')) ?? 0.0;
         finalSaldoInicial = limiteCredito;
         // Si es edicion, actualizamos saldoActual en base a la nueva deuda y limite
         finalSaldoActual = limiteCredito - deudaActual;
