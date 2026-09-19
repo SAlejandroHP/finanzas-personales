@@ -105,7 +105,7 @@ Sé muy selectivo. Ofrece entre 1 y 3 acciones clave al final de tus respuestas 
     required String userQuery,
   }) async {
     final model = GenerativeModel(
-      model: 'llama-3.1-8b-instant',
+      model: 'llama3-8b-8192',
       apiKey: _apiKey,
       systemInstruction: Content.system(specialistPrompt),
     );
@@ -127,7 +127,7 @@ Escribe tu reporte técnico de especialista basándote únicamente en estos dato
   /// Crea e inicializa una sesión de chat para el Agente Supervisor
   ChatSession startSupervisorChat() {
     return GenerativeModel(
-      model: 'openai/gpt-oss-120b',
+      model: 'llama3-70b-8192',
       apiKey: _apiKey,
       systemInstruction: Content.system(_kSupervisorPrompt),
     ).startChat();

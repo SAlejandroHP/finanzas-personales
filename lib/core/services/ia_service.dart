@@ -168,7 +168,7 @@ class IAService {
     _apiKey = key;
 
     _model = GenerativeModel(
-      model: 'llama-3.1-8b-instant',
+      model: 'llama3-8b-8192',
       apiKey: key,
       generationConfig: GenerationConfig(
         responseMimeType: 'application/json',
@@ -183,7 +183,7 @@ class IAService {
   }) {
     if (!isAvailable) throw Exception('Servicio de IA no disponible: GROQ_API_KEY faltante.');
     return GenerativeModel(
-      model: 'openai/gpt-oss-120b',
+      model: 'llama3-70b-8192',
       apiKey: _apiKey,
       systemInstruction: Content.system(systemInstruction),
     ).startChat(history: history);

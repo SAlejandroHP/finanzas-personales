@@ -50,7 +50,7 @@ Si la notificación no parece una transacción financiera válida, devuelve un J
 ''';
 
     _model = GenerativeModel(
-      model: 'llama-3.1-8b-instant',
+      model: 'llama3-8b-8192',
       apiKey: key,
       generationConfig: GenerationConfig(
         responseMimeType: 'application/json',
