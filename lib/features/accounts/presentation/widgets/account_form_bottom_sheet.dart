@@ -32,9 +32,9 @@ class AccountFormBottomSheet extends ConsumerStatefulWidget {
 class _AccountFormBottomSheetState extends ConsumerState<AccountFormBottomSheet> {
   final _formKey = GlobalKey<FormState>();
   final _nombreController = TextEditingController();
-  final _saldoInicialController = TextEditingController();
-  final _limiteCreditoController = TextEditingController();
-  final _deudaActualController = TextEditingController(text: '0');
+  final _saldoInicialController = TextEditingController(text: '0.00');
+  final _limiteCreditoController = TextEditingController(text: '0.00');
+  final _deudaActualController = TextEditingController(text: '0.00');
   final _lastFourController = TextEditingController();
   final _tagsController = TextEditingController();
   List<String> _tags = [];
