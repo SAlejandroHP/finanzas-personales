@@ -8,6 +8,7 @@ class TransactionFilters {
   final double? minAmount;
   final double? maxAmount;
   final DateTimeRange? dateRange;
+  final String? searchQuery;
 
   TransactionFilters({
     this.status,
@@ -16,6 +17,7 @@ class TransactionFilters {
     this.minAmount,
     this.maxAmount,
     this.dateRange,
+    this.searchQuery,
   });
 
   TransactionFilters copyWith({
@@ -25,6 +27,7 @@ class TransactionFilters {
     double? minAmount,
     double? maxAmount,
     DateTimeRange? dateRange,
+    String? searchQuery,
   }) {
     return TransactionFilters(
       status: status ?? this.status,
@@ -33,6 +36,7 @@ class TransactionFilters {
       minAmount: minAmount ?? this.minAmount,
       maxAmount: maxAmount ?? this.maxAmount,
       dateRange: dateRange ?? this.dateRange,
+      searchQuery: searchQuery ?? this.searchQuery,
     );
   }
 

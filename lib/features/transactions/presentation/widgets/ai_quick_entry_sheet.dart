@@ -9,7 +9,7 @@ import '../../../../core/widgets/app_toast.dart';
 import '../../../accounts/presentation/providers/accounts_provider.dart';
 import '../../../categories/presentation/providers/categories_provider.dart';
 import '../providers/transactions_provider.dart';
-import '../models/transaction_model.dart';
+import '../../models/transaction_model.dart';
 import '../../../../core/network/supabase_client.dart';
 
 class AiQuickEntrySheet extends ConsumerStatefulWidget {
@@ -111,11 +111,11 @@ class _AiQuickEntrySheetState extends ConsumerState<AiQuickEntrySheet> {
       
       if (mounted) {
         Navigator.pop(context);
-        showAppToast(context, 'Movimiento registrado con éxito', icon: Icons.check_circle_outline);
+        showAppToast(context, message: 'Movimiento registrado con éxito', type: ToastType.success);
       }
     } catch (e) {
       if (mounted) {
-        showAppToast(context, 'Error al registrar: \${e.toString()}', isError: true);
+        showAppToast(context, message: 'Error al registrar: \${e.toString()}', type: ToastType.error);
       }
     } finally {
       if (mounted) {

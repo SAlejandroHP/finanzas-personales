@@ -8,7 +8,6 @@ import '../../models/transaction_model.dart';
 import '../providers/transactions_provider.dart';
 import '../widgets/transaction_form_sheet.dart';
 import '../widgets/transaction_tile.dart';
-import '../widgets/spotlight_search_overlay.dart';
 import '../providers/transaction_filters_provider.dart';
 import '../../../../core/services/finance_service.dart';
 import '../../../../core/utils/download_helper.dart';
@@ -40,29 +39,29 @@ class TransactionListScreen extends ConsumerStatefulWidget {
 
 class _TransactionListScreenState extends ConsumerState<TransactionListScreen> {
   final PageController _pageController = PageController();
+  final TextEditingController _searchController = TextEditingController();
+  final FocusNode _searchFocus = FocusNode();
   int _currentPage = 0;
   bool _showArchived = false;
-  bool _isSpotlightOpen = false;
+  bool _isSearchOpen = false;
 
-  void _openSpotlight() {
-    if (_isSpotlightOpen) return;
-    _isSpotlightOpen = true;
-    
-    Navigator.of(context).push(
-      PageRouteBuilder(
-        opaque: false,
-        pageBuilder: (context, _, __) => const SpotlightSearchOverlay(),
-        transitionsBuilder: (context, animation, secondaryAnimation, child) {
-          return FadeTransition(opacity: animation, child: child);
-        },
-      ),
-    ).then((_) {
-      _isSpotlightOpen = false;
+  void _toggleSearch() {
+    setState(() {
+      _isSearchOpen = !_isSearchOpen;
+      if (!_isSearchOpen) {
+        _searchController.clear();
+        _searchFocus.unfocus();
+        ref.read(transactionFiltersProvider.notifier).update((state) => state.copyWith(searchQuery: ''));
+      } else {
+        _searchFocus.requestFocus();
+      }
     });
   }
 
   @override
   void dispose() {
+    _searchController.dispose();
+    _searchFocus.dispose();
 
     super.dispose();
   }
@@ -112,7 +111,7 @@ class _TransactionListScreenState extends ConsumerState<TransactionListScreen> {
                   Row(
                     children: [
                       _HeaderAction(
-                        onTap: _openSpotlight,
+                        onTap: _toggleSearch,
                         icon: Icons.search_rounded,
                       ),
                       const SizedBox(width: 8),
@@ -120,6 +119,53 @@ class _TransactionListScreenState extends ConsumerState<TransactionListScreen> {
                     ],
                   ),
                 ],
+              ),
+            ),
+          ),
+          
+          // Inline Search Bar
+          AnimatedContainer(
+            duration: const Duration(milliseconds: 300),
+            curve: Curves.easeInOut,
+            height: _isSearchOpen ? 60 : 0,
+            child: ClipRect(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                child: TextField(
+                  controller: _searchController,
+                  focusNode: _searchFocus,
+                  onChanged: (val) {
+                    ref.read(transactionFiltersProvider.notifier).update((state) => state.copyWith(searchQuery: val));
+                  },
+                  style: TextStyle(
+                    color: isDark ? Colors.white : AppColors.textPrimary,
+                    fontSize: 15,
+                  ),
+                  decoration: InputDecoration(
+                    hintText: 'Buscar monto, categoría, estatus...',
+                    hintStyle: TextStyle(
+                      color: isDark ? Colors.white54 : Colors.black54,
+                      fontSize: 14,
+                    ),
+                    prefixIcon: Icon(Icons.search, color: isDark ? Colors.white54 : Colors.black54, size: 20),
+                    suffixIcon: _searchController.text.isNotEmpty 
+                        ? IconButton(
+                            icon: Icon(Icons.clear, color: isDark ? Colors.white54 : Colors.black54, size: 18),
+                            onPressed: () {
+                              _searchController.clear();
+                              ref.read(transactionFiltersProvider.notifier).update((state) => state.copyWith(searchQuery: ''));
+                            },
+                          )
+                        : null,
+                    filled: true,
+                    fillColor: isDark ? const Color(0xFF1E1E1E) : Colors.grey[100],
+                    contentPadding: const EdgeInsets.symmetric(vertical: 0),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide.none,
+                    ),
+                  ),
+                ),
               ),
             ),
           ),
@@ -195,8 +241,8 @@ class _TransactionListScreenState extends ConsumerState<TransactionListScreen> {
               Expanded(
                 child: NotificationListener<ScrollUpdateNotification>(
                   onNotification: (notification) {
-                    if (notification.metrics.pixels < -60 && notification.dragDetails != null && !_isSpotlightOpen) {
-                      _openSpotlight();
+                    if (notification.metrics.pixels < -60 && notification.dragDetails != null && !_isSearchOpen) {
+                      _toggleSearch();
                     }
                     return false;
                   },

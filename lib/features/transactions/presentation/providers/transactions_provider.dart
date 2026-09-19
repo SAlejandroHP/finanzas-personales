@@ -81,6 +81,23 @@ final filteredTransactionsProvider = Provider<AsyncValue<List<TransactionModel>>
           return false;
         }
       }
+      
+      // Filtro de Búsqueda General (Spotlight inline)
+      if (filters.searchQuery != null && filters.searchQuery!.trim().isNotEmpty) {
+        final query = filters.searchQuery!.toLowerCase().trim();
+        final matchesDesc = t.descripcion?.toLowerCase().contains(query) ?? false;
+        final matchesCat = t.categoriaId.toLowerCase().contains(query);
+        final matchesStatus = t.estado.toLowerCase().contains(query);
+        final matchesType = t.tipo.toLowerCase().contains(query);
+        final matchesAmount = t.monto.toString().contains(query);
+        final matchesAcc = t.cuentaOrigenId.toLowerCase().contains(query);
+        final matchesDest = t.cuentaDestinoId?.toLowerCase().contains(query) ?? false;
+        
+        if (!matchesDesc && !matchesCat && !matchesStatus && !matchesType && !matchesAmount && !matchesAcc && !matchesDest) {
+          return false;
+        }
+      }
+      
       return true;
     }).toList();
 
