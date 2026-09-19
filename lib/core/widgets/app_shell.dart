@@ -1,4 +1,5 @@
 import 'dart:ui';
+import 'dart:convert';
 import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -198,6 +199,8 @@ class _AppShellState extends ConsumerState<AppShell> with WidgetsBindingObserver
     final double bottomMargin = isPwa ? AppColors.pagePadding : 0.0;
     
     final isCanvasOpen = ref.watch(isCanvasOpenProvider);
+    final userAsync = ref.watch(currentUserProvider);
+    final avatarUrl = userAsync.value?.userMetadata?['avatar_url'] as String?;
 
     // Ítems de navegación con "Agregar" como opción
     final navItems = [
@@ -391,6 +394,7 @@ class _AppShellState extends ConsumerState<AppShell> with WidgetsBindingObserver
                                       item, 
                                       isIconActive,
                                       _isScrolling,
+                                      avatarUrl,
                                     );
                                   }).toList(),
                                 ),
@@ -415,6 +419,7 @@ class _AppShellState extends ConsumerState<AppShell> with WidgetsBindingObserver
     NavItem item,
     bool isActive,
     bool isScrolling,
+    String? avatarUrl,
   ) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
@@ -463,13 +468,29 @@ class _AppShellState extends ConsumerState<AppShell> with WidgetsBindingObserver
                   scale: isScrolling ? 0.85 : 1.0,
                   duration: const Duration(milliseconds: 300),
                   curve: Curves.easeOutCubic,
-                  child: Icon(
-                    item.icon,
-                    size: 28, // Proporciones de Instagram Island
-                    color: isActive 
-                        ? Colors.white 
-                        : (isDark ? Colors.white54 : Colors.grey[600]),
-                  ),
+                  child: (item.label == 'Ajustes' && avatarUrl != null)
+                      ? Container(
+                          width: 26,
+                          height: 26,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            border: Border.all(
+                              color: isActive ? Colors.white : Colors.transparent,
+                              width: isActive ? 1.5 : 0,
+                            ),
+                            image: DecorationImage(
+                              image: MemoryImage(base64Decode(avatarUrl.split(',').last)),
+                              fit: BoxFit.cover,
+                            ),
+                          ),
+                        )
+                      : Icon(
+                          item.icon,
+                          size: 28, // Proporciones de Instagram Island
+                          color: isActive 
+                              ? Colors.white 
+                              : (isDark ? Colors.white54 : Colors.grey[600]),
+                        ),
                 ),
               ),
             ),
