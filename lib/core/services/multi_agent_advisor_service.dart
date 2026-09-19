@@ -1,5 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'groq_service.dart';
+import 'package:google_generative_ai/google_generative_ai.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 /// Clase que contiene la respuesta consolidada del sistema Multi-Agente
@@ -23,9 +23,9 @@ class MultiAgentAdvisorService {
   late final String _apiKey;
 
   MultiAgentAdvisorService({String? apiKey}) {
-    final key = apiKey ?? dotenv.env['GROQ_API_KEY'] ?? '';
+    final key = apiKey ?? dotenv.env['GEMINI_API_KEY'] ?? dotenv.env['GEMINI_API_KEY'] ?? '';
     if (key.isEmpty) {
-      throw Exception('GROQ_API_KEY no encontrada.');
+      throw Exception('GEMINI_API_KEY no encontrada.');
     }
     _apiKey = key;
   }
@@ -105,7 +105,7 @@ Sé muy selectivo. Ofrece entre 1 y 3 acciones clave al final de tus respuestas 
     required String userQuery,
   }) async {
     final model = GenerativeModel(
-      model: 'llama3-8b-8192',
+      model: 'gemini-1.5-flash',
       apiKey: _apiKey,
       systemInstruction: Content.system(specialistPrompt),
     );
@@ -127,7 +127,7 @@ Escribe tu reporte técnico de especialista basándote únicamente en estos dato
   /// Crea e inicializa una sesión de chat para el Agente Supervisor
   ChatSession startSupervisorChat() {
     return GenerativeModel(
-      model: 'llama3-70b-8192',
+      model: 'gemini-1.5-flash',
       apiKey: _apiKey,
       systemInstruction: Content.system(_kSupervisorPrompt),
     ).startChat();

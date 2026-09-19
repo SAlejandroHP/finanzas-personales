@@ -1575,7 +1575,6 @@ Widget _buildPendingInvitations(BuildContext context, WidgetRef ref, bool isDark
             ),
           );
         }).toList(),
-      ),
     );
   }
 

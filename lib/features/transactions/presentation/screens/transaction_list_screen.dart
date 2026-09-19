@@ -221,7 +221,10 @@ class _TransactionListScreenState extends ConsumerState<TransactionListScreen> {
                     : Column(
                         children: [
                           _buildCommitmentSummaryCard(
-                            summary: summary,
+                            title: 'Compromisos (Pendientes)',
+                            total: summary.pendingTotal,
+                            income: summary.pendingIncome,
+                            expenses: summary.pendingExpenses,
                             isDark: isDark,
                           ),
                           const SizedBox(height: 4),
@@ -229,14 +232,16 @@ class _TransactionListScreenState extends ConsumerState<TransactionListScreen> {
                         ],
                       ),
                 ),
-              ],
+              ),
             ],
-          ),
-        ),
-      ), // Cierra async when
-    ), // Cierra Expanded
-  ], // Cierra children de Column
-), // Cierra Column
+          );
+        },
+        loading: () => const Center(child: CircularProgressIndicator()),
+        error: (err, stack) => Center(child: Text('Error: $err')),
+      ),
+    ),
+        ],
+      ),
     );
   }
 

@@ -1,5 +1,5 @@
 import 'dart:convert';
-import 'groq_service.dart';
+import 'package:google_generative_ai/google_generative_ai.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import '../../features/accounts/models/account_model.dart';
 
@@ -30,9 +30,9 @@ class NotificationExtractionService {
   late final GenerativeModel _model;
 
   NotificationExtractionService({String? apiKey}) {
-    final key = apiKey ?? dotenv.env['GROQ_API_KEY'] ?? '';
+    final key = apiKey ?? dotenv.env['GEMINI_API_KEY'] ?? dotenv.env['GEMINI_API_KEY'] ?? '';
     if (key.isEmpty) {
-      throw Exception('GROQ_API_KEY no encontrada.');
+      throw Exception('GEMINI_API_KEY no encontrada.');
     }
 
     // Prompt estructurado para la IA como fallback
@@ -50,7 +50,7 @@ Si la notificación no parece una transacción financiera válida, devuelve un J
 ''';
 
     _model = GenerativeModel(
-      model: 'llama3-8b-8192',
+      model: 'gemini-1.5-flash',
       apiKey: key,
       generationConfig: GenerationConfig(
         responseMimeType: 'application/json',

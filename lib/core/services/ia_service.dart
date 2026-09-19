@@ -1,6 +1,6 @@
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
-import 'groq_service.dart';
+import 'package:google_generative_ai/google_generative_ai.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import '../../features/accounts/models/account_model.dart';
 import '../../features/categories/models/category_model.dart';
@@ -158,17 +158,17 @@ class IAService {
   bool get isAvailable => _apiKey.isNotEmpty;
 
   IAService({String? apiKey}) {
-    final key = apiKey ?? dotenv.maybeGet('GROQ_API_KEY') ?? '';
+    final key = apiKey ?? dotenv.maybeGet('GEMINI_API_KEY') ?? '';
     if (key.isEmpty) {
       // No lanzar excepción — el servicio simplemente no estará disponible.
       // Esto evita que un .env faltante en producción colapse el dashboard.
-      debugPrint('[IAService] GROQ_API_KEY no encontrada. El asistente de IA estará deshabilitado.');
+      debugPrint('[IAService] GEMINI_API_KEY no encontrada. El asistente de IA estará deshabilitado.');
       return;
     }
     _apiKey = key;
 
     _model = GenerativeModel(
-      model: 'llama3-8b-8192',
+      model: 'gemini-1.5-flash',
       apiKey: key,
       generationConfig: GenerationConfig(
         responseMimeType: 'application/json',
@@ -181,9 +181,9 @@ class IAService {
     required String systemInstruction,
     List<Content>? history,
   }) {
-    if (!isAvailable) throw Exception('Servicio de IA no disponible: GROQ_API_KEY faltante.');
+    if (!isAvailable) throw Exception('Servicio de IA no disponible: GEMINI_API_KEY faltante.');
     return GenerativeModel(
-      model: 'llama3-70b-8192',
+      model: 'gemini-1.5-flash',
       apiKey: _apiKey,
       systemInstruction: Content.system(systemInstruction),
     ).startChat(history: history);
