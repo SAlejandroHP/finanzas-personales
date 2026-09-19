@@ -294,11 +294,11 @@ class _AppShellState extends ConsumerState<AppShell> {
                 child: AnimatedContainer(
                   duration: const Duration(milliseconds: 300),
                   curve: Curves.easeOutCubic,
-                  height: _isScrolling ? 44 : 52, 
+                  height: _isScrolling ? 40 : 50, 
                   width: double.infinity,
                   margin: EdgeInsets.only(
-                    left: _isScrolling ? 60 : 20, 
-                    right: _isScrolling ? 60 : 20, 
+                    left: _isScrolling ? 72 : 16, 
+                    right: _isScrolling ? 72 : 16, 
                     bottom: bottomMargin + 8.0, 
                   ),
                   child: LayoutBuilder(
@@ -376,11 +376,11 @@ class _AppShellState extends ConsumerState<AppShell> {
                                   child: AnimatedContainer(
                                     duration: const Duration(milliseconds: 300),
                                     curve: Curves.easeOutCubic,
-                                    width: _isScrolling ? 40 : 48,
-                                    height: _isScrolling ? 32 : 36,
+                                    width: _isScrolling ? 36 : 46,
+                                    height: _isScrolling ? 28 : 38,
                                     decoration: BoxDecoration(
                                       color: AppColors.primary,
-                                      borderRadius: BorderRadius.circular(_isScrolling ? 16 : 18),
+                                      borderRadius: BorderRadius.circular(_isScrolling ? 14 : 19),
                                     ),
                                   ),
                                 ),
@@ -460,7 +460,7 @@ class _AppShellState extends ConsumerState<AppShell> {
                   curve: Curves.easeOutCubic,
                   child: Icon(
                     item.icon,
-                    size: 24, // El tamaño base se escala suavemente
+                    size: 26, // Exactamente igual a las proporciones de Instagram
                     color: isActive 
                         ? Colors.white 
                         : (isDark ? Colors.white54 : Colors.grey[600]),
