@@ -66,7 +66,6 @@ class _AppShellState extends ConsumerState<AppShell> with WidgetsBindingObserver
     _initSharingIntentListener();
     _initQuickActions();
     _initAppLinks();
-  WidgetsBinding.instance.addObserver(this);
   }
 
   void _initAppLinks() {
@@ -288,25 +287,20 @@ class _AppShellState extends ConsumerState<AppShell> with WidgetsBindingObserver
       ),
       bottomNavigationBar: !hideNav
           ? AnimatedSlide(
-              offset: (isNavbarVisible && !_isScrolling) ? Offset.zero : const Offset(0, 1.5),
+              offset: isNavbarVisible ? Offset.zero : const Offset(0, 2),
               duration: const Duration(milliseconds: 300),
-              curve: Curves.easeOutCubic,
+              curve: Curves.easeInOut,
               child: SafeArea(
                 bottom: true,
-                child: Container(
-                  height: 50,
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 300),
+                  curve: Curves.easeOutCubic,
+                  height: _isScrolling ? 40 : 50, 
                   width: double.infinity,
-                  margin: EdgeInsets.only(bottom: bottomMargin),
-                  decoration: BoxDecoration(
-                    color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
-                    border: Border(
-                      top: BorderSide(
-                        color: isDark 
-                            ? Colors.white.withValues(alpha: 0.1) 
-                            : Colors.black.withValues(alpha: 0.05),
-                        width: 1.0,
-                      ),
-                    ),
+                  margin: EdgeInsets.only(
+                    left: _isScrolling ? 72 : 16, 
+                    right: _isScrolling ? 72 : 16, 
+                    bottom: bottomMargin + 8.0, 
                   ),
                   child: LayoutBuilder(
                     builder: (context, constraints) {
@@ -315,6 +309,7 @@ class _AppShellState extends ConsumerState<AppShell> with WidgetsBindingObserver
                       return AnimatedBuilder(
                         animation: _pageController,
                         builder: (context, child) {
+                          // The raw page value from PageController, which smoothly tracks finger drags 1:1
                           double pageValue = 0.0;
                           if (_pageController.hasClients && _pageController.position.haveDimensions) {
                             pageValue = _pageController.page ?? _currentIndex.toDouble();
@@ -322,50 +317,80 @@ class _AppShellState extends ConsumerState<AppShell> with WidgetsBindingObserver
                             pageValue = _currentIndex.toDouble();
                           }
                           
+                          // If canvas is open, override the visual index to 4.0
+                          // To animate to/from 4.0 smoothly while still tracking finger perfectly on 0-3,
+                          // we use AnimatedPositioned with a dynamic duration.
                           bool forceAnimation = isCanvasOpen || (currentIndex == 4) || _isTappingNav;
                           double animIndex = isCanvasOpen ? 4.0 : pageValue;
                           
                           return Stack(
                             clipBehavior: Clip.none,
                             children: [
-                              forceAnimation
-                                ? AnimatedPositioned(
-                                    duration: const Duration(milliseconds: 300),
-                                    curve: Curves.easeOutCubic,
-                                    left: animIndex * itemWidth,
-                                    top: 0,
-                                    bottom: 0,
-                                    width: itemWidth,
-                                    child: Center(
-                                      child: Container(
-                                        width: 46,
-                                        height: 38,
-                                        decoration: BoxDecoration(
-                                          color: AppColors.primary,
-                                          borderRadius: BorderRadius.circular(19),
-                                        ),
+                              // Fondo Liquid Glass del Nav Island
+                              Positioned.fill(
+                                child: Container(
+                                  decoration: BoxDecoration(
+                                    borderRadius: BorderRadius.circular(30.0),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: Colors.black.withValues(alpha: 0.05),
+                                        blurRadius: 24,
                                       ),
-                                    ),
-                                  )
-                                : Positioned(
-                                    left: animIndex * itemWidth,
-                                    top: 0,
-                                    bottom: 0,
-                                    width: itemWidth,
-                                    child: Center(
+                                      BoxShadow(
+                                        color: Colors.black.withValues(alpha: 0.10),
+                                        blurRadius: 12,
+                                        offset: const Offset(0, 6),
+                                      ),
+                                    ],
+                                  ),
+                                  child: ClipRRect(
+                                    borderRadius: BorderRadius.circular(30.0),
+                                    child: BackdropFilter(
+                                      filter: ImageFilter.blur(sigmaX: 24.0, sigmaY: 24.0),
                                       child: Container(
-                                        width: 46,
-                                        height: 38,
                                         decoration: BoxDecoration(
-                                          color: AppColors.primary,
-                                          borderRadius: BorderRadius.circular(19),
+                                          color: isDark 
+                                              ? const Color(0xFF1E1E1E).withValues(alpha: 0.45)
+                                              : Colors.white.withValues(alpha: 0.40),
+                                          border: Border.all(
+                                            color: isDark 
+                                                ? Colors.white.withValues(alpha: 0.20) 
+                                                : Colors.white.withValues(alpha: 0.60),
+                                            width: 1.5,
+                                          ),
+                                          borderRadius: BorderRadius.circular(30.0),
                                         ),
                                       ),
                                     ),
                                   ),
+                                ),
+                              ),
+                              // Óvalo indicador de activo integrado al navbar
+                              AnimatedPositioned(
+                                duration: forceAnimation ? const Duration(milliseconds: 300) : Duration.zero,
+                                curve: Curves.easeOutCubic,
+                                left: animIndex * itemWidth,
+                                top: 0,
+                                bottom: 0,
+                                width: itemWidth,
+                                child: Center(
+                                  child: AnimatedContainer(
+                                    duration: const Duration(milliseconds: 300),
+                                    curve: Curves.easeOutCubic,
+                                    width: _isScrolling ? 36 : 46,
+                                    height: _isScrolling ? 28 : 38,
+                                    decoration: BoxDecoration(
+                                      color: AppColors.primary,
+                                      borderRadius: BorderRadius.circular(_isScrolling ? 14 : 19),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              // Fila de botones de navegación
                               Positioned.fill(
                                 child: Row(
                                   children: navItems.map((item) {
+                                    // Make the icon light up smoothly if it's currently selected
                                     bool isIconActive = (item.index == 4 && isCanvasOpen) || (!isCanvasOpen && _currentIndex == item.index);
                                     return _buildNavButton(
                                       context, 
@@ -451,13 +476,18 @@ class _AppShellState extends ConsumerState<AppShell> with WidgetsBindingObserver
               left: 0,
               right: 0,
               child: Center(
-                child: Icon(
+                child: AnimatedScale(
+                  scale: isScrolling ? 0.85 : 1.0,
+                  duration: const Duration(milliseconds: 300),
+                  curve: Curves.easeOutCubic,
+                  child: Icon(
                     item.icon,
                     size: 26, // Exactamente igual a las proporciones de Instagram
                     color: isActive 
                         ? Colors.white 
                         : (isDark ? Colors.white54 : Colors.grey[600]),
                   ),
+                ),
               ),
             ),
           ],
