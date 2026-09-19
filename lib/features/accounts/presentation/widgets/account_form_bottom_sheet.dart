@@ -281,7 +281,11 @@ class _AccountFormBottomSheetState extends ConsumerState<AccountFormBottomSheet>
       );
 
       if (selectedAccount != null) {
-        await ref.read(accountsNotifierProvider.notifier).updateAccount(account);
+        await ref.read(accountsNotifierProvider.notifier).updateAccount(
+          account,
+          limiteCredito: limiteCredito,
+          deudaActual: deudaActual,
+        );
       } else {
         await ref.read(accountsNotifierProvider.notifier).createAccount(
           account,

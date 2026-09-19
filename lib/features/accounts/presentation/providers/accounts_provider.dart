@@ -159,12 +159,52 @@ class AccountsNotifier extends StateNotifier<AsyncValue<void>> {
   }
 
   /// Actualiza una cuenta existente
-  Future<void> updateAccount(AccountModel account) async {
+  Future<void> updateAccount(AccountModel account, {double? limiteCredito, double? deudaActual}) async {
     _setLoading(true);
     _clearError();
 
     try {
-      await _repository.updateAccount(account);
+      // Si es TC, el saldo inicial es el límite y el saldo actual es límite - deuda
+      AccountModel accountToSave = account;
+      if (account.tipo == 'tarjeta_credito' && limiteCredito != null && deudaActual != null) {
+        accountToSave = account.copyWith(
+          saldoInicial: limiteCredito,
+          saldoActual: limiteCredito - deudaActual,
+        );
+      }
+
+      await _repository.updateAccount(accountToSave);
+      
+      // Actualizar deuda asociada si existe
+      if (account.tipo == 'tarjeta_credito' && limiteCredito != null && deudaActual != null) {
+        final debtsRepo = _ref.read(debtsRepositoryProvider);
+        final debts = await debtsRepo.getUserDebts();
+        final associatedDebt = debts.where((d) => d.cuentaAsociadaId == account.id).firstOrNull;
+        
+        if (associatedDebt != null) {
+          final updatedDebt = associatedDebt.copyWith(
+            montoTotal: limiteCredito,
+            montoRestante: deudaActual,
+            nombre: "Tarjeta ${account.nombre}", // Actualizamos nombre por si cambió
+          );
+          await debtsRepo.updateDebt(updatedDebt);
+        } else {
+          // Si por alguna razón no se creó, la creamos
+          final debt = DebtModel(
+            id: const Uuid().v4(),
+            userId: account.userId,
+            nombre: "Tarjeta ${account.nombre}",
+            montoTotal: limiteCredito,
+            montoRestante: deudaActual,
+            tipo: 'prestamo_bancario',
+            cuentaAsociadaId: account.id,
+            estado: 'activa',
+            createdAt: DateTime.now(),
+          );
+          await debtsRepo.createDebt(debt);
+        }
+      }
+      
       state = const AsyncValue.data(null);
       
       // FinanceService: refrescar providers
