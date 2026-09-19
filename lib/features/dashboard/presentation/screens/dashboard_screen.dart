@@ -1505,8 +1505,9 @@ Widget _buildPendingInvitations(BuildContext context, WidgetRef ref, bool isDark
                           fontSize: 14,
                           color: isDark ? Colors.white : Colors.black87,
                         ),
-                        maxLines: 1,
+                        maxLines: 3,
                         overflow: TextOverflow.ellipsis,
+                        
                       ),
                       const SizedBox(height: 4),
                       Text(
@@ -1516,8 +1517,9 @@ Widget _buildPendingInvitations(BuildContext context, WidgetRef ref, bool isDark
                           fontWeight: FontWeight.w500,
                           color: isDark ? Colors.white54 : Colors.black54,
                         ),
-                        maxLines: 1,
+                        maxLines: 3,
                         overflow: TextOverflow.ellipsis,
+                        
                       ),
                     ],
                   ),

@@ -347,8 +347,7 @@ class TransactionTile extends ConsumerWidget {
                     children: [
                       Text(
                         displayCategoryName ?? _getTipoFormatted(transaction.tipo),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
+                        maxLines: 3, overflow: TextOverflow.ellipsis,
                         style: GoogleFonts.montserrat(
                           fontWeight: FontWeight.w600,
                           fontSize: 13,
@@ -367,8 +366,7 @@ class TransactionTile extends ConsumerWidget {
                           Expanded(
                             child: Text(
                               '${displayAccountName ?? "Cuenta general"}${transaction.descripcion?.isNotEmpty == true ? " • ${transaction.descripcion}" : ""}',
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
+                              maxLines: 3, overflow: TextOverflow.ellipsis,
                               style: GoogleFonts.montserrat(
                                 color: isDark ? Colors.white60 : Colors.grey[600],
                                 fontSize: 10,
