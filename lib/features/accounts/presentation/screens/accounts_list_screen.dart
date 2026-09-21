@@ -1,3 +1,4 @@
+import 'package:finanzas/core/widgets/app_shell.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -43,7 +44,9 @@ class AccountsListScreen extends ConsumerWidget {
                   Row(
                     children: [
                       IconButton(
-                        onPressed: () => Navigator.pop(context),
+                        onPressed: () {
+                          ref.read(appNavigationProvider.notifier).state = 3;
+                        },
                         icon: Icon(
                           Icons.arrow_back_ios_new_rounded,
                           color: isDark ? Colors.white : AppColors.textPrimary,
@@ -343,7 +346,7 @@ class AccountsListScreen extends ConsumerWidget {
           ),
           const SizedBox(height: 16),
           ElevatedButton(
-            onPressed: () => ref.read(financeServiceProvider).refreshAll(),
+            onPressed: () => ref.read(financeServiceProvider).refreshAll(null, true),
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.primary,
               foregroundColor: Colors.white,

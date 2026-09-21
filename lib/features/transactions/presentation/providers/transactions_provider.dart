@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../data/transactions_repository.dart';
 import '../../models/transaction_model.dart';
 import '../../../accounts/presentation/providers/accounts_provider.dart'; // Corrección v4
+import '../../../categories/presentation/providers/categories_provider.dart';
 import '../../../../core/services/finance_service.dart';
 import './transaction_filters_provider.dart';
 
@@ -42,8 +43,18 @@ final transactionsListProvider =
 final filteredTransactionsProvider = Provider<AsyncValue<List<TransactionModel>>>((ref) {
   final transactionsAsync = ref.watch(transactionsListProvider);
   final filters = ref.watch(transactionFiltersProvider);
+  
+  // Obtenemos categorías y cuentas para poder buscar por sus nombres reales
+  final categoriesAsync = ref.watch(categoriesListProvider);
+  final accountsAsync = ref.watch(accountsListProvider);
 
   return transactionsAsync.whenData((transactions) {
+    final categories = categoriesAsync.asData?.value ?? [];
+    final accounts = accountsAsync.asData?.value ?? [];
+    
+    final categoriesMap = {for (var c in categories) c.id: c.nombre.toLowerCase()};
+    final accountsMap = {for (var a in accounts) a.id: a.nombre.toLowerCase()};
+
     final now = DateTime.now();
     final startOfMonth = DateTime(now.year, now.month, 1);
 
@@ -85,15 +96,24 @@ final filteredTransactionsProvider = Provider<AsyncValue<List<TransactionModel>>
       // Filtro de Búsqueda General (Spotlight inline)
       if (filters.searchQuery != null && filters.searchQuery!.trim().isNotEmpty) {
         final query = filters.searchQuery!.toLowerCase().trim();
-        final matchesDesc = t.descripcion?.toLowerCase().contains(query) ?? false;
-        final matchesCat = t.categoriaId?.toLowerCase().contains(query) ?? false;
-        final matchesStatus = t.estado.toLowerCase().contains(query);
-        final matchesType = t.tipo.toLowerCase().contains(query);
-        final matchesAmount = t.monto.toString().contains(query);
-        final matchesAcc = t.cuentaOrigenId.toLowerCase().contains(query);
-        final matchesDest = t.cuentaDestinoId?.toLowerCase().contains(query) ?? false;
         
-        if (!matchesDesc && !matchesCat && !matchesStatus && !matchesType && !matchesAmount && !matchesAcc && !matchesDest) {
+        final descStr = t.descripcion?.toLowerCase() ?? '';
+        final catName = t.categoriaId != null ? (categoriesMap[t.categoriaId] ?? '') : '';
+        final accName = accountsMap[t.cuentaOrigenId] ?? '';
+        final statusStr = t.estado.toLowerCase();
+        final typeStr = t.tipo.toLowerCase();
+        final amountStr = t.monto.toString();
+        
+        final matchesDesc = descStr.contains(query);
+        final matchesCat = catName.contains(query);
+        final matchesAcc = accName.contains(query);
+        final mappedStatus = statusStr == 'completa' ? 'pagado' : statusStr;
+        final mappedStatusFem = statusStr == 'completa' ? 'pagada' : statusStr;
+        final matchesStatus = statusStr.contains(query) || mappedStatus.contains(query) || mappedStatusFem.contains(query);
+        final matchesType = typeStr.contains(query);
+        final matchesAmount = amountStr.contains(query);
+        
+        if (!matchesDesc && !matchesCat && !matchesAcc && !matchesStatus && !matchesType && !matchesAmount) {
           return false;
         }
       }

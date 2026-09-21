@@ -53,6 +53,17 @@ class TransactionsRepository {
         )
         .subscribe();
   }
+  /// Fuerza una actualización manual de los datos (sin usar realtime)
+  Future<void> refresh() async {
+    try {
+      final transactions = await getUserTransactions();
+      if (!_transactionsController.isClosed) {
+        _transactionsController.add(transactions);
+      }
+    } catch (e) {
+      // Ignore
+    }
+  }
 
   Future<List<TransactionModel>> getUserTransactions() async {
     try {

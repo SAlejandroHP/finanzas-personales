@@ -50,7 +50,7 @@ Si la notificación no parece una transacción financiera válida, devuelve un J
 ''';
 
     _model = GenerativeModel(
-      model: 'gemini-1.5-flash',
+      model: 'gemini-2.5-flash',
       apiKey: key,
       generationConfig: GenerationConfig(
         responseMimeType: 'application/json',

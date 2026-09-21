@@ -4,6 +4,7 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:quick_actions/quick_actions.dart';
 import 'package:app_links/app_links.dart';
@@ -60,6 +61,27 @@ class _AppShellState extends ConsumerState<AppShell> with WidgetsBindingObserver
   late final PageController _pageController;
   int _currentIndex = 0;
 
+  ImageProvider? _cachedAvatarProvider;
+  String? _lastAvatarUrl;
+
+  ImageProvider? _getAvatarProvider(String? url) {
+    if (url == null || url.isEmpty) return null;
+    if (url == _lastAvatarUrl && _cachedAvatarProvider != null) {
+      return _cachedAvatarProvider;
+    }
+    _lastAvatarUrl = url;
+    if (url.startsWith('http')) {
+      _cachedAvatarProvider = NetworkImage(url);
+    } else {
+      try {
+        _cachedAvatarProvider = MemoryImage(base64Decode(url.split(',').last));
+      } catch (e) {
+        _cachedAvatarProvider = null;
+      }
+    }
+    return _cachedAvatarProvider;
+  }
+
   @override
   void initState() {
     super.initState();
@@ -80,21 +102,26 @@ class _AppShellState extends ConsumerState<AppShell> with WidgetsBindingObserver
   }
 
   void _initQuickActions() {
-    const QuickActions quickActions = QuickActions();
-    quickActions.initialize((String shortcutType) {
-      if (shortcutType == 'action_add_transaction') {
-        // Open the AI Advisor Bottom Sheet
-        ref.read(isCanvasOpenProvider.notifier).state = true;
-      }
-    });
+    if (kIsWeb) return;
+    try {
+      const QuickActions quickActions = QuickActions();
+      quickActions.initialize((String shortcutType) {
+        if (shortcutType == 'action_add_transaction') {
+          // Open the AI Advisor Bottom Sheet
+          ref.read(isCanvasOpenProvider.notifier).state = true;
+        }
+      });
 
-    quickActions.setShortcutItems(<ShortcutItem>[
-      const ShortcutItem(
-        type: 'action_add_transaction',
-        localizedTitle: 'Agregar transacción',
-        icon: 'AppIcon', // Uses default app icon or system icon if defined natively, but 'compose' is standard iOS, wait, 'AppIcon' or None. We can omit icon or use 'compose' for iOS.
-      ),
-    ]);
+      quickActions.setShortcutItems(<ShortcutItem>[
+        const ShortcutItem(
+          type: 'action_add_transaction',
+          localizedTitle: 'Agregar transacción',
+          icon: 'AppIcon', // Uses default app icon or system icon if defined natively, but 'compose' is standard iOS, wait, 'AppIcon' or None. We can omit icon or use 'compose' for iOS.
+        ),
+      ]);
+    } catch (e) {
+      debugPrint('Error initializing QuickActions: $e');
+    }
   }
 
   @override
@@ -184,11 +211,10 @@ class _AppShellState extends ConsumerState<AppShell> with WidgetsBindingObserver
   Widget build(BuildContext context) {
     ref.listen<int>(appNavigationProvider, (previous, next) {
       if (previous != next && _pageController.hasClients) {
-        _pageController.animateToPage(
-          next,
-          duration: const Duration(milliseconds: 300),
-          curve: Curves.easeInOut,
-        );
+        // Only animate if the controller isn't already at this page (e.g., from jumpToPage or swiping)
+        if (_pageController.page?.round() != next) {
+          _pageController.jumpToPage(next);
+        }
       }
     });
 
@@ -243,10 +269,25 @@ class _AppShellState extends ConsumerState<AppShell> with WidgetsBindingObserver
     final bool isKeyboardOpen = MediaQuery.of(context).viewInsets.bottom > 0;
     final bool hideNav = isKeyboardOpen;
 
-    return Scaffold(
-      extendBody: true,
-      body: NotificationListener<ScrollNotification>(
-        onNotification: (scrollNotification) {
+    return PopScope(
+      canPop: false,
+      onPopInvoked: (didPop) {
+        if (didPop) return;
+        if (_currentIndex != 0) {
+          // Switch back to dashboard instead of exiting
+          ref.read(appNavigationProvider.notifier).state = 0;
+        } else {
+          // We are on dashboard. We can exit.
+          // SystemNavigator.pop() exits the app on Android.
+          // However, GoRouter handles root back presses differently.
+          // To allow normal exit on Android when at index 0, we can use SystemNavigator:
+          SystemNavigator.pop();
+        }
+      },
+      child: Scaffold(
+        extendBody: true,
+        body: NotificationListener<ScrollNotification>(
+          onNotification: (scrollNotification) {
           // 1. Ignorar movimientos horizontales (PageView, swiping de pestañas)
           if (scrollNotification.metrics.axis == Axis.horizontal) {
             return false;
@@ -277,7 +318,7 @@ class _AppShellState extends ConsumerState<AppShell> with WidgetsBindingObserver
             _KeepAlivePage(child: DashboardScreen()),
             _KeepAlivePage(child: TransactionListScreen()),
             _KeepAlivePage(child: AccountsListScreen()),
-            _KeepAlivePage(child: SettingsScreen()),
+            _KeepAlivePage(child: SettingsNavigator()),
           ],
         ),
       ),
@@ -291,12 +332,12 @@ class _AppShellState extends ConsumerState<AppShell> with WidgetsBindingObserver
                 child: AnimatedContainer(
                   duration: const Duration(milliseconds: 300),
                   curve: Curves.easeOutCubic,
-                  height: _isScrolling ? 44 : 64, 
+                  height: _isScrolling ? 56 : 64, 
                   width: double.infinity,
                   margin: EdgeInsets.only(
-                    left: _isScrolling ? 80 : 16, 
-                    right: _isScrolling ? 80 : 16, 
-                    bottom: bottomMargin + 8.0, 
+                    left: _isScrolling ? 40 : 16, 
+                    right: _isScrolling ? 40 : 16, 
+                    bottom: bottomMargin, // Se redujo el margen inferior extra para bajar el nav
                   ),
                   child: LayoutBuilder(
                     builder: (context, constraints) {
@@ -305,7 +346,6 @@ class _AppShellState extends ConsumerState<AppShell> with WidgetsBindingObserver
                       return AnimatedBuilder(
                         animation: _pageController,
                         builder: (context, child) {
-                          // The raw page value from PageController, which smoothly tracks finger drags 1:1
                           double pageValue = 0.0;
                           if (_pageController.hasClients && _pageController.position.haveDimensions) {
                             pageValue = _pageController.page ?? _currentIndex.toDouble();
@@ -313,11 +353,14 @@ class _AppShellState extends ConsumerState<AppShell> with WidgetsBindingObserver
                             pageValue = _currentIndex.toDouble();
                           }
                           
-                          // If canvas is open, override the visual index to 4.0
-                          // To animate to/from 4.0 smoothly while still tracking finger perfectly on 0-3,
-                          // we use AnimatedPositioned with a dynamic duration.
                           bool forceAnimation = isCanvasOpen || (currentIndex == 4) || _isTappingNav;
                           double animIndex = isCanvasOpen ? 4.0 : pageValue;
+                          
+                          // Agregamos padding horizontal al interior del nav para que el primer
+                          // y último ícono no choquen con la curvatura del borde (borderRadius: 30)
+                          const double horizontalPadding = 8.0;
+                          final double availableWidth = constraints.maxWidth - (horizontalPadding * 2);
+                          final double itemWidth = availableWidth / navItems.length;
                           
                           return Stack(
                             clipBehavior: Clip.none,
@@ -342,7 +385,7 @@ class _AppShellState extends ConsumerState<AppShell> with WidgetsBindingObserver
                                   child: ClipRRect(
                                     borderRadius: BorderRadius.circular(30.0),
                                     child: BackdropFilter(
-                                      filter: ImageFilter.blur(sigmaX: 24.0, sigmaY: 24.0),
+                                      filter: ImageFilter.blur(sigmaX: 12.0, sigmaY: 12.0),
                                       child: Container(
                                         decoration: BoxDecoration(
                                           color: isDark 
@@ -365,7 +408,7 @@ class _AppShellState extends ConsumerState<AppShell> with WidgetsBindingObserver
                               AnimatedPositioned(
                                 duration: forceAnimation ? const Duration(milliseconds: 300) : Duration.zero,
                                 curve: Curves.easeOutCubic,
-                                left: animIndex * itemWidth,
+                                left: horizontalPadding + (animIndex * itemWidth),
                                 top: 0,
                                 bottom: 0,
                                 width: itemWidth,
@@ -373,18 +416,20 @@ class _AppShellState extends ConsumerState<AppShell> with WidgetsBindingObserver
                                   child: AnimatedContainer(
                                     duration: const Duration(milliseconds: 300),
                                     curve: Curves.easeOutCubic,
-                                    width: _isScrolling ? 52 : 72,
-                                    height: _isScrolling ? 32 : 46,
+                                    width: _isScrolling ? 46 : 56, // Reducido para que no choque con los bordes
+                                    height: _isScrolling ? 38 : 46,
                                     decoration: BoxDecoration(
                                       color: AppColors.primary,
-                                      borderRadius: BorderRadius.circular(_isScrolling ? 16 : 23),
+                                      borderRadius: BorderRadius.circular(_isScrolling ? 19 : 23),
                                     ),
                                   ),
                                 ),
                               ),
                               // Fila de botones de navegación
                               Positioned.fill(
-                                child: Row(
+                                child: Padding(
+                                  padding: const EdgeInsets.symmetric(horizontal: horizontalPadding),
+                                  child: Row(
                                   children: navItems.map((item) {
                                     // Make the icon light up smoothly if it's currently selected
                                     bool isIconActive = (item.index == 4 && isCanvasOpen) || (!isCanvasOpen && _currentIndex == item.index);
@@ -397,6 +442,7 @@ class _AppShellState extends ConsumerState<AppShell> with WidgetsBindingObserver
                                       avatarUrl,
                                     );
                                   }).toList(),
+                                  ),
                                 ),
                               ),
                             ],
@@ -409,6 +455,7 @@ class _AppShellState extends ConsumerState<AppShell> with WidgetsBindingObserver
               ),
             )
           : null,
+      ),
     );
   }
 
@@ -468,7 +515,7 @@ class _AppShellState extends ConsumerState<AppShell> with WidgetsBindingObserver
                   scale: isScrolling ? 0.85 : 1.0,
                   duration: const Duration(milliseconds: 300),
                   curve: Curves.easeOutCubic,
-                  child: (item.label == 'Ajustes' && avatarUrl != null)
+                  child: (item.label == 'Ajustes' && _getAvatarProvider(avatarUrl) != null)
                       ? Container(
                           width: 26,
                           height: 26,
@@ -479,7 +526,7 @@ class _AppShellState extends ConsumerState<AppShell> with WidgetsBindingObserver
                               width: isActive ? 1.5 : 0,
                             ),
                             image: DecorationImage(
-                              image: MemoryImage(base64Decode(avatarUrl.split(',').last)),
+                              image: _getAvatarProvider(avatarUrl)!,
                               fit: BoxFit.cover,
                             ),
                           ),

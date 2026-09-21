@@ -117,7 +117,7 @@ void main() async {
       // Guardar la URL y Key de Supabase y Groq (desde .env)
       await HomeWidget.saveWidgetData('supabase_url', dotenv.env['SUPABASE_URL'] ?? '');
       await HomeWidget.saveWidgetData('supabase_anon_key', dotenv.env['SUPABASE_ANON_KEY'] ?? '');
-      await HomeWidget.saveWidgetData('groq_api_key', dotenv.env['GROQ_API_KEY'] ?? '');
+      await HomeWidget.saveWidgetData('gemini_api_key', dotenv.env['GEMINI_API_KEY'] ?? '');
       
       // Guardar el token de sesión actual si existe
       final session = supabaseClient.auth.currentSession;
@@ -425,8 +425,8 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
   }
 
   Future<void> _checkAuthAndNavigate() async {
-    // Espera mínimo 2 segundos para mostrar el splash
-    await Future.delayed(const Duration(seconds: 2));
+    // Reducido a 500ms para que la app inicie mucho más rápido
+    await Future.delayed(const Duration(milliseconds: 500));
     
     if (!mounted) return;
     

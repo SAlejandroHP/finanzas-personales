@@ -57,13 +57,13 @@ abstract class AppColors {
   static const double radiusMedium      = 12.0;
   static const double radiusLarge       = 24.0;
   
-  // Tipografía Montserrat (Tokens de tamaño)
-  static const double displayLarge = 32.0; // w800 - Saldo
-  static const double titleLarge   = 24.0; // w700 - Headers
-  static const double titleMedium  = 18.0; // w600 - Card Titles
-  static const double bodyLarge    = 16.0; // w600 - Inputs/Buttons
-  static const double bodyMedium   = 14.0; // w400 - Párrafos
-  static const double bodySmall    = 12.0; // w500 - Labels/Chips
+  // Tipografía Montserrat (Tokens de tamaño aumentados para mejor legibilidad)
+  static const double displayLarge = 36.0; // w800 - Saldo
+  static const double titleLarge   = 28.0; // w700 - Headers
+  static const double titleMedium  = 20.0; // w600 - Card Titles
+  static const double bodyLarge    = 18.0; // w600 - Inputs/Buttons
+  static const double bodyMedium   = 16.0; // w400 - Párrafos
+  static const double bodySmall    = 14.0; // w500 - Labels/Chips
 
   // 🌈 Categorías Ocean Lime
   static const List<Color> categoryColors = [

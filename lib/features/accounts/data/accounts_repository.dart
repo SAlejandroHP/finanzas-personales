@@ -47,6 +47,18 @@ class AccountsRepository {
         .subscribe();
   }
 
+  /// Fuerza una actualización manual de los datos (sin usar realtime)
+  Future<void> refresh() async {
+    try {
+      final accounts = await getUserAccounts();
+      if (!_accountsController.isClosed) {
+        _accountsController.add(accounts);
+      }
+    } catch (e) {
+      // Ignore
+    }
+  }
+
   /// Obtiene todas las cuentas del usuario actual
   Future<List<AccountModel>> getUserAccounts() async {
     try {

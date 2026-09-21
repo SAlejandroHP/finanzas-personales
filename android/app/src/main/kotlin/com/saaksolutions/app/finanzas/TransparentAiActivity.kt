@@ -60,10 +60,10 @@ class TransparentAiActivity : Activity() {
                 // HomeWidget plugin en Flutter guarda las preferencias en las preferencias compartidas nativas con prefijo "HomeWidgetPreferences"
                 // O usa default preferences. Vamos a revisar ambos.
                 val prefs = getSharedPreferences("HomeWidgetPreferences", Context.MODE_PRIVATE)
-                var apiKey = prefs.getString("groq_api_key", "") ?: ""
+                var apiKey = prefs.getString("gemini_api_key", "") ?: ""
                 if (apiKey.isEmpty()) {
                     val defaultPrefs = getSharedPreferences(packageName + "_preferences", Context.MODE_PRIVATE)
-                    apiKey = defaultPrefs.getString("groq_api_key", "") ?: ""
+                    apiKey = defaultPrefs.getString("gemini_api_key", "") ?: ""
                 }
                 
                 val sbUrl = prefs.getString("supabase_url", "") ?: ""
@@ -87,49 +87,109 @@ class TransparentAiActivity : Activity() {
                 - tipo: "ingreso" o "gasto"
                 - monto: número
                 - descripcion: un resumen corto
-                - cuentaOrigenId: UUID de la cuenta que mencione de aquí: $aiContext
-                - categoriaId: UUID de la categoría que encaje de aquí: $aiContext
+                - cuenta_origen_id: UUID de la cuenta que mencione de aquí: $aiContext
+                - categoria_id: UUID de la categoría que encaje de aquí: $aiContext
+                No agregues formato markdown. Solo JSON puro.
                 """.trimIndent()
                 
-                // Call Groq
-                val groqUrl = URL("https://api.groq.com/openai/v1/chat/completions")
-                val groqConn = groqUrl.openConnection() as HttpURLConnection
-                groqConn.requestMethod = "POST"
-                groqConn.setRequestProperty("Authorization", "Bearer $apiKey")
-                groqConn.setRequestProperty("Content-Type", "application/json")
-                groqConn.doOutput = true
+                // Call Gemini
+                val geminiUrl = URL("https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=$apiKey")
+                val geminiConn = geminiUrl.openConnection() as HttpURLConnection
+                geminiConn.requestMethod = "POST"
+                geminiConn.setRequestProperty("Content-Type", "application/json")
+                geminiConn.doOutput = true
                 
-                val groqPayload = JSONObject().apply {
-                    put("model", "llama3-8b-8192")
-                    put("response_format", JSONObject().put("type", "json_object"))
-                    val messages = org.json.JSONArray()
-                    messages.put(JSONObject().put("role", "system").put("content", systemPrompt))
-                    messages.put(JSONObject().put("role", "user").put("content", input))
-                    put("messages", messages)
+                val geminiPayload = JSONObject().apply {
+                    val sysInstruction = JSONObject().put("parts", org.json.JSONArray().put(JSONObject().put("text", systemPrompt)))
+                    put("systemInstruction", sysInstruction)
+                    
+                    val contents = org.json.JSONArray()
+                    val userRole = JSONObject().put("role", "user")
+                    userRole.put("parts", org.json.JSONArray().put(JSONObject().put("text", input)))
+                    contents.put(userRole)
+                    put("contents", contents)
+                    
+                    put("generationConfig", JSONObject().put("responseMimeType", "application/json"))
                 }
                 
-                OutputStreamWriter(groqConn.outputStream).use { it.write(groqPayload.toString()) }
+                OutputStreamWriter(geminiConn.outputStream).use { it.write(geminiPayload.toString()) }
                 
-                val responseStr = groqConn.inputStream.bufferedReader().use { it.readText() }
+                val responseStr = geminiConn.inputStream.bufferedReader().use { it.readText() }
                 val jsonResponse = JSONObject(responseStr)
-                val content = jsonResponse.getJSONArray("choices").getJSONObject(0).getJSONObject("message").getString("content")
-                val resultJson = JSONObject(content)
+                val candidates = jsonResponse.getJSONArray("candidates")
+                val content = candidates.getJSONObject(0).getJSONObject("content")
+                var text = content.getJSONArray("parts").getJSONObject(0).getString("text").trim()
                 
-                // Prepare Supabase Payload
-                resultJson.put("id", UUID.randomUUID().toString())
-                resultJson.put("user_id", userId)
-                resultJson.put("estado", "completada")
+                if (text.startsWith("```json")) {
+                    text = text.substring(7)
+                } else if (text.startsWith("```")) {
+                    text = text.substring(3)
+                }
+                if (text.endsWith("```")) {
+                    text = text.substring(0, text.length - 3)
+                }
+                text = text.trim()
                 
+                val resultJson = JSONObject(text)
+                // Validate monto
+                if (!resultJson.has("monto") || resultJson.isNull("monto")) {
+                    runOnUiThread {
+                        Toast.makeText(this@TransparentAiActivity, "No detecté ningún monto. Por favor incluye la cantidad.", Toast.LENGTH_LONG).show()
+                    }
+                    return@launch
+                }
+                
+                // Forzar a double
+                try {
+                    val montoDouble = resultJson.getString("monto").toDouble()
+                    resultJson.put("monto", montoDouble)
+                } catch (e: Exception) {}
+                
+                // Construir payload seguro
+                val safePayload = JSONObject()
+                safePayload.put("id", UUID.randomUUID().toString())
+                safePayload.put("user_id", userId)
+                safePayload.put("estado", "completa")
                 val df = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", Locale.US)
                 val nowStr = df.format(Date())
-                resultJson.put("fecha", nowStr)
-                resultJson.put("created_at", nowStr)
+                safePayload.put("fecha", nowStr)
+                safePayload.put("created_at", nowStr)
                 
-                if (!resultJson.has("tipo") || resultJson.isNull("tipo")) resultJson.put("tipo", "gasto")
-                if (!resultJson.has("descripcion") || resultJson.isNull("descripcion")) resultJson.put("descripcion", "Registro desde Atajo")
+                safePayload.put("tipo", if (!resultJson.has("tipo") || resultJson.isNull("tipo")) "gasto" else resultJson.getString("tipo"))
+                safePayload.put("descripcion", if (!resultJson.has("descripcion") || resultJson.isNull("descripcion")) "Registro desde Atajo" else resultJson.getString("descripcion"))
+                
+                // Fallback de cuenta_origen_id y categoria_id si vienen vacíos
+                try {
+                    val contextJson = JSONObject(aiContext)
+                    
+                    if (!resultJson.has("cuenta_origen_id") || resultJson.isNull("cuenta_origen_id")) {
+                        val accounts = contextJson.getJSONArray("accounts")
+                        if (accounts.length() > 0) {
+                            resultJson.put("cuenta_origen_id", accounts.getJSONObject(0).getString("id"))
+                        }
+                    }
+                    if (!resultJson.has("categoria_id") || resultJson.isNull("categoria_id")) {
+                        val categories = contextJson.getJSONArray("categories")
+                        if (categories.length() > 0) {
+                            resultJson.put("categoria_id", categories.getJSONObject(0).getString("id"))
+                        }
+                    }
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                }
+
+                if (resultJson.has("monto") && !resultJson.isNull("monto")) {
+                    safePayload.put("monto", resultJson.getDouble("monto"))
+                }
+                if (resultJson.has("cuenta_origen_id") && !resultJson.isNull("cuenta_origen_id")) {
+                    safePayload.put("cuenta_origen_id", resultJson.getString("cuenta_origen_id"))
+                }
+                if (resultJson.has("categoria_id") && !resultJson.isNull("categoria_id")) {
+                    safePayload.put("categoria_id", resultJson.getString("categoria_id"))
+                }
                 
                 // Call Supabase
-                val sbEndpoint = URL("$sbUrl/rest/v1/transactions")
+                val sbEndpoint = URL("$sbUrl/rest/v1/transacciones")
                 val sbConn = sbEndpoint.openConnection() as HttpURLConnection
                 sbConn.requestMethod = "POST"
                 sbConn.setRequestProperty("Authorization", "Bearer $sbToken")
@@ -138,7 +198,7 @@ class TransparentAiActivity : Activity() {
                 sbConn.setRequestProperty("Prefer", "return=minimal")
                 sbConn.doOutput = true
                 
-                OutputStreamWriter(sbConn.outputStream).use { it.write(resultJson.toString()) }
+                OutputStreamWriter(sbConn.outputStream).use { it.write(safePayload.toString()) }
                 
                 val responseCode = sbConn.responseCode
                 withContext(Dispatchers.Main) {

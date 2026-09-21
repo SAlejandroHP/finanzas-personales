@@ -105,7 +105,7 @@ Sé muy selectivo. Ofrece entre 1 y 3 acciones clave al final de tus respuestas 
     required String userQuery,
   }) async {
     final model = GenerativeModel(
-      model: 'gemini-1.5-flash',
+      model: 'gemini-2.5-flash',
       apiKey: _apiKey,
       systemInstruction: Content.system(specialistPrompt),
     );
@@ -127,7 +127,7 @@ Escribe tu reporte técnico de especialista basándote únicamente en estos dato
   /// Crea e inicializa una sesión de chat para el Agente Supervisor
   ChatSession startSupervisorChat() {
     return GenerativeModel(
-      model: 'gemini-1.5-flash',
+      model: 'gemini-2.5-flash',
       apiKey: _apiKey,
       systemInstruction: Content.system(_kSupervisorPrompt),
     ).startChat();

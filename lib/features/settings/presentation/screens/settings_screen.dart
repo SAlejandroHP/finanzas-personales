@@ -1,3 +1,8 @@
+import 'package:finanzas/features/categories/presentation/screens/categories_list_screen.dart';
+import 'package:finanzas/features/transactions/presentation/screens/recurring_transactions_screen.dart';
+import 'package:finanzas/features/debts/presentation/screens/debts_list_screen.dart';
+import 'package:finanzas/features/goals/presentation/screens/goals_list_screen.dart';
+import 'package:finanzas/core/widgets/app_shell.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/widgets/app_shell.dart';
@@ -186,7 +191,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               child: Row(
                 children: [
                   IconButton(
-                    onPressed: () => Navigator.pop(context),
+                    onPressed: () {
+                          ref.read(appNavigationProvider.notifier).state = 0;
+                    },
                     icon: Icon(
                       Icons.arrow_back_ios_new_rounded,
                       color: isDark ? Colors.white : AppColors.textPrimary,
@@ -240,7 +247,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             iconColor: AppColors.categories,
             title: 'Mis Categorías',
             subtitle: 'Organiza tus ingresos y gastos',
-            onTap: () => context.push('/categories'),
+            onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => CategoriesListScreen())),
           ),
           const SizedBox(height: 8),
           _buildNavigationCard(
@@ -250,7 +257,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             iconColor: AppColors.recurringTransactions,
             title: 'Transacciones Recurrentes',
             subtitle: 'Configura sueldos y pagos automáticos',
-            onTap: () => context.push('/settings/recurring'),
+            onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => RecurringTransactionsScreen())),
           ),
           const SizedBox(height: 8),
           _buildNavigationCard(
@@ -260,7 +267,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             iconColor: AppColors.debts,
             title: 'Mis Deudas',
             subtitle: 'Préstamos, deudas con familiares y servicios',
-            onTap: () => context.push('/settings/debts'),
+            onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => DebtsListScreen())),
           ),
           const SizedBox(height: 8),
           _buildNavigationCard(
@@ -270,41 +277,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             iconColor: AppColors.goals,
             title: 'Mis Metas de Ahorro',
             subtitle: 'Viajes, fondos de emergencia y compras',
-            onTap: () => context.push('/goals'),
-          ),
-          const SizedBox(height: 16),
-
-          // SECCIÓN: PERMISOS
-          _buildSectionHeader(context, 'Permisos'),
-          _buildNavigationCard(
-            context,
-            isDark,
-            icon: Icons.notifications_active_outlined,
-            iconColor: Colors.amber,
-            title: 'Lectura de Notificaciones',
-            subtitle: 'Permitir lectura para automatizar transacciones',
-            onTap: () async {
-              // Verifica si es web o no es Android
-              if (Theme.of(context).platform != TargetPlatform.android) {
-                showAppToast(context, message: 'Esta función solo está disponible en Android', type: ToastType.info);
-                return;
-              }
-
-              try {
-                final bool hasPermission = (await NotificationsListener.hasPermission) ?? false;
-                if (!hasPermission) {
-                  await NotificationsListener.openPermissionSettings();
-                } else {
-                  if (mounted) {
-                    showAppToast(context, message: 'El permiso ya ha sido otorgado', type: ToastType.success);
-                  }
-                }
-              } catch (e) {
-                if (mounted) {
-                  showAppToast(context, message: 'No se pudo abrir la configuración: ${e.toString()}', type: ToastType.error);
-                }
-              }
-            },
+            onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => GoalsListScreen())),
           ),
           const SizedBox(height: 16),
 
@@ -711,6 +684,23 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           ],
         ),
       ),
+    );
+  }
+}
+
+
+class SettingsNavigator extends StatelessWidget {
+  const SettingsNavigator({Key? key}) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return Navigator(
+      key: const PageStorageKey('SettingsNavigator'),
+      onGenerateRoute: (settings) {
+        return MaterialPageRoute(
+          builder: (context) => const SettingsScreen(),
+        );
+      },
     );
   }
 }

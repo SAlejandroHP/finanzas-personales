@@ -1,3 +1,4 @@
+import 'package:finanzas/core/widgets/app_shell.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -11,6 +12,7 @@ import '../widgets/transaction_tile.dart';
 import '../providers/transaction_filters_provider.dart';
 import '../../../../core/services/finance_service.dart';
 import '../../../../core/utils/download_helper.dart';
+import '../../../../core/widgets/app_shell.dart';
 import 'dart:convert';
 
 // Función de utilidad para formatear la fecha del encabezado
@@ -38,12 +40,22 @@ class TransactionListScreen extends ConsumerStatefulWidget {
 }
 
 class _TransactionListScreenState extends ConsumerState<TransactionListScreen> {
-  final PageController _pageController = PageController();
   final TextEditingController _searchController = TextEditingController();
   final FocusNode _searchFocus = FocusNode();
-  int _currentPage = 0;
   bool _showArchived = false;
   bool _isSearchOpen = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _searchFocus.addListener(() {
+      if (!_searchFocus.hasFocus && _searchController.text.isEmpty) {
+        if (_isSearchOpen && mounted) {
+          setState(() => _isSearchOpen = false);
+        }
+      }
+    });
+  }
 
   void _toggleSearch() {
     setState(() {
@@ -86,17 +98,6 @@ class _TransactionListScreenState extends ConsumerState<TransactionListScreen> {
                 children: [
                   Row(
                     children: [
-                      IconButton(
-                        onPressed: () => Navigator.pop(context),
-                        icon: Icon(
-                          Icons.arrow_back_ios_new_rounded,
-                          color: isDark ? Colors.white : AppColors.textPrimary,
-                          size: 20,
-                        ),
-                        padding: EdgeInsets.zero,
-                        constraints: const BoxConstraints(),
-                      ),
-                      const SizedBox(width: 12),
                       Text(
                         'Movimientos',
                         style: GoogleFonts.montserrat(
@@ -131,40 +132,65 @@ class _TransactionListScreenState extends ConsumerState<TransactionListScreen> {
             child: ClipRect(
               child: Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-                child: TextField(
-                  controller: _searchController,
-                  focusNode: _searchFocus,
-                  onChanged: (val) {
-                    ref.read(transactionFiltersProvider.notifier).update((state) => state.copyWith(searchQuery: val));
-                  },
-                  style: TextStyle(
-                    color: isDark ? Colors.white : AppColors.textPrimary,
-                    fontSize: 15,
-                  ),
-                  decoration: InputDecoration(
-                    hintText: 'Buscar monto, categoría, estatus...',
-                    hintStyle: TextStyle(
-                      color: isDark ? Colors.white54 : Colors.black54,
-                      fontSize: 14,
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: TextField(
+                        controller: _searchController,
+                        focusNode: _searchFocus,
+                        textInputAction: TextInputAction.search,
+                        onSubmitted: (_) {
+                          // Oculta el teclado pero mantiene el buscador visible
+                          _searchFocus.unfocus();
+                        },
+                        onChanged: (val) {
+                          ref.read(transactionFiltersProvider.notifier).update((state) => state.copyWith(searchQuery: val));
+                        },
+                        style: TextStyle(
+                          color: isDark ? Colors.white : AppColors.textPrimary,
+                          fontSize: 15,
+                        ),
+                        decoration: InputDecoration(
+                          hintText: 'Buscar monto, categoría, estatus...',
+                          hintStyle: TextStyle(
+                            color: isDark ? Colors.white54 : Colors.black54,
+                            fontSize: 14,
+                          ),
+                          prefixIcon: Icon(Icons.search, color: isDark ? Colors.white54 : Colors.black54, size: 20),
+                          suffixIcon: _searchController.text.isNotEmpty 
+                              ? IconButton(
+                                  icon: Icon(Icons.clear, color: isDark ? Colors.white54 : Colors.black54, size: 18),
+                                  onPressed: () {
+                                    _searchController.clear();
+                                    ref.read(transactionFiltersProvider.notifier).update((state) => state.copyWith(searchQuery: ''));
+                                    // Mantiene el foco para poder escribir otra cosa
+                                    _searchFocus.requestFocus();
+                                  },
+                                )
+                              : null,
+                          filled: true,
+                          fillColor: isDark ? const Color(0xFF1E1E1E) : Colors.grey[100],
+                          contentPadding: const EdgeInsets.symmetric(vertical: 0),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: BorderSide.none,
+                          ),
+                        ),
+                      ),
                     ),
-                    prefixIcon: Icon(Icons.search, color: isDark ? Colors.white54 : Colors.black54, size: 20),
-                    suffixIcon: _searchController.text.isNotEmpty 
-                        ? IconButton(
-                            icon: Icon(Icons.clear, color: isDark ? Colors.white54 : Colors.black54, size: 18),
-                            onPressed: () {
-                              _searchController.clear();
-                              ref.read(transactionFiltersProvider.notifier).update((state) => state.copyWith(searchQuery: ''));
-                            },
-                          )
-                        : null,
-                    filled: true,
-                    fillColor: isDark ? const Color(0xFF1E1E1E) : Colors.grey[100],
-                    contentPadding: const EdgeInsets.symmetric(vertical: 0),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide.none,
+                    const SizedBox(width: 12),
+                    GestureDetector(
+                      onTap: _toggleSearch,
+                      child: Text(
+                        'Cancelar',
+                        style: GoogleFonts.montserrat(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.primary,
+                        ),
+                      ),
                     ),
-                  ),
+                  ],
                 ),
               ),
             ),
@@ -225,19 +251,6 @@ class _TransactionListScreenState extends ConsumerState<TransactionListScreen> {
                   ),
                 ),
               ),
-              // Indicadores (Tabs) fijos arriba del PageView
-              if (hasPending) ...[
-                const SizedBox(height: 8),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    _buildTabDot(0, 'General', isDark),
-                    _buildTabDot(1, 'Pendientes', isDark),
-                  ],
-                ),
-                const SizedBox(height: 8),
-              ],
-
               Expanded(
                 child: NotificationListener<ScrollUpdateNotification>(
                   onNotification: (notification) {
@@ -246,37 +259,25 @@ class _TransactionListScreenState extends ConsumerState<TransactionListScreen> {
                     }
                     return false;
                   },
-                  child: _currentPage == 0 
-                    ? Column(
-                        children: [
-                          _buildModernSummaryCard(
-                            title: (_hasAnyFilter(ref.watch(transactionFiltersProvider))) ? 'Balance del Periodo' : 'Balance Total (Efectivo)',
-                            total: summary.total,
-                            income: summary.income,
-                            expenses: summary.expenses,
-                            isDark: isDark,
-                            gradient: [
-                              AppColors.primary,
-                              AppColors.primary.withRed(30).withGreen(100),
-                            ],
-                          ),
-                          const SizedBox(height: 4),
-                          Expanded(child: _buildTransactionList(displayedTransactions, isDark, ref, archivedCount: archivedTransactions.length)),
-                        ],
-                      )
-                    : Column(
-                        children: [
-                          _buildCommitmentSummaryCard(
-                            title: 'Compromisos (Pendientes)',
-                            total: summary.pendingTotal,
-                            income: summary.pendingIncome,
-                            expenses: summary.pendingExpenses,
-                            isDark: isDark,
-                          ),
-                          const SizedBox(height: 4),
-                          Expanded(child: _buildTransactionList(pendingTransactions, isDark, ref)),
+                  child: Column(
+                    children: [
+                      _buildModernSummaryCard(
+                        title: (_hasAnyFilter(ref.watch(transactionFiltersProvider))) ? 'Balance del Periodo' : 'Balance General',
+                        total: summary.total,
+                        income: summary.income,
+                        expenses: summary.expenses,
+                        pendingIncome: summary.pendingIncome,
+                        pendingExpenses: summary.pendingExpenses,
+                        isDark: isDark,
+                        gradient: [
+                          AppColors.primary,
+                          AppColors.primary.withRed(30).withGreen(100),
                         ],
                       ),
+                      const SizedBox(height: 4),
+                      Expanded(child: _buildTransactionList(displayedTransactions, isDark, ref, archivedCount: archivedTransactions.length)),
+                    ],
+                  ),
                 ),
               ),
             ],
@@ -312,7 +313,7 @@ class _TransactionListScreenState extends ConsumerState<TransactionListScreen> {
           Text(
             hasFilters 
                 ? 'Sin resultados' 
-                : (_currentPage == 1 ? 'Sin compromisos' : 'Sin transacciones'),
+                : 'Sin transacciones',
             style: GoogleFonts.montserrat(
               fontWeight: FontWeight.w700,
               fontSize: AppColors.titleSmall,
@@ -323,9 +324,7 @@ class _TransactionListScreenState extends ConsumerState<TransactionListScreen> {
           Text(
             hasFilters 
                 ? 'Prueba ajustando los filtros' 
-                : (_currentPage == 1 
-                    ? 'No tienes pagos pendientes en este periodo' 
-                    : 'Comienza a registrar tus movimientos'),
+                : 'Comienza a registrar tus movimientos',
             style: GoogleFonts.montserrat(
               color: isDark ? Colors.white70 : AppColors.textPrimary.withOpacity(0.6),
               fontSize: AppColors.bodyMedium,
@@ -424,158 +423,37 @@ class _TransactionListScreenState extends ConsumerState<TransactionListScreen> {
     );
   }
 
-  Widget _buildTabDot(int index, String label, bool isDark) {
-    final isSelected = _currentPage == index;
-    return GestureDetector(
-      onTap: () {
-        _pageController.animateToPage(index, duration: const Duration(milliseconds: 300), curve: Curves.easeInOut);
-      },
-      child: Container(
-        margin: const EdgeInsets.symmetric(horizontal: 4),
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-        decoration: BoxDecoration(
-          color: isSelected ? AppColors.primary.withOpacity(0.15) : Colors.transparent,
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(
-            color: isSelected ? AppColors.primary.withOpacity(0.5) : (isDark ? Colors.white12 : Colors.black12),
-          ),
-        ),
-        child: Text(
-          label,
-          style: GoogleFonts.montserrat(
-            fontSize: 11,
-            fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
-            color: isSelected ? AppColors.primary : (isDark ? Colors.white60 : Colors.black54),
-          ),
-        ),
-      ),
-    );
-  }
-
-  // Card con gradiente para el balance principal
   Widget _buildModernSummaryCard({
     required String title,
     required double total,
     required double income,
     required double expenses,
+    double pendingIncome = 0.0,
+    double pendingExpenses = 0.0,
     required bool isDark,
-    required List<Color> gradient,
+    required List<Color> gradient, // Se ignora
   }) {
     final currencyFormatter = NumberFormat.currency(symbol: '\$', decimalDigits: 2);
     
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16),
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(16),
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: gradient,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: gradient[0].withOpacity(0.35),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Row(
-        children: [
-          Expanded(
-            flex: 5,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Text(
-                  title,
-                  style: GoogleFonts.montserrat(
-                    fontSize: 10,
-                    fontWeight: FontWeight.w700,
-                    color: Colors.white.withOpacity(0.8),
-                    letterSpacing: 0.5,
-                  ),
-                ),
-                const SizedBox(height: 2),
-                FittedBox(
-                  fit: BoxFit.scaleDown,
-                  child: Text(
-                    currencyFormatter.format(total),
-                    style: GoogleFonts.montserrat(
-                      fontSize: 20,
-                      fontWeight: FontWeight.w800,
-                      color: Colors.white,
-                      letterSpacing: -0.5,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          Container(
-            height: 30, // Unificado a 30
-            width: 1,
-            margin: const EdgeInsets.symmetric(horizontal: 12),
-            color: Colors.white.withOpacity(0.2),
-          ),
-          Expanded(
-            flex: 4, // Unificado a 4 para que sea una columna delgada
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _buildCompactSummaryItem(
-                  amount: income,
-                  color: Colors.greenAccent,
-                  icon: Icons.add_circle_outline,
-                ),
-                const SizedBox(height: 4), // Gap para la pila
-                _buildCompactSummaryItem(
-                  amount: expenses,
-                  color: Colors.white.withOpacity(0.9),
-                  icon: Icons.remove_circle_outline,
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  // Card minimalista con columna vertical para compromisos
-  Widget _buildCommitmentSummaryCard({
-    required String title,
-    required double total,
-    required double income,
-    required double expenses,
-    required bool isDark,
-  }) {
-    final currencyFormatter = NumberFormat.currency(symbol: '\$', decimalDigits: 2);
-    final cardBgColor = isDark ? const Color(0xFF1E1E1E) : Colors.white;
+    final bgColor = isDark ? const Color(0xFF1C1C1E) : const Color(0xFFF5F7FA);
+    final borderColor = isDark ? Colors.white.withOpacity(0.08) : Colors.black.withOpacity(0.05);
+    final titleColor = isDark ? Colors.white54 : Colors.black54;
+    final balanceColor = isDark ? Colors.white : AppColors.textPrimary;
+    
+    final hasPending = pendingIncome > 0 || pendingExpenses > 0;
     
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16),
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
       decoration: BoxDecoration(
-        color: cardBgColor,
-        borderRadius: BorderRadius.circular(AppColors.radiusXLarge),
-        border: Border.all(
-          color: AppColors.secondary.withOpacity(isDark ? 0.3 : 0.1),
-          width: 1.5,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(isDark ? 0.2 : 0.05),
-            blurRadius: 15,
-            offset: const Offset(0, 8),
-          ),
-        ],
+        color: bgColor,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: borderColor, width: 1),
       ),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
+          // Lado Izquierdo: Balance Total
           Expanded(
             flex: 5,
             child: Column(
@@ -585,51 +463,93 @@ class _TransactionListScreenState extends ConsumerState<TransactionListScreen> {
                 Text(
                   title.toUpperCase(),
                   style: GoogleFonts.montserrat(
-                    fontSize: 10,
+                    fontSize: 11,
                     fontWeight: FontWeight.w700,
-                    color: isDark ? Colors.white60 : Colors.grey.shade600,
-                    letterSpacing: 0.8,
+                    color: titleColor,
+                    letterSpacing: 0.5,
                   ),
                 ),
                 const SizedBox(height: 4),
                 FittedBox(
                   fit: BoxFit.scaleDown,
+                  alignment: Alignment.centerLeft,
                   child: Text(
                     currencyFormatter.format(total),
                     style: GoogleFonts.montserrat(
-                      fontSize: 20,
+                      fontSize: 30, // Más grande
                       fontWeight: FontWeight.w800,
-                      color: isDark ? Colors.white : AppColors.textPrimary,
-                      letterSpacing: -0.5,
+                      color: balanceColor,
+                      letterSpacing: -0.8,
                     ),
                   ),
                 ),
               ],
             ),
           ),
+          
           Container(
-            height: 30,
             width: 1,
+            height: hasPending ? 70 : 40,
             margin: const EdgeInsets.symmetric(horizontal: 12),
-            color: isDark ? Colors.white10 : Colors.grey.withOpacity(0.1),
+            color: borderColor,
           ),
+          
+          // Lado Derecho: Indicadores (Ingresos, Gastos, Pendientes)
           Expanded(
-            flex: 4,
+            flex: 6,
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _buildCompactSummaryItem(
-                  amount: income,
-                  color: isDark ? const Color(0xFF81C784) : const Color(0xFF2E7D32),
-                  icon: Icons.add_circle_outline,
+                Row(
+                  children: [
+                    Expanded(
+                      child: _buildFlatMetric(
+                        label: 'INGRESOS',
+                        amount: income,
+                        color: isDark ? Colors.greenAccent : Colors.green[700]!,
+                        isDark: isDark,
+                        icon: Icons.arrow_downward_rounded,
+                      ),
+                    ),
+                    Expanded(
+                      child: _buildFlatMetric(
+                        label: 'GASTOS',
+                        amount: expenses,
+                        color: isDark ? Colors.redAccent : Colors.red[700]!,
+                        isDark: isDark,
+                        icon: Icons.arrow_upward_rounded,
+                      ),
+                    ),
+                  ],
                 ),
-                const SizedBox(height: 4),
-                _buildCompactSummaryItem(
-                  amount: expenses,
-                  color: AppColors.secondary,
-                  icon: Icons.remove_circle_outline,
-                ),
+                if (hasPending) ...[
+                  Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 10),
+                    child: Divider(height: 1, color: borderColor),
+                  ),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _buildFlatMetric(
+                          label: 'COBRAR',
+                          amount: pendingIncome,
+                          color: isDark ? Colors.tealAccent : Colors.teal[700]!,
+                          isDark: isDark,
+                          icon: Icons.schedule_rounded,
+                        ),
+                      ),
+                      Expanded(
+                        child: _buildFlatMetric(
+                          label: 'PAGAR',
+                          amount: pendingExpenses,
+                          color: isDark ? Colors.orange[300]! : Colors.orange[800]!,
+                          isDark: isDark,
+                          icon: Icons.schedule_rounded,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
               ],
             ),
           ),
@@ -638,47 +558,52 @@ class _TransactionListScreenState extends ConsumerState<TransactionListScreen> {
     );
   }
 
-  Widget _buildCompactSummaryItem({
+  Widget _buildFlatMetric({
+    required String label,
     required double amount,
     required Color color,
+    required bool isDark,
     required IconData icon,
   }) {
-    final absAmount = amount.abs();
-    final String formattedText;
-
-    // Si el monto es menor a 1 millón, lo mostramos completo (ej: $17,500) para mayor precisión.
-    if (absAmount < 1000000) {
-      formattedText = NumberFormat.currency(
-        symbol: '\$',
-        decimalDigits: 0,
-        locale: 'en_US', // Asegura separadores de miles con coma
-      ).format(absAmount);
-    } else {
-      // Para montos muy grandes usamos el formato compacto (K, M) para no romper el layout.
-      formattedText = NumberFormat.compactCurrency(
-        symbol: '\$',
-        locale: 'en_US',
-      ).format(absAmount);
+    final currencyFormatter = NumberFormat.currency(symbol: '\$', decimalDigits: 0, locale: 'en_US');
+    if (amount >= 1000000) {
+      currencyFormatter.maximumFractionDigits = 1;
     }
-
-    return Row(
-      mainAxisSize: MainAxisSize.min,
+    
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Icon(icon, size: 14, color: color),
-        const SizedBox(width: 4),
+        Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, size: 12, color: color.withOpacity(0.9)),
+            const SizedBox(width: 4),
+            Text(
+              label,
+              style: GoogleFonts.montserrat(
+                fontSize: 10.5,
+                fontWeight: FontWeight.w700,
+                color: isDark ? Colors.white54 : Colors.black54,
+                letterSpacing: 0.2,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 2),
         Text(
-          formattedText,
+          amount >= 1000000 
+            ? NumberFormat.compactCurrency(symbol: '\$', locale: 'en_US').format(amount)
+            : currencyFormatter.format(amount),
           style: GoogleFonts.montserrat(
-            fontSize: 14,
-            fontWeight: FontWeight.w700,
-            color: color,
-            letterSpacing: -0.2,
+            fontSize: 14.5,
+            fontWeight: FontWeight.w800,
+            color: isDark ? Colors.white : AppColors.textPrimary,
+            letterSpacing: -0.3,
           ),
         ),
       ],
     );
   }
-
   bool _hasAnyFilter(TransactionFilters filters) {
     return filters.status != null ||
         filters.accountId != null ||
@@ -798,18 +723,15 @@ class _TransactionListScreenState extends ConsumerState<TransactionListScreen> {
     }).toList();
     
     final displayedTransactions = _showArchived ? allTransactions : activeTransactions;
-    final exportTransactions = _currentPage == 1 
-        ? displayedTransactions.where((t) => t.estado == 'pendiente').toList()
-        : displayedTransactions;
+    final exportTransactions = displayedTransactions;
 
     if (exportTransactions.isEmpty) {
       showAppToast(context, message: 'No hay transacciones para exportar', type: ToastType.warning);
       return;
     }
     
-    final tabName = _currentPage == 0 ? 'General' : 'Pendientes';
     final dateStr = DateFormat('yyyy-MM-dd').format(DateTime.now());
-    final filename = 'finanzas_${tabName.toLowerCase()}_$dateStr';
+    final filename = 'finanzas_movimientos_$dateStr';
 
     try {
       if (format == 'csv') {

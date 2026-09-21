@@ -47,6 +47,18 @@ class CategoriesRepository {
         .subscribe();
   }
 
+  /// Fuerza una actualización manual de los datos (sin usar realtime)
+  Future<void> refresh() async {
+    try {
+      final categories = await getUserCategories();
+      if (!_categoriesController.isClosed) {
+        _categoriesController.add(categories);
+      }
+    } catch (e) {
+      // Ignore
+    }
+  }
+
   /// Obtiene todas las categorías del usuario actual
   Future<List<CategoryModel>> getUserCategories() async {
     try {

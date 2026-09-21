@@ -158,7 +158,7 @@ class IAService {
   bool get isAvailable => _apiKey.isNotEmpty;
 
   IAService({String? apiKey}) {
-    final key = apiKey ?? dotenv.maybeGet('GEMINI_API_KEY') ?? '';
+    final key = apiKey ?? dotenv.env['GEMINI_API_KEY'] ?? '';
     if (key.isEmpty) {
       // No lanzar excepción — el servicio simplemente no estará disponible.
       // Esto evita que un .env faltante en producción colapse el dashboard.
@@ -168,7 +168,7 @@ class IAService {
     _apiKey = key;
 
     _model = GenerativeModel(
-      model: 'gemini-1.5-flash',
+      model: 'gemini-2.5-flash',
       apiKey: key,
       generationConfig: GenerationConfig(
         responseMimeType: 'application/json',
@@ -183,7 +183,7 @@ class IAService {
   }) {
     if (!isAvailable) throw Exception('Servicio de IA no disponible: GEMINI_API_KEY faltante.');
     return GenerativeModel(
-      model: 'gemini-1.5-flash',
+      model: 'gemini-2.5-flash',
       apiKey: _apiKey,
       systemInstruction: Content.system(systemInstruction),
     ).startChat(history: history);

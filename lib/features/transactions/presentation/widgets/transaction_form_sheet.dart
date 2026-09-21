@@ -474,21 +474,9 @@ class _TransactionFormSheetState extends ConsumerState<TransactionFormSheet> {
             .read(transactionsNotifierProvider.notifier)
             .updateTransaction(transaction);
       } else {
-        if (_tipo == 'pago_deuda' && _deudaId != null) {
-          await ref.read(financeServiceProvider).processDebtPayment(
-            debtId: _deudaId!,
-            amount: _montoNumerico,
-            accountId: _cuentaOrigenId!,
-            description: _descripcionController.text.isEmpty
-                ? null
-                : _descripcionController.text,
-            fecha: _fecha,
-          );
-        } else {
-          await ref
-              .read(transactionsNotifierProvider.notifier)
-              .createTransaction(transaction);
-        }
+        await ref
+            .read(transactionsNotifierProvider.notifier)
+            .createTransaction(transaction);
       }
 
       if (mounted) {
@@ -527,7 +515,7 @@ class _TransactionFormSheetState extends ConsumerState<TransactionFormSheet> {
       child: Padding(
         padding: EdgeInsets.only(bottom: bottomInset),
         child: DraggableScrollableSheet(
-          initialChildSize: 0.85,
+          initialChildSize: 0.95,
           minChildSize: 0.4,
           maxChildSize: 0.95,
           expand: false,
@@ -676,10 +664,11 @@ class _TransactionFormSheetState extends ConsumerState<TransactionFormSheet> {
                         const SizedBox(height: AppColors.lg),
 
                         // Selectores de Tipo (Pills)
-                        SingleChildScrollView(
-                          scrollDirection: Axis.horizontal,
-                          physics: const BouncingScrollPhysics(),
-                          child: Row(
+                        Center(
+                          child: Wrap(
+                            spacing: AppColors.sm,
+                            runSpacing: AppColors.sm,
+                            alignment: WrapAlignment.center,
                             children: [
                               _buildTypeButton(
                                 'gasto',
@@ -688,7 +677,6 @@ class _TransactionFormSheetState extends ConsumerState<TransactionFormSheet> {
                                 Colors.red,
                                 isDark,
                               ),
-                              const SizedBox(width: AppColors.sm),
                               _buildTypeButton(
                                 'ingreso',
                                 'Ingreso',
@@ -696,7 +684,6 @@ class _TransactionFormSheetState extends ConsumerState<TransactionFormSheet> {
                                 AppColors.success,
                                 isDark,
                               ),
-                              const SizedBox(width: AppColors.sm),
                               _buildTypeButton(
                                 'transferencia',
                                 'Transf.',
@@ -704,7 +691,6 @@ class _TransactionFormSheetState extends ConsumerState<TransactionFormSheet> {
                                 AppColors.primary,
                                 isDark,
                               ),
-                              const SizedBox(width: AppColors.sm),
                               _buildTypeButton(
                                 'pago_deuda',
                                 'Pago Deuda',
@@ -712,7 +698,6 @@ class _TransactionFormSheetState extends ConsumerState<TransactionFormSheet> {
                                 Colors.orange,
                                 isDark,
                               ),
-                              const SizedBox(width: AppColors.sm),
                               _buildTypeButton(
                                 'meta_aporte',
                                 'Aporte Meta',
@@ -729,98 +714,64 @@ class _TransactionFormSheetState extends ConsumerState<TransactionFormSheet> {
                         _buildFormSectionHeader('DETALLES DE LA TRANSACCIÓN'),
                         const SizedBox(height: AppColors.md),
 
-                        // Tarjeta de Cuenta
-                        _buildSelectorTile(
-                          label:
-                              (_tipo == 'transferencia' ||
-                                  _tipo == 'pago_deuda')
-                              ? 'De cuenta origen'
-                              : 'Cuenta principal',
-                          value: _getAccountName(_cuentaOrigenId, accounts),
-                          icon: Icons.account_balance_wallet_rounded,
-                          onTap: () =>
-                              _showAccountSelector(context, accounts, true),
-                          isDark: isDark,
-                        ),
-
-                        // Campos Condicionales
-                        if (_tipo == 'transferencia') ...[
-                          const SizedBox(height: AppColors.md),
+                        _buildTilesGroup([
                           _buildSelectorTile(
-                            label: 'Hacia cuenta destino',
-                            value: _getAccountName(_cuentaDestinoId, accounts),
-                            icon: Icons.login_rounded,
-                            onTap: () =>
-                                _showAccountSelector(context, accounts, false),
+                            label: (_tipo == 'transferencia' || _tipo == 'pago_deuda')
+                                ? 'De cuenta origen'
+                                : 'Cuenta principal',
+                            value: _getAccountName(_cuentaOrigenId, accounts),
+                            icon: Icons.account_balance_wallet_rounded,
+                            onTap: () => _showAccountSelector(context, accounts, true),
                             isDark: isDark,
                           ),
-                        ],
-
-                        if (_tipo == 'gasto' || _tipo == 'ingreso') ...[
-                          const SizedBox(height: AppColors.md),
+                          if (_tipo == 'transferencia')
+                            _buildSelectorTile(
+                              label: 'Hacia cuenta destino',
+                              value: _getAccountName(_cuentaDestinoId, accounts),
+                              icon: Icons.login_rounded,
+                              onTap: () => _showAccountSelector(context, accounts, false),
+                              isDark: isDark,
+                            ),
+                          if (_tipo == 'gasto' || _tipo == 'ingreso')
+                            _buildSelectorTile(
+                              label: 'Categoría',
+                              value: _getCategoryName(_categoriaId, categories),
+                              icon: Icons.category_rounded,
+                              onTap: () => _showCategorySelector(context, categories),
+                              isDark: isDark,
+                            ),
+                          if (_tipo == 'pago_deuda')
+                            ref.watch(debtsListProvider).when(
+                                  data: (debts) => _buildSelectorTile(
+                                    label: 'Deuda vinculada',
+                                    value: _getDebtName(_deudaId, debts),
+                                    icon: Icons.money_off_rounded,
+                                    onTap: () => _showDebtSelector(context, debts),
+                                    isDark: isDark,
+                                  ),
+                                  loading: () => const Padding(padding: EdgeInsets.all(16), child: Center(child: CircularProgressIndicator())),
+                                  error: (_, _) => const Padding(padding: EdgeInsets.all(16), child: Text('Error al cargar deudas')),
+                                ),
+                          if (_tipo == 'meta_aporte')
+                            ref.watch(goalsListProvider).when(
+                                  data: (goals) => _buildSelectorTile(
+                                    label: 'Meta destino',
+                                    value: _getGoalName(_metaId, goals),
+                                    icon: Icons.flag_rounded,
+                                    onTap: () => _showGoalSelector(context, ref, goals),
+                                    isDark: isDark,
+                                  ),
+                                  loading: () => const Padding(padding: EdgeInsets.all(16), child: Center(child: CircularProgressIndicator())),
+                                  error: (_, _) => const Padding(padding: EdgeInsets.all(16), child: Text('Error al cargar metas')),
+                                ),
                           _buildSelectorTile(
-                            label: 'Categoría',
-                            value: _getCategoryName(_categoriaId, categories),
-                            icon: Icons.category_rounded,
-                            onTap: () =>
-                                _showCategorySelector(context, categories),
+                            label: 'Fecha del movimiento',
+                            value: intl.DateFormat('EEEE d MMMM, yyyy', 'es').format(_fecha),
+                            icon: Icons.calendar_today_rounded,
+                            onTap: _selectDate,
                             isDark: isDark,
                           ),
-                        ],
-
-                        if (_tipo == 'pago_deuda') ...[
-                          const SizedBox(height: AppColors.md),
-                          ref
-                              .watch(debtsListProvider)
-                              .when(
-                                data: (debts) => _buildSelectorTile(
-                                  label: 'Deuda vinculada',
-                                  value: _getDebtName(_deudaId, debts),
-                                  icon: Icons.money_off_rounded,
-                                  onTap: () =>
-                                      _showDebtSelector(context, debts),
-                                  isDark: isDark,
-                                ),
-                                loading: () => const Center(
-                                  child: CircularProgressIndicator(),
-                                ),
-                                error: (_, _) =>
-                                    const Text('Error al cargar deudas'),
-                              ),
-                        ],
-
-                        if (_tipo == 'meta_aporte') ...[
-                          const SizedBox(height: AppColors.md),
-                          ref
-                              .watch(goalsListProvider)
-                              .when(
-                                data: (goals) => _buildSelectorTile(
-                                  label: 'Meta destino',
-                                  value: _getGoalName(_metaId, goals),
-                                  icon: Icons.flag_rounded,
-                                  onTap: () =>
-                                      _showGoalSelector(context, ref, goals),
-                                  isDark: isDark,
-                                ),
-                                loading: () => const Center(
-                                  child: CircularProgressIndicator(),
-                                ),
-                                error: (_, _) =>
-                                    const Text('Error al cargar metas'),
-                              ),
-                        ],
-
-                        const SizedBox(height: AppColors.md),
-                        _buildSelectorTile(
-                          label: 'Fecha del movimiento',
-                          value: intl.DateFormat(
-                            'EEEE d MMMM, yyyy',
-                            'es',
-                          ).format(_fecha),
-                          icon: Icons.calendar_today_rounded,
-                          onTap: _selectDate,
-                          isDark: isDark,
-                        ),
+                        ], isDark),
 
                         const SizedBox(height: AppColors.xl),
                         _buildFormSectionHeader('NOTAS Y RECURRENCIA'),
@@ -1254,13 +1205,7 @@ class _TransactionFormSheetState extends ConsumerState<TransactionFormSheet> {
         border: Border(
           top: BorderSide(color: isDark ? Colors.white10 : Colors.black12),
         ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
-            blurRadius: 10,
-            offset: const Offset(0, -5),
-          ),
-        ],
+        
       ),
       child: SafeArea(
         top: false,
@@ -1364,13 +1309,7 @@ class _TransactionFormSheetState extends ConsumerState<TransactionFormSheet> {
           border: Border.all(
             color: isSelected ? AppColors.primary : Colors.transparent,
           ),
-          boxShadow: isSelected ? [
-            BoxShadow(
-              color: AppColors.primary.withValues(alpha: 0.3),
-              blurRadius: 8,
-              offset: const Offset(0, 4),
-            )
-          ] : null,
+          
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
@@ -1552,9 +1491,9 @@ class _TransactionFormSheetState extends ConsumerState<TransactionFormSheet> {
         },
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 200),
-          height: 52.0, // Mantener altura interactiva requerida
           padding: const EdgeInsets.symmetric(
             horizontal: AppColors.md,
+            vertical: 14,
           ),
           decoration: BoxDecoration(
             color: isSelected
@@ -1563,17 +1502,7 @@ class _TransactionFormSheetState extends ConsumerState<TransactionFormSheet> {
                       ? Colors.white.withValues(alpha: 0.05)
                       : Colors.grey[100]),
             borderRadius: BorderRadius.circular(AppColors.radiusLarge),
-            boxShadow: isSelected
-                ? [
-                    BoxShadow(
-                      color: color.withValues(alpha: 0.3),
-                      blurRadius: 8,
-                      offset: const Offset(0, 4),
-                    ),
-                  ]
-                : null,
           ),
-          alignment: Alignment.center,
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -1613,6 +1542,35 @@ class _TransactionFormSheetState extends ConsumerState<TransactionFormSheet> {
     );
   }
 
+  Widget _buildTilesGroup(List<Widget> tiles, bool isDark) {
+    if (tiles.isEmpty) return const SizedBox.shrink();
+    return Container(
+      decoration: BoxDecoration(
+        color: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.grey[50],
+        borderRadius: BorderRadius.circular(AppColors.radiusLarge),
+        border: Border.all(
+          color: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.black.withValues(alpha: 0.05),
+        ),
+      ),
+      child: Column(
+        children: tiles.asMap().entries.map((entry) {
+          final isLast = entry.key == tiles.length - 1;
+          return Column(
+            children: [
+              entry.value,
+              if (!isLast)
+                Divider(
+                  height: 1,
+                  indent: 52,
+                  color: isDark ? Colors.white10 : Colors.black12,
+                ),
+            ],
+          );
+        }).toList(),
+      ),
+    );
+  }
+
   Widget _buildSelectorTile({
     required String label,
     required String value,
@@ -1625,20 +1583,8 @@ class _TransactionFormSheetState extends ConsumerState<TransactionFormSheet> {
       splashColor: Colors.transparent,
       highlightColor: Colors.transparent,
       hoverColor: Colors.transparent,
-      borderRadius: BorderRadius.circular(AppColors.radiusLarge),
       child: Container(
-        padding: const EdgeInsets.all(AppColors.md),
-        decoration: BoxDecoration(
-          color: isDark
-              ? Colors.white.withValues(alpha: 0.05)
-              : Colors.grey[50],
-          borderRadius: BorderRadius.circular(AppColors.radiusLarge),
-          border: Border.all(
-            color: isDark
-                ? Colors.white.withValues(alpha: 0.05)
-                : Colors.black.withValues(alpha: 0.05),
-          ),
-        ),
+        padding: const EdgeInsets.symmetric(horizontal: AppColors.md, vertical: 12),
         child: Row(
           children: [
             Container(
@@ -1667,7 +1613,7 @@ class _TransactionFormSheetState extends ConsumerState<TransactionFormSheet> {
                   Text(
                     value,
                     style: GoogleFonts.montserrat(
-                      fontSize: AppColors.bodyLarge,
+                      fontSize: AppColors.bodyMedium,
                       fontWeight: FontWeight.w700,
                       color: isDark ? Colors.white : AppColors.textPrimary,
                     ),

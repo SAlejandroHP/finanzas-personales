@@ -350,7 +350,7 @@ class TransactionTile extends ConsumerWidget {
                         maxLines: 3, overflow: TextOverflow.ellipsis,
                         style: GoogleFonts.montserrat(
                           fontWeight: FontWeight.w600,
-                          fontSize: 13,
+                          fontSize: 15,
                           color: isDark ? Colors.white : AppColors.textPrimary,
                         ),
                       ),
@@ -359,7 +359,7 @@ class TransactionTile extends ConsumerWidget {
                         children: [
                           Icon(
                             Icons.account_balance_rounded,
-                            size: 10,
+                            size: 12,
                             color: isDark ? Colors.white54 : Colors.grey[500],
                           ),
                           const SizedBox(width: 4),
@@ -369,7 +369,7 @@ class TransactionTile extends ConsumerWidget {
                               maxLines: 3, overflow: TextOverflow.ellipsis,
                               style: GoogleFonts.montserrat(
                                 color: isDark ? Colors.white60 : Colors.grey[600],
-                                fontSize: 10,
+                                fontSize: 12,
                                 fontWeight: FontWeight.w500,
                               ),
                             ),
@@ -392,7 +392,7 @@ class TransactionTile extends ConsumerWidget {
                     Text(
                       _formatCurrency(transaction.monto, displayCurrencySymbol),
                       style: GoogleFonts.montserrat(
-                        fontSize: 14,
+                        fontSize: 16,
                         color: _getAmountColor(),
                         fontWeight: FontWeight.w700,
                       ),
@@ -452,7 +452,7 @@ class _TransactionStatusButtonState extends ConsumerState<_TransactionStatusButt
         : (widget.isDark ? Colors.orange[300]!.withValues(alpha: 0.15) : Colors.orange[100]);
 
     return SizedBox(
-      height: 22,
+      height: 24,
       child: TextButton.icon(
         onPressed: () async {
           // Actualización optimista inmediata
@@ -460,9 +460,8 @@ class _TransactionStatusButtonState extends ConsumerState<_TransactionStatusButt
             _optimisticIsCompleted = !isCompleted;
           });
 
-          // Pequeño retardo visual para que el usuario alcance a ver
-          // que el botón cambió a verde/naranja antes de que la lista se reorganice
-          await Future.delayed(const Duration(milliseconds: 700));
+          // Pequeño retardo visual reducido a 300ms
+          await Future.delayed(const Duration(milliseconds: 300));
 
           // Operación en segundo plano (silenciosa)
           if (!isCompleted) {
@@ -475,12 +474,12 @@ class _TransactionStatusButtonState extends ConsumerState<_TransactionStatusButt
         },
         icon: Icon(
           isCompleted ? Icons.check_circle_rounded : Icons.schedule_rounded,
-          size: 11,
+          size: 13,
         ),
         label: Text(
           isCompleted ? 'Pagado' : 'Pendiente',
           style: GoogleFonts.montserrat(
-            fontSize: 10,
+            fontSize: 12,
             fontWeight: FontWeight.w600,
           ),
         ),

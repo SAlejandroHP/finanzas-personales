@@ -97,7 +97,8 @@ class DebtsListScreen extends ConsumerWidget {
                 final totalRemaining = debts.fold<double>(0.0, (s, d) => s + d.montoRestante);
 
                 return RefreshIndicator(
-                  onRefresh: () async => ref.read(financeServiceProvider).refreshAll(),
+                  displacement: 20,
+                  onRefresh: () async => ref.read(financeServiceProvider).refreshAll(null, true),
                   child: ListView(
                     padding: const EdgeInsets.fromLTRB(20, 10, 20, 100),
                     physics: const BouncingScrollPhysics(),

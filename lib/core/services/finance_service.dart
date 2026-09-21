@@ -86,7 +86,12 @@ class FinanceService {
 
   /// Coordina el refresco de los providers después de una operación financiera
   Future<void> updateAfterTransaction(TransactionModel tx, {bool isUndo = false, Ref? ref}) async {
-    refreshAll(ref);
+    // Audit v6: No usamos refreshAll() aquí porque los StreamProviders ya tienen
+    // suscripciones Realtime a Supabase. Invalidad aquí forzaba a la app entera a
+    // entrar en estado "loading" (spinner) y re-hacer las peticiones de red.
+    // Con Realtime, la UI se actualiza sola en ~200ms suavemente.
+    final refToUse = ref ?? _ref;
+    _syncContextToWidget(refToUse);
   }
 
   /// Coordina el pago anticipado de una transacción recurrente
@@ -110,30 +115,44 @@ class FinanceService {
     // 2. Procesar el pago anticipado (Crea la transacción y actualiza la regla)
     await repository.payRecurringEarly(rule);
 
-    // 3. Refrescar los providers
-    refreshAll();
+    // 3. Sync context (no hacemos refreshAll para evitar spinners globales)
+    _syncContextToWidget(_ref);
   }
 
   /// Invalida todos los providers relacionados usando el Ref interno seguro o uno externo
-  void refreshAll([Ref? ref]) {
-    // Audit v5: Centralizamos aquí los refrescos que antes estaban dispersos.
-    // Usamos el _ref interno si no se pasa uno externo.
+  void refreshAll([Ref? ref, bool force = false]) {
+    // Audit v6: Por defecto force es false para evitar que las mutaciones (agregar, pagar)
+    // destruyan los StreamProviders en tiempo real y causen spinners lentos.
+    // Solo en Pull-to-refresh enviamos force = true.
     final refToUse = ref ?? _ref;
     
-    refToUse.invalidate(accountsListProvider);
-    refToUse.invalidate(accountsWithBalanceProvider);
-    refToUse.invalidate(transactionsListProvider);
-    refToUse.invalidate(pendingTransactionsProvider); // Agregado para reactividad en dashboard
-    refToUse.invalidate(recentTransactionsProvider); // Agregado para reactividad en dashboard
-    refToUse.invalidate(debtsListProvider);
-    refToUse.invalidate(pendingInvitationsProvider);
-    refToUse.invalidate(recurringTransactionsProvider);
-    refToUse.invalidate(goalsListProvider);
-    
-    // Providers de categorías (antes dispersos en CategoryForm)
-    refToUse.invalidate(categoriesListProvider);
-    refToUse.invalidate(incomeCategoriesProvider);
-    refToUse.invalidate(expenseCategoriesProvider);
+    if (force) {
+      refToUse.invalidate(accountsListProvider);
+      refToUse.invalidate(accountsWithBalanceProvider);
+      refToUse.invalidate(transactionsListProvider);
+      refToUse.invalidate(pendingTransactionsProvider); 
+      refToUse.invalidate(recentTransactionsProvider); 
+      refToUse.invalidate(debtsListProvider);
+      refToUse.invalidate(pendingInvitationsProvider);
+      refToUse.invalidate(recurringTransactionsProvider);
+      refToUse.invalidate(goalsListProvider);
+      
+      refToUse.invalidate(categoriesListProvider);
+      refToUse.invalidate(incomeCategoriesProvider);
+      refToUse.invalidate(expenseCategoriesProvider);
+    } else {
+      // Actualización silenciosa (sin spinners)
+      // Empuja los nuevos datos a los StreamControllers locales
+      refToUse.read(transactionsRepositoryProvider).refresh();
+      refToUse.read(accountsRepositoryProvider).refresh();
+      refToUse.read(categoriesRepositoryProvider).refresh();
+      
+      // Para Debts y Goals que aún no tienen refresh(), los invalidamos
+      // Ya que no se usan tan frecuentemente como las transacciones
+      refToUse.invalidate(debtsListProvider);
+      refToUse.invalidate(goalsListProvider);
+      refToUse.invalidate(recurringTransactionsProvider);
+    }
     
     // Guardar contexto para la IA en el Widget
     _syncContextToWidget(refToUse);
